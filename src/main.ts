@@ -35,7 +35,9 @@ import '@ionic/vue/css/palettes/dark.system.css';
 import './theme/variables.css';
 
 const app = createApp(App)
-  .use(IonicVue)
+  .use(IonicVue, {
+    mode: 'ios',
+  })
   .use(router);
 
 router.isReady().then(() => {
