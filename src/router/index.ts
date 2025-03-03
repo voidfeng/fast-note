@@ -30,8 +30,8 @@ const routes: Array<RouteRecordRaw> = [
     ]
   },
   {
-    path: '/detail',
-    component: () => import('@/views/NewPage.vue')
+    path: '/note',
+    component: () => import('@/views/NotePage.vue')
   }
 ]
 

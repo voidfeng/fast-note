@@ -13,7 +13,7 @@
         </ion-toolbar>
       </ion-header>
 
-      <ion-button @click="() => router.push('/detail')">Go to detail</ion-button>
+      <ion-button @click="() => router.push('/note')">Go to detail</ion-button>
 
       <ExploreContainer name="Tab 1 page" />
     </ion-content>
