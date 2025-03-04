@@ -1,3 +1,31 @@
+<script setup lang="ts">
+import { useRoute } from 'vue-router';
+import {
+  IonBackButton,
+  IonButtons,
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonItem,
+  IonLabel,
+  IonNote,
+  IonPage,
+  IonToolbar,
+} from '@ionic/vue';
+import { personCircle } from 'ionicons/icons';
+import { getMessage } from '../data/messages';
+import editor from '@/components/YYEditor.vue'
+
+const getBackButtonText = () => {
+  const win = window as any;
+  const mode = win && win.Ionic && win.Ionic.mode;
+  return mode === 'ios' ? '备忘录' : '';
+};
+
+const route = useRoute();
+const message = getMessage(parseInt(route.params.id as string, 10));
+</script>
+
 <template>
   <ion-page>
     <ion-header :translucent="true">
@@ -23,41 +51,11 @@
       </ion-item>
 
       <div class="ion-padding">
-        <h1>{{ message.subject }}</h1>
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-        </p>
+        <editor />
       </div>
     </ion-content>
   </ion-page>
 </template>
-
-<script setup lang="ts">
-import { useRoute } from 'vue-router';
-import {
-  IonBackButton,
-  IonButtons,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonItem,
-  IonLabel,
-  IonNote,
-  IonPage,
-  IonToolbar,
-} from '@ionic/vue';
-import { personCircle } from 'ionicons/icons';
-import { getMessage } from '../data/messages';
-
-const getBackButtonText = () => {
-  const win = window as any;
-  const mode = win && win.Ionic && win.Ionic.mode;
-  return mode === 'ios' ? 'Inbox' : '';
-};
-
-const route = useRoute();
-const message = getMessage(parseInt(route.params.id as string, 10));
-</script>
 
 <style scoped>
 ion-item {
@@ -99,12 +97,6 @@ ion-item ion-note {
   font-size: 0.9375rem;
   margin-right: 12px;
   font-weight: normal;
-}
-
-h1 {
-  margin: 0;
-  font-weight: bold;
-  font-size: 1.4rem;
 }
 
 p {
