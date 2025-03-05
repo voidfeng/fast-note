@@ -3,7 +3,7 @@
     <div slot="start" :class="!message.read ? 'dot dot-unread' : 'dot'"></div>
     <ion-label class="ion-text-wrap">
       <h2>
-        {{ message.fromName }}
+        {{ message.title }}
         <span class="date">
           <ion-note>{{ message.date }}</ion-note>
           <ion-icon aria-hidden="true" :icon="chevronForward" size="small" v-if="isIos()"></ion-icon>

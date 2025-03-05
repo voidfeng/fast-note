@@ -1,29 +1,3 @@
-<template>
-  <ion-page>
-    <ion-header :translucent="true">
-      <ion-toolbar>
-        <ion-title>备忘录</ion-title>
-      </ion-toolbar>
-    </ion-header>
-
-    <ion-content :fullscreen="true">
-      <ion-refresher slot="fixed" @ionRefresh="refresh($event)">
-        <ion-refresher-content></ion-refresher-content>
-      </ion-refresher>
-
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">备忘录</ion-title>
-        </ion-toolbar>
-      </ion-header>
-
-      <ion-list>
-        <MessageListItem v-for="message in messages" :key="message.id" :message="message" />
-      </ion-list>
-    </ion-content>
-  </ion-page>
-</template>
-
 <script setup lang="ts">
 import {
   IonContent,
@@ -50,3 +24,30 @@ const refresh = (ev: CustomEvent) => {
   }, 3000);
 };
 </script>
+
+<template>
+  <ion-page>
+    <ion-header :translucent="true">
+      <ion-toolbar>
+        <ion-title>备忘录</ion-title>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content :fullscreen="true">
+      <ion-refresher slot="fixed" @ionRefresh="refresh($event)">
+        <ion-refresher-content></ion-refresher-content>
+      </ion-refresher>
+
+      <ion-header collapse="condense">
+        <ion-toolbar>
+          <ion-title size="large">备忘录</ion-title>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-list>
+        <MessageListItem v-for="d in categorys" :key="d.id" :message="d" />
+      </ion-list>
+    </ion-content>
+  </ion-page>
+</template>
+
