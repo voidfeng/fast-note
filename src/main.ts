@@ -34,6 +34,10 @@ import '@ionic/vue/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 
+import { useDexie } from './hooks/useDexie';
+
+useDexie()
+
 const app = createApp(App)
   .use(IonicVue, {
     mode: 'ios',

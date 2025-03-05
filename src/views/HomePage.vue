@@ -38,8 +38,11 @@ import {
 import MessageListItem from '@/components/MessageListItem.vue';
 import { getMessages, Message } from '@/data/messages';
 import { ref } from 'vue';
+import { useCategory } from '@/hooks/useCategory';
 
 const messages = ref<Message[]>(getMessages());
+
+const {categorys} = useCategory()
 
 const refresh = (ev: CustomEvent) => {
   setTimeout(() => {
