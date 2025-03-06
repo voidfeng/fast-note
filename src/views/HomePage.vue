@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import {
+  IonButton,
+  IonButtons,
   IonContent,
+  IonFooter,
   IonHeader,
   IonList,
   IonPage,
@@ -8,21 +11,30 @@ import {
   IonRefresherContent,
   IonTitle,
   IonToolbar,
-} from '@ionic/vue';
-import MessageListItem from '@/components/MessageListItem.vue';
-import { getMessages, Message } from '@/data/messages';
-import { ref } from 'vue';
-import { useCategory } from '@/hooks/useCategory';
+  IonAlert,
+  AlertButton,
+} from '@ionic/vue'
+import MessageListItem from '@/components/MessageListItem.vue'
+import { useCategory } from '@/hooks/useCategory'
 
-const messages = ref<Message[]>(getMessages());
 
-const {categorys} = useCategory()
+const { categorys } = useCategory()
+
+const addButtons: AlertButton[] = [
+  { text: '取消', role: 'cancel' },
+  {
+    text: '确认',
+    handler: (d) => {
+      console.log(d.newFolderName)
+    },
+  },
+]
 
 const refresh = (ev: CustomEvent) => {
   setTimeout(() => {
-    ev.detail.complete();
-  }, 3000);
-};
+    ev.detail.complete()
+  }, 3000)
+}
 </script>
 
 <template>
@@ -48,6 +60,19 @@ const refresh = (ev: CustomEvent) => {
         <MessageListItem v-for="d in categorys" :key="d.id" :message="d" />
       </ion-list>
     </ion-content>
+    <ion-footer>
+      <ion-toolbar>
+        <ion-title></ion-title>
+        <ion-buttons slot="end">
+          <ion-button id="add-folder">新建文件夹</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-footer>
+    <ion-alert
+      trigger="add-folder"
+      header="请输入文件夹名称"
+      :buttons="addButtons"
+      :inputs="[{ name: 'newFolderName', placeholder: '请输入文件夹名称' }]"
+    />
   </ion-page>
 </template>
-
