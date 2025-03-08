@@ -1,15 +1,13 @@
 <template>
   <ion-item v-if="message" :routerLink="'/n/' + message.id" :detail="false" class="list-item">
-    <div slot="start" :class="!message.read ? 'dot dot-unread' : 'dot'"></div>
     <ion-label class="ion-text-wrap">
       <h2>
         {{ message.title }}
         <span class="date">
-          <ion-note>{{ message.date }}</ion-note>
+          <ion-note>{{ message.newstime }}</ion-note>
           <ion-icon aria-hidden="true" :icon="chevronForward" size="small" v-if="isIos()"></ion-icon>
         </span>
       </h2>
-      <h3>{{ message.subject }}</h3>
     </ion-label>
   </ion-item>
 </template>
@@ -29,11 +27,6 @@ const isIos = () => {
 </script>
 
 <style scoped>
-.list-item {
-  --padding-start: 0;
-  --inner-padding-end: 0;
-}
-
 .list-item ion-label {
   margin-top: 12px;
   margin-bottom: 12px;
@@ -72,18 +65,5 @@ const isIos = () => {
 
 .list-item ion-note.md {
   margin-right: 14px;
-}
-
-.list-item .dot {
-  display: block;
-  height: 12px;
-  width: 12px;
-  border-radius: 50%;
-  align-self: start;
-  margin: 16px 10px 16px 16px;
-}
-
-.list-item .dot-unread {
-  background: var(--ion-color-primary);
 }
 </style>

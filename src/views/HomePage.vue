@@ -16,16 +16,19 @@ import {
 } from '@ionic/vue'
 import MessageListItem from '@/components/MessageListItem.vue'
 import { useCategory } from '@/hooks/useCategory'
+import { useDexie } from '@/hooks/useDexie'
 
 
-const { categorys } = useCategory()
+const { categorys, updateCategorys } = useCategory()
+const {addFolderToDb} = useDexie()
 
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
   {
     text: '确认',
-    handler: (d) => {
-      console.log(d.newFolderName)
+    handler: async (d) => {
+      await addFolderToDb(d.newFolderName)
+      updateCategorys()
     },
   },
 ]

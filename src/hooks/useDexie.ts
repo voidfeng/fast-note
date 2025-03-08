@@ -4,7 +4,7 @@ import { Ref, ref } from 'vue'
 // 定义数据库结构
 
 export interface Category {
-  id: number
+  id?: number
   title: string
   newstime: number
   type: 'folder' | 'note'
@@ -18,7 +18,7 @@ interface NoteDatabase extends Dexie {
 const db = ref<NoteDatabase>()
 
 export function useDexie() {
-  function init() {
+  async function init() {
     db.value = new Dexie('note') as NoteDatabase
 
     // 定义表结构和索引
@@ -36,8 +36,13 @@ export function useDexie() {
     })
   }
 
+  function addFolderToDb(title: string) {
+    return db.value?.categorys.add({title, newstime: Date.now(), type: 'folder', pid: 0})
+  }
+
   return {
     db: db as Ref<NoteDatabase>,
     init,
+    addFolderToDb,
   }
 }
