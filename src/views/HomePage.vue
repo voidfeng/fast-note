@@ -5,6 +5,7 @@ import {
   IonContent,
   IonFooter,
   IonHeader,
+  IonIcon,
   IonList,
   IonPage,
   IonRefresher,
@@ -14,6 +15,8 @@ import {
   IonAlert,
   AlertButton,
 } from '@ionic/vue'
+import { addOutline, createOutline } from 'ionicons/icons';
+
 import MessageListItem from '@/components/MessageListItem.vue'
 import { useCategory } from '@/hooks/useCategory'
 import { useDexie } from '@/hooks/useDexie'
@@ -65,9 +68,16 @@ const refresh = (ev: CustomEvent) => {
     </ion-content>
     <ion-footer>
       <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-button id="add-folder">
+            <ion-icon :icon="addOutline" />
+          </ion-button>
+        </ion-buttons>
         <ion-title></ion-title>
         <ion-buttons slot="end">
-          <ion-button id="add-folder">新建文件夹</ion-button>
+          <ion-button id="add-note">
+            <ion-icon :icon="createOutline" />
+          </ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-footer>

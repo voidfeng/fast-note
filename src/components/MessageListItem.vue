@@ -1,5 +1,6 @@
 <template>
   <ion-item v-if="message" :routerLink="'/n/' + message.id" :detail="false" class="list-item">
+    <ion-icon :icon="folderOutline" class="mr-3"></ion-icon>
     <ion-label class="ion-text-wrap">
       <h2>
         {{ message.title }}
@@ -14,7 +15,7 @@
 
 <script setup lang="ts">
 import { IonIcon, IonItem, IonLabel, IonNote } from '@ionic/vue';
-import { chevronForward } from 'ionicons/icons';
+import { chevronForward, folderOutline } from 'ionicons/icons';
 
 defineProps({
   message: Object,

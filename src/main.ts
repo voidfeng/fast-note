@@ -34,6 +34,8 @@ import '@ionic/vue/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 
+import 'virtual:uno.css'
+
 import { useDexie } from './hooks/useDexie';
 
 useDexie()
