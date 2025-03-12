@@ -12,6 +12,8 @@ import StarterKit from '@tiptap/starter-kit'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import { onBeforeMount, onMounted, ref } from 'vue'
 
+const emit = defineEmits(['blur'])
+
 const editor = ref()
 
 onMounted(() => {
@@ -87,11 +89,18 @@ onMounted(() => {
         — Mom
       </blockquote>
     `,
+    onBlur: () => {
+      emit('blur')
+    },
   })
 })
 
 onBeforeMount(() => {
   editor.value?.destroy()
+})
+
+defineExpose({
+  getContent: () => editor.value?.getHTML(),
 })
 </script>
 

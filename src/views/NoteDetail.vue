@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router';
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   IonBackButton,
   IonButtons,
@@ -11,19 +12,49 @@ import {
   IonNote,
   IonPage,
   IonToolbar,
-} from '@ionic/vue';
-import { personCircle } from 'ionicons/icons';
-import { getMessage } from '../data/messages';
+} from '@ionic/vue'
+import { personCircle } from 'ionicons/icons'
+import { getMessage } from '../data/messages'
 import editor from '@/components/YYEditor.vue'
+import { useCategory } from '@/hooks/useCategory'
+
+const router = useRouter()
+const route = useRoute()
+const { addCategory } = useCategory()
+
+const editorRef = ref()
+const message = getMessage(parseInt(route.params.id as string, 10))
 
 const getBackButtonText = () => {
-  const win = window as any;
-  const mode = win && win.Ionic && win.Ionic.mode;
-  return mode === 'ios' ? '备忘录' : '';
-};
+  const win = window as any
+  const mode = win && win.Ionic && win.Ionic.mode
+  return mode === 'ios' ? '备忘录' : ''
+}
 
-const route = useRoute();
-const message = getMessage(parseInt(route.params.id as string, 10));
+async function onBlur() {
+  console.log('onBlur')
+  /**
+   * 保存逻辑
+   * 1. 新建时(id为0)
+   *   - 如果内容为空，则不保存
+   *   - 如果内容不为空，则保存
+   * 2. 编辑时(id不为0)
+   *   - 全部保存
+   */
+  if (route.params.id === '0') {
+    const content = editorRef.value?.getContent()
+    if (content) {
+      console.log('新建时保存', content)
+      const id = await addCategory({
+        newstext: content,
+        newstime: Date.now(),
+        type: 'note',
+        pid: 1,
+      })
+      router.replace(`/n/${id}`)
+    }
+  }
+}
 </script>
 
 <template>
@@ -51,7 +82,7 @@ const message = getMessage(parseInt(route.params.id as string, 10));
       </ion-item>
 
       <div class="ion-padding">
-        <editor />
+        <editor ref="editorRef" @blur="onBlur" />
       </div>
     </ion-content>
   </ion-page>
@@ -70,7 +101,7 @@ ion-label {
 
 ion-item h2 {
   font-weight: 600;
-  
+
   /**
    * With larger font scales
    * the date/time should wrap to the next

@@ -27,9 +27,14 @@ export  function useCategory() {
       })
   }
 
+  function addCategory(note: any) {
+    return db.value.categorys.add(note)
+  }
+
   return {
     categorys,
     syncCategory,
     updateCategorys,
+    addCategory,
   }
 }

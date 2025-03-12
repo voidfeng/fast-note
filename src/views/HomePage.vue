@@ -21,9 +21,8 @@ import MessageListItem from '@/components/MessageListItem.vue'
 import { useCategory } from '@/hooks/useCategory'
 import { useDexie } from '@/hooks/useDexie'
 
-
 const { categorys, updateCategorys } = useCategory()
-const {addFolderToDb} = useDexie()
+const {addFolderToDb, onCategoryUpdate} = useDexie()
 
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
@@ -41,6 +40,10 @@ const refresh = (ev: CustomEvent) => {
     ev.detail.complete()
   }, 3000)
 }
+
+onCategoryUpdate(() => {
+  updateCategorys()
+})
 </script>
 
 <template>
@@ -75,7 +78,7 @@ const refresh = (ev: CustomEvent) => {
         </ion-buttons>
         <ion-title></ion-title>
         <ion-buttons slot="end">
-          <ion-button id="add-note">
+          <ion-button router-link="/n/0" router-direction="forward">
             <ion-icon :icon="createOutline" />
           </ion-button>
         </ion-buttons>
