@@ -66,7 +66,7 @@ onCategoryUpdate(() => {
       </ion-header>
 
       <ion-list>
-        <MessageListItem v-for="d in categorys" :key="d.id" :message="d" />
+        <MessageListItem v-for="d in categorys" :key="d.id" :data="d" />
       </ion-list>
     </ion-content>
     <ion-footer>

@@ -16,6 +16,46 @@ const emit = defineEmits(['blur'])
 
 const editor = ref()
 
+function getTitle() {
+  const json = editor.value?.getJSON()
+  if (!json || !json.content || json.content.length === 0) {
+    return ''
+  }
+  
+  // 递归遍历节点提取文本
+  function extractTextFromNode(node) {
+    if (!node) return ''
+    
+    // 如果是文本节点，直接返回文本内容
+    if (node.type === 'text') {
+      return node.text || ''
+    }
+    
+    // 如果是heading、listItem或paragraph，提取其内部文本并直接返回
+    if (['heading', 'listItem', 'paragraph'].includes(node.type)) {
+      let text = ''
+      if (node.content && Array.isArray(node.content)) {
+        node.content.forEach(child => {
+          if (child.type === 'text') {
+            text += child.text || ''
+          }
+        })
+      }
+      return text
+    }
+    
+    // 其他类型节点，返回节点类型
+    return `[${node.type}]`
+  }
+  
+  // 从第一个节点提取文本作为标题
+  if (json.content.length > 0) {
+    return extractTextFromNode(json.content[0]).trim()
+  }
+  
+  return ''
+}
+
 onMounted(() => {
   editor.value = new Editor({
     extensions: [
@@ -57,12 +97,6 @@ onMounted(() => {
     }),
     ],
     content: `
-      <h2>
-        你好啊！!
-      </h2>
-      <p>
-        这是一个 <em>基础</em> 的<strong>Tiptap</strong>例子. Sure, there are all kind of basic text styles you'd probably expect from a text editor. But wait until you see the lists:
-      </p>
       <ul>
         <li>
           That's a bullet list with one …
@@ -101,6 +135,7 @@ onBeforeMount(() => {
 
 defineExpose({
   getContent: () => editor.value?.getHTML(),
+  getTitle,
 })
 </script>
 

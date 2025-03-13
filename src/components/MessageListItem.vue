@@ -1,31 +1,36 @@
+<script setup lang="ts">
+import { IonIcon, IonItem, IonLabel, IonNote } from '@ionic/vue'
+import { chevronForward, folderOutline } from 'ionicons/icons'
+
+defineProps({
+  data: Object,
+})
+
+const isIos = () => {
+  const win = window as any
+  return win && win.Ionic && win.Ionic.mode === 'ios'
+}
+</script>
+
 <template>
-  <ion-item v-if="message" :routerLink="'/n/' + message.id" :detail="false" class="list-item">
-    <ion-icon :icon="folderOutline" class="mr-3"></ion-icon>
+  <ion-item v-if="data" :routerLink="'/n/' + data.id" :detail="false" class="list-item">
+    <ion-icon v-if="data.type === 'folder'" :icon="folderOutline" class="mr-3" />
     <ion-label class="ion-text-wrap">
       <h2>
-        {{ message.title }}
+        {{ data.title }}
         <span class="date">
-          <ion-note>{{ message.newstime }}</ion-note>
-          <ion-icon aria-hidden="true" :icon="chevronForward" size="small" v-if="isIos()"></ion-icon>
+          <ion-note>{{ data.newstime }}</ion-note>
+          <ion-icon
+            aria-hidden="true"
+            :icon="chevronForward"
+            size="small"
+            v-if="isIos()"
+          />
         </span>
       </h2>
     </ion-label>
   </ion-item>
 </template>
-
-<script setup lang="ts">
-import { IonIcon, IonItem, IonLabel, IonNote } from '@ionic/vue';
-import { chevronForward, folderOutline } from 'ionicons/icons';
-
-defineProps({
-  message: Object,
-});
-
-const isIos = () => {
-  const win = window as any;
-  return win && win.Ionic && win.Ionic.mode === 'ios';
-};
-</script>
 
 <style scoped>
 .list-item ion-label {
@@ -36,7 +41,7 @@ const isIos = () => {
 .list-item h2 {
   font-weight: 600;
   margin: 0;
-  
+
   /**
    * With larger font scales
    * the date/time should wrap to the next

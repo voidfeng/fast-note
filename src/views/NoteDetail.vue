@@ -42,10 +42,12 @@ async function onBlur() {
    *   - 全部保存
    */
   if (route.params.id === '0') {
+    const title = editorRef.value?.getTitle()
     const content = editorRef.value?.getContent()
     if (content) {
       console.log('新建时保存', content)
       const id = await addCategory({
+        title,
         newstext: content,
         newstime: Date.now(),
         type: 'note',
