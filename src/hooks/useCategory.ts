@@ -27,8 +27,10 @@ export  function useCategory() {
       })
   }
 
-  function addCategory(note: any) {
-    return db.value.categorys.add(note)
+  async function addCategory(note: any) {
+    const r = await db.value.categorys.add(note)
+    updateCategorys()
+    return r
   }
 
   return {

@@ -129,6 +129,10 @@ onMounted(() => {
   })
 })
 
+function setContent(content: string) {
+  editor.value?.commands.setContent(content)
+}
+
 onBeforeMount(() => {
   editor.value?.destroy()
 })
@@ -136,6 +140,7 @@ onBeforeMount(() => {
 defineExpose({
   getContent: () => editor.value?.getHTML(),
   getTitle,
+  setContent,
 })
 </script>
 

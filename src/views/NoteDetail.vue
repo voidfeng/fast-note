@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   IonBackButton,
@@ -45,7 +45,6 @@ async function onBlur() {
     const title = editorRef.value?.getTitle()
     const content = editorRef.value?.getContent()
     if (content) {
-      console.log('新建时保存', content)
       const id = await addCategory({
         title,
         newstext: content,
@@ -53,10 +52,19 @@ async function onBlur() {
         type: 'note',
         pid: 1,
       })
-      router.replace(`/n/${id}`)
+      window.history.replaceState(null, '', `/n/${id}`)
     }
   }
 }
+
+onMounted(async () => {
+  console.log('onMounted')
+  console.log(route.params.id)
+  console.log(editorRef.value)
+  const text = '测试功能！！！'
+  const text = 
+  editorRef.value?.setContent(text)
+})
 </script>
 
 <template>
@@ -69,8 +77,8 @@ async function onBlur() {
       </ion-toolbar>
     </ion-header>
 
-    <ion-content :fullscreen="true" v-if="message">
-      <ion-item>
+    <ion-content :fullscreen="true">
+      <!-- <ion-item>
         <ion-icon aria-hidden="true" :icon="personCircle" color="primary"></ion-icon>
         <ion-label class="ion-text-wrap">
           <h2>
@@ -81,7 +89,7 @@ async function onBlur() {
           </h2>
           <h3>To: <ion-note>Me</ion-note></h3>
         </ion-label>
-      </ion-item>
+      </ion-item> -->
 
       <div class="ion-padding">
         <editor ref="editorRef" @blur="onBlur" />

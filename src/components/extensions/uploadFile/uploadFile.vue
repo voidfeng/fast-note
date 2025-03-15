@@ -18,13 +18,13 @@ watch(
     }
   },
 )
-window.aa = props
-onMounted(() => {
-  console.log(props)
-  setInterval(() => {
-    console.log(props.selected)
-  }, 500)
-})
+// window.aa = props
+// onMounted(() => {
+//   console.log(props)
+//   setInterval(() => {
+//     console.log(props.selected)
+//   }, 500)
+// })
 </script>
 
 <style lang="scss">
