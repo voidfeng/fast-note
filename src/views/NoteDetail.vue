@@ -1,29 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import {
-  IonBackButton,
-  IonButtons,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonItem,
-  IonLabel,
-  IonNote,
-  IonPage,
-  IonToolbar,
-} from '@ionic/vue'
-import { personCircle } from 'ionicons/icons'
-import { getMessage } from '../data/messages'
+import { computed, onMounted, ref, toRaw } from 'vue'
+import { useRoute } from 'vue-router'
+import { IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/vue'
 import editor from '@/components/YYEditor.vue'
 import { useCategory } from '@/hooks/useCategory'
 
-const router = useRouter()
 const route = useRoute()
-const { addCategory } = useCategory()
+const { addCategory, getCategory, updateCategory, deleteCategory } = useCategory()
 
 const editorRef = ref()
-const message = getMessage(parseInt(route.params.id as string, 10))
+const data = ref()
+
+const noteId = computed(() => parseInt(route.params.id as string, 10))
 
 const getBackButtonText = () => {
   const win = window as any
@@ -32,7 +20,6 @@ const getBackButtonText = () => {
 }
 
 async function onBlur() {
-  console.log('onBlur')
   /**
    * 保存逻辑
    * 1. 新建时(id为0)
@@ -41,29 +28,43 @@ async function onBlur() {
    * 2. 编辑时(id不为0)
    *   - 全部保存
    */
-  if (route.params.id === '0') {
-    const title = editorRef.value?.getTitle()
-    const content = editorRef.value?.getContent()
-    if (content) {
-      const id = await addCategory({
+  const title = editorRef.value?.getTitle()
+  const content = editorRef.value?.getContent()
+  // 新增
+  if (noteId.value === 0 && content) {
+    const time = Date.now()
+    const id = await addCategory({
+      title,
+      newstext: content,
+      newstime: time,
+      updatetime: time,
+      type: 'note',
+      pid: 1,
+    })
+    window.history.replaceState(null, '', `/n/${id}`)
+  }
+  // 编辑
+  else if (content) {
+    const time = Date.now()
+    updateCategory(
+      noteId.value,
+      Object.assign(toRaw(data.value), {
         title,
         newstext: content,
-        newstime: Date.now(),
-        type: 'note',
-        pid: 1,
-      })
-      window.history.replaceState(null, '', `/n/${id}`)
-    }
+        newstime: time,
+        updatetime: time,
+      }),
+    )
+  }
+  // 删除
+  else {
+    await deleteCategory(noteId.value)
   }
 }
 
 onMounted(async () => {
-  console.log('onMounted')
-  console.log(route.params.id)
-  console.log(editorRef.value)
-  const text = '测试功能！！！'
-  const text = 
-  editorRef.value?.setContent(text)
+  data.value = await getCategory(noteId.value)
+  if (data.value) editorRef.value?.setContent(data.value.newstext)
 })
 </script>
 

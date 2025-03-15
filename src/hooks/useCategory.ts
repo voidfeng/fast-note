@@ -8,14 +8,14 @@ export  function useCategory() {
   const { db, init } = useDexie()
   if (!isInitialized) {
     init()
-    updateCategorys().then(() => {
+    fetchCategorys().then(() => {
       isInitialized = true
     })
   }
 
   async function syncCategory() {}
 
-  function updateCategorys() {
+  function fetchCategorys() {
     return db.value.categorys
       .orderBy('newstime') // 按 newstime 排序
       .toArray() // 将结果转换为数组
@@ -29,14 +29,32 @@ export  function useCategory() {
 
   async function addCategory(note: any) {
     const r = await db.value.categorys.add(note)
-    updateCategorys()
+    fetchCategorys()
     return r
+  }
+
+  async function getCategory(id: number) {
+    const r = await db.value.categorys.get(id)
+    return r
+  }
+
+  async function deleteCategory(id: number) {
+    await db.value.categorys.delete(id)
+    fetchCategorys()
+  }
+
+  async function updateCategory(id: number, note: any) {
+    await db.value.categorys.put(note, id)
+    fetchCategorys()
   }
 
   return {
     categorys,
     syncCategory,
-    updateCategorys,
+    fetchCategorys,
     addCategory,
+    getCategory,
+    deleteCategory,
+    updateCategory,
   }
 }

@@ -15,6 +15,22 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/n/:id',
     component: () => import('../views/NoteDetail.vue')
+  },
+  {
+    path: '/f/:id/:id2',
+    component: () => import('../views/FolderPage.vue')
+  },
+  {
+    path: '/f/:id/:id2/:id3',
+    component: () => import('../views/FolderPage.vue')
+  },
+  {
+    path: '/f/:id/:id2/:id3/:id4',
+    component: () => import('../views/FolderPage.vue')
+  },
+  {
+    path: '/f/:id/:id2/:id3/:id4/:id5',
+    component: () => import('../views/FolderPage.vue')
   }
 ]
 

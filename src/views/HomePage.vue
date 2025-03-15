@@ -21,16 +21,20 @@ import MessageListItem from '@/components/MessageListItem.vue'
 import { useCategory } from '@/hooks/useCategory'
 import { useDexie } from '@/hooks/useDexie'
 
-const { categorys, updateCategorys } = useCategory()
-const {addFolderToDb, onCategoryUpdate} = useDexie()
+const { categorys, addCategory } = useCategory()
+const { onCategoryUpdate } = useDexie()
 
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
   {
     text: '确认',
     handler: async (d) => {
-      await addFolderToDb(d.newFolderName)
-      updateCategorys()
+      await addCategory({
+        title: d.newFolderName,
+        newstime: Date.now(),
+        type: 'folder',
+        pid: 0,
+      })
     },
   },
 ]
@@ -42,7 +46,7 @@ const refresh = (ev: CustomEvent) => {
 }
 
 onCategoryUpdate(() => {
-  updateCategorys()
+  // updateCategorys()
 })
 </script>
 

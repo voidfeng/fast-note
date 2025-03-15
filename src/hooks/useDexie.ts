@@ -7,6 +7,7 @@ export interface Category {
   id?: number
   title: string
   newstime: number
+  newstext: string
   type: 'folder' | 'note'
   pid: number
 }
@@ -44,6 +45,7 @@ export function useDexie() {
         id: 1,
         title: '备忘录',
         newstime: Date.now(),
+        newstext: '',
         type: 'folder',
         pid: 0,
       })
@@ -51,9 +53,6 @@ export function useDexie() {
     }
   }
 
-  function addFolderToDb(title: string) {
-    return db.value?.categorys.add({title, newstime: Date.now(), type: 'folder', pid: 0})
-  }
 
   function onCategoryUpdate(fn: () => void) {
     onCategoryUpdateArr.push(fn)
@@ -69,7 +68,6 @@ export function useDexie() {
   return {
     db: db as Ref<NoteDatabase>,
     init,
-    addFolderToDb,
     onCategoryUpdate,
   }
 }

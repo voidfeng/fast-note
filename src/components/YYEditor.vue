@@ -12,18 +12,23 @@ import StarterKit from '@tiptap/starter-kit'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import { onBeforeMount, onMounted, ref } from 'vue'
 
-const emit = defineEmits(['blur'])
+// 定义编辑器类型
+type EditorInstance = Editor | null
 
-const editor = ref()
+const emit = defineEmits<{
+  (e: 'blur'): void
+}>()
 
-function getTitle() {
+const editor = ref<EditorInstance>(null)
+
+function getTitle(): string {
   const json = editor.value?.getJSON()
   if (!json || !json.content || json.content.length === 0) {
     return ''
   }
   
   // 递归遍历节点提取文本
-  function extractTextFromNode(node) {
+  function extractTextFromNode(node: any): string {
     if (!node) return ''
     
     // 如果是文本节点，直接返回文本内容
@@ -35,7 +40,7 @@ function getTitle() {
     if (['heading', 'listItem', 'paragraph'].includes(node.type)) {
       let text = ''
       if (node.content && Array.isArray(node.content)) {
-        node.content.forEach(child => {
+        node.content.forEach((child: any) => {
           if (child.type === 'text') {
             text += child.text || ''
           }
@@ -129,7 +134,7 @@ onMounted(() => {
   })
 })
 
-function setContent(content: string) {
+function setContent(content: string): void {
   editor.value?.commands.setContent(content)
 }
 
@@ -138,7 +143,7 @@ onBeforeMount(() => {
 })
 
 defineExpose({
-  getContent: () => editor.value?.getHTML(),
+  getContent: (): string | undefined => editor.value?.getHTML(),
   getTitle,
   setContent,
 })
