@@ -42,7 +42,7 @@ const routerLink = computed(() => {
         <h2>
           {{ data.title }}
           <span class="date">
-            <ion-note>{{ data.newstime }}</ion-note>
+            <ion-note>{{ data.noteCount }}</ion-note>
             <ion-icon aria-hidden="true" :icon="chevronForward" size="small" />
           </span>
         </h2>
@@ -53,8 +53,8 @@ const routerLink = computed(() => {
         <h2>
           {{ data.title }}
           <span class="date">
-            <ion-note>{{ data.newstime }}</ion-note>
-            <ion-icon aria-hidden="true" :icon="chevronForward" size="small" />
+            <!-- <ion-note>{{ data.newstime }}</ion-note> -->
+            <!-- <ion-icon aria-hidden="true" :icon="chevronForward" size="small" /> -->
           </span>
         </h2>
       </ion-label>

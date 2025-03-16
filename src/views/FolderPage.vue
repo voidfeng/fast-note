@@ -13,6 +13,7 @@ import {
   IonToolbar,
   IonAlert,
   AlertButton,
+  onIonViewWillEnter,
 } from '@ionic/vue'
 import { addOutline, createOutline } from 'ionicons/icons'
 
@@ -23,10 +24,17 @@ import { useRoute } from 'vue-router'
 import { Category } from '@/hooks/useDexie'
 
 const route = useRoute()
-const {  addCategory, getCategory, getCategorysByPid } = useCategory()
+const { addCategory, getCategory, getCategorysByPid, getNoteCountByPid } = useCategory()
 
 const data = ref<Category>({} as Category)
 const dataList = ref<Category[]>([])
+
+const folderId = computed(() => {
+  const path = route.path
+  const lastId = path.split('/')
+  return parseInt(lastId[lastId.length - 1], 10)
+})
+
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
   {
@@ -36,17 +44,12 @@ const addButtons: AlertButton[] = [
         title: d.newFolderName,
         newstime: Date.now(),
         type: 'folder',
-        pid: 0,
+        pid: folderId.value,
       })
+      init()
     },
   },
 ]
-
-const folderId = computed(() => {
-  const path = route.path
-  const lastId = path.split('/')
-  return parseInt(lastId[lastId.length - 1], 10)
-})
 
 const isTopFolder = computed(() => {
   const path = route.path
@@ -78,12 +81,24 @@ const defaultHref = computed(() => {
   return newPath
 })
 
-getCategory(folderId.value).then((res) => {
-  if (res) data.value = res
-})
+function init() {
+  getCategory(folderId.value).then((res) => {
+    if (res) data.value = res
+  })
 
-getCategorysByPid(folderId.value).then((res) => {
-  dataList.value = res
+  getCategorysByPid(folderId.value).then(async (res) => {
+    dataList.value = res
+
+    for (let i = 0; i < dataList.value.length; i++) {
+      const item = dataList.value[i]
+      const count = await getNoteCountByPid(item.id!)
+      item.noteCount = count
+    }
+  })
+}
+
+onIonViewWillEnter(() => {
+  init()
 })
 </script>
 
@@ -92,10 +107,7 @@ getCategorysByPid(folderId.value).then((res) => {
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button
-            :text="isTopFolder ? '备忘录' : '返回'"
-            :default-href="defaultHref"
-          ></ion-back-button>
+          <ion-back-button :text="isTopFolder ? '备忘录' : '返回'" :default-href="defaultHref" />
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -103,7 +115,7 @@ getCategorysByPid(folderId.value).then((res) => {
     <ion-content :fullscreen="true">
       <ion-header collapse="condense">
         <ion-toolbar>
-          <ion-title size="large">{{data.title}}</ion-title>
+          <ion-title size="large">{{ data.title }}</ion-title>
         </ion-toolbar>
       </ion-header>
 
@@ -114,7 +126,7 @@ getCategorysByPid(folderId.value).then((res) => {
     <ion-footer>
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-button id="add-folder">
+          <ion-button id="add-folder2">
             <ion-icon :icon="addOutline" />
           </ion-button>
         </ion-buttons>
@@ -123,14 +135,14 @@ getCategorysByPid(folderId.value).then((res) => {
           {{ notes.length > 0 ? `${notes.length}个备忘录` : '无备忘录' }}
         </ion-title>
         <ion-buttons slot="end">
-          <ion-button router-link="/n/0" router-direction="forward">
+          <ion-button :router-link="`/n/0?pid=${folderId}`" router-direction="forward">
             <ion-icon :icon="createOutline" />
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-footer>
     <ion-alert
-      trigger="add-folder"
+      trigger="add-folder2"
       header="请输入文件夹名称"
       :buttons="addButtons"
       :inputs="[{ name: 'newFolderName', placeholder: '请输入文件夹名称' }]"

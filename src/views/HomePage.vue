@@ -22,7 +22,7 @@ import { useCategory } from '@/hooks/useCategory'
 import { Category } from '@/hooks/useDexie';
 import { ref } from 'vue';
 
-const { addCategory, getCategorysByPid } = useCategory()
+const { addCategory, getCategorysByPid, getNoteCountByPid } = useCategory()
 
 const dataList = ref<Category[]>([])
 const addButtons: AlertButton[] = [
@@ -47,8 +47,13 @@ const refresh = (ev: CustomEvent) => {
 }
 
 function init() {
-  getCategorysByPid(0).then((res) => {
+  getCategorysByPid(0).then(async (res) => {
     dataList.value = res
+    for (let i = 0; i < dataList.value.length; i++) {
+      const item = dataList.value[i];
+      const count = await getNoteCountByPid(item.id!)
+      item.noteCount = count
+    }
   })
 }
 

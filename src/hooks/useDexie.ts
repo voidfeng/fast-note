@@ -10,6 +10,7 @@ export interface Category {
   newstext: string
   type: 'folder' | 'note'
   pid: number
+  noteCount?: number
 }
 
 interface NoteDatabase extends Dexie {

@@ -39,7 +39,7 @@ async function onBlur() {
       newstime: time,
       updatetime: time,
       type: 'note',
-      pid: 1,
+      pid: parseInt(route.query.pid as string, 10) || 1,
     })
     window.history.replaceState(null, '', `/n/${id}`)
   }

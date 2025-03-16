@@ -53,6 +53,27 @@ export  function useCategory() {
     return r
   }
 
+  async function getNoteCountByPid(pid: number) {
+    // 获取当前 pid 下的所有分类
+    const categories = await db.value.categorys.where('pid').equals(pid).toArray();
+    
+    let count = 0;
+    
+    // 遍历所有分类
+    for (const category of categories) {
+      // 如果是笔记类型，计数加1
+      if (category.type === 'note') {
+        count++;
+      }
+      // 如果是文件夹类型，递归获取其中的笔记数量
+      else if (category.type === 'folder') {
+        count += await getNoteCountByPid(category.id!);
+      }
+    }
+    
+    return count;
+  }
+
   return {
     categorys,
     syncCategory,
@@ -62,5 +83,6 @@ export  function useCategory() {
     deleteCategory,
     updateCategory,
     getCategorysByPid,
+    getNoteCountByPid,
   }
 }
