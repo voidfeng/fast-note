@@ -48,6 +48,11 @@ export  function useCategory() {
     fetchCategorys()
   }
 
+  async function getCategorysByPid(pid: number) {
+    const r = await db.value.categorys.where('pid').equals(pid).toArray()
+    return r
+  }
+
   return {
     categorys,
     syncCategory,
@@ -56,5 +61,6 @@ export  function useCategory() {
     getCategory,
     deleteCategory,
     updateCategory,
+    getCategorysByPid,
   }
 }

@@ -19,11 +19,12 @@ import { addOutline, createOutline } from 'ionicons/icons';
 
 import MessageListItem from '@/components/MessageListItem.vue'
 import { useCategory } from '@/hooks/useCategory'
-import { useDexie } from '@/hooks/useDexie'
+import { Category } from '@/hooks/useDexie';
+import { ref } from 'vue';
 
-const { categorys, addCategory } = useCategory()
-const { onCategoryUpdate } = useDexie()
+const { addCategory, getCategorysByPid } = useCategory()
 
+const dataList = ref<Category[]>([])
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
   {
@@ -45,9 +46,14 @@ const refresh = (ev: CustomEvent) => {
   }, 3000)
 }
 
-onCategoryUpdate(() => {
-  // updateCategorys()
-})
+function init() {
+  getCategorysByPid(0).then((res) => {
+    dataList.value = res
+  })
+}
+
+init()
+
 </script>
 
 <template>
@@ -70,7 +76,7 @@ onCategoryUpdate(() => {
       </ion-header>
 
       <ion-list>
-        <MessageListItem v-for="d in categorys" :key="d.id" :data="d" />
+        <MessageListItem v-for="d in dataList" :key="d.id" :data="d" />
       </ion-list>
     </ion-content>
     <ion-footer>

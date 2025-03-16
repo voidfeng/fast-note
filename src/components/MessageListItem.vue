@@ -1,34 +1,64 @@
 <script setup lang="ts">
+import { Category } from '@/hooks/useDexie'
 import { IonIcon, IonItem, IonLabel, IonNote } from '@ionic/vue'
 import { chevronForward, folderOutline } from 'ionicons/icons'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
-defineProps({
-  data: Object,
+const props = withDefaults(
+  defineProps<{
+    data: Category
+  }>(),
+  {
+    data: () => ({} as Category),
+  },
+)
+
+const route = useRoute()
+
+const routerLink = computed(() => {
+  if (props.data.type === 'folder') {
+    /**
+     * 文件夹跳转逻辑
+     * 1. 首页到文件夹: /f/ + id
+     * 2. 文件夹到文件夹: 当前路径 + id
+     */
+    const isHome = route.path === '/home'
+    if (isHome) {
+      return '/f/' + props.data.id
+    } else {
+      return route.path + '/' + props.data.id
+    }
+  }
+  return '/n/' + props.data.id
 })
-
-const isIos = () => {
-  const win = window as any
-  return win && win.Ionic && win.Ionic.mode === 'ios'
-}
 </script>
 
 <template>
-  <ion-item v-if="data" :routerLink="'/n/' + data.id" :detail="false" class="list-item">
-    <ion-icon v-if="data.type === 'folder'" :icon="folderOutline" class="mr-3" />
-    <ion-label class="ion-text-wrap">
-      <h2>
-        {{ data.title }}
-        <span class="date">
-          <ion-note>{{ data.newstime }}</ion-note>
-          <ion-icon
-            aria-hidden="true"
-            :icon="chevronForward"
-            size="small"
-            v-if="isIos()"
-          />
-        </span>
-      </h2>
-    </ion-label>
+  <ion-item v-if="data" :routerLink="routerLink" :detail="false" class="list-item">
+    <template v-if="data.type === 'folder'">
+      <ion-icon :icon="folderOutline" class="mr-3" />
+      <ion-label class="ion-text-wrap">
+        <h2>
+          {{ data.title }}
+          <span class="date">
+            <ion-note>{{ data.newstime }}</ion-note>
+            <ion-icon aria-hidden="true" :icon="chevronForward" size="small" />
+          </span>
+        </h2>
+      </ion-label>
+    </template>
+    <template v-else>
+      <ion-label class="ion-text-wrap">
+        <h2>
+          {{ data.title }}
+          <span class="date">
+            <ion-note>{{ data.newstime }}</ion-note>
+            <ion-icon aria-hidden="true" :icon="chevronForward" size="small" />
+          </span>
+        </h2>
+      </ion-label>
+    </template>
   </ion-item>
 </template>
 

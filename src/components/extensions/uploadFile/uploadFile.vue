@@ -5,8 +5,8 @@
 </template>
 
 <script lang="ts" setup>
-import { NodeViewContent, nodeViewProps, NodeViewWrapper } from '@tiptap/vue-3'
-import { onMounted, watch } from 'vue'
+import { /*NodeViewContent,*/ nodeViewProps, NodeViewWrapper } from '@tiptap/vue-3'
+import { /*onMounted,*/ watch } from 'vue'
 
 const props = defineProps(nodeViewProps)
 
