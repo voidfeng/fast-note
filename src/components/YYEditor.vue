@@ -101,33 +101,7 @@ onMounted(() => {
         customNodes: [],
     }),
     ],
-    content: `
-      <ul>
-        <li>
-          That's a bullet list with one …
-        </li>
-        <li>
-          … or two list items.
-        </li>
-      </ul>
-      <div data-type="upload-file" url="https://placehold.co/400x200"></div>
-      <div data-type="upload-file" url="https://placehold.co/400x400"></div>
-      <p>
-        Isn't that great? And all of that is editable. But wait, there's more. Let's try a code block:
-      </p>
-        <img src="https://placehold.co/400x200" />
-      <pre><code class="language-css">body {
-        display: none;
-      }</code></pre>
-      <p>
-        I know, I know, this is impressive. It's only the tip of the iceberg though. Give it a try and click a little bit around. Don't forget to check the other examples too.
-      </p>
-      <blockquote>
-        Wow, that's amazing. Good work, boy! 👏
-        <br />
-        — Mom
-      </blockquote>
-    `,
+    content: '',
     onBlur: () => {
       emit('blur')
     },
@@ -151,7 +125,7 @@ defineExpose({
 
 <template>
   <div v-if="editor" class="yy-editor">
-    <editor-content :editor />
+    <editor-content :editor="editor as any" />
     <div class="button-group">
       <button
         @click="editor.chain().focus().toggleBold().run()"
@@ -289,6 +263,8 @@ defineExpose({
 <style lang="scss">
 /* Basic editor styles */
 .tiptap {
+  outline: none;
+  padding: 16px;
   :first-child {
     margin-top: 0;
   }
@@ -311,28 +287,28 @@ defineExpose({
   h3,
   h4,
   h5,
-  h6 {
-    line-height: 1.1;
-    margin-top: 2.5rem;
+  h6,
+  p,
+  ul,
+  ol {
+    margin: 0;
+    line-height: 1.6;
     text-wrap: pretty;
   }
 
-  h1,
-  h2 {
-    margin-top: 3.5rem;
-    margin-bottom: 1.5rem;
-  }
 
   h1 {
-    font-size: 1.4rem;
+    font-size: 1.75rem;
+    margin: 0;
   }
 
   h2 {
-    font-size: 1.2rem;
+    font-size: 1.375rem;
   }
 
   h3 {
-    font-size: 1.1rem;
+    font-size: 1.0625rem;
+    font-weight: 400;
   }
 
   h4,
@@ -403,8 +379,4 @@ defineExpose({
     }
   }
 }
-// .yy-editor {
-//   .button-group {
-//   }
-// }
 </style>
