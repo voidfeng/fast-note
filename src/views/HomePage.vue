@@ -14,13 +14,14 @@ import {
   IonToolbar,
   IonAlert,
   AlertButton,
+  onIonViewWillEnter,
 } from '@ionic/vue'
-import { addOutline, createOutline } from 'ionicons/icons';
+import { addOutline, createOutline } from 'ionicons/icons'
 
 import MessageListItem from '@/components/MessageListItem.vue'
 import { useCategory } from '@/hooks/useCategory'
-import { Category } from '@/hooks/useDexie';
-import { ref } from 'vue';
+import { Category } from '@/hooks/useDexie'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 
 const { addCategory, getCategorysByPid, getNoteCountByPid, onUpdateCategory } = useCategory()
 
@@ -39,6 +40,13 @@ const addButtons: AlertButton[] = [
     },
   },
 ]
+const state = reactive({
+  windowWidth: 0,
+})
+
+const noteDesktop = computed(() => {
+  return state.windowWidth >= 640
+})
 
 const refresh = (ev: CustomEvent) => {
   setTimeout(() => {
@@ -50,7 +58,7 @@ function init() {
   getCategorysByPid(0).then(async (res) => {
     dataList.value = res
     for (let i = 0; i < dataList.value.length; i++) {
-      const item = dataList.value[i];
+      const item = dataList.value[i]
       const count = await getNoteCountByPid(item.id!)
       item.noteCount = count
     }
@@ -63,10 +71,30 @@ onUpdateCategory((item) => {
     init()
   }
 })
+
+onIonViewWillEnter(() => {
+  init()
+})
+
+// 更新窗口宽度的函数
+function updateWindowWidth() {
+  state.windowWidth = window.innerWidth
+}
+
+// 组件挂载时添加监听
+onMounted(() => {
+  state.windowWidth = window.innerWidth
+  window.addEventListener('resize', updateWindowWidth)
+})
+
+// 组件卸载时移除监听
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth)
+})
 </script>
 
 <template>
-  <ion-page>
+  <ion-page :class="{ 'note-desktop': noteDesktop }">
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-title>备忘录</ion-title>
@@ -111,3 +139,13 @@ onUpdateCategory((item) => {
     />
   </ion-page>
 </template>
+
+<style lang="scss">
+.ion-page {
+  .note-desktop {
+    right: initial;
+    width: 33%;
+    border-right: 1px solid #333;
+  }
+}
+</style>
