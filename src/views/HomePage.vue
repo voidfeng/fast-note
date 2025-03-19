@@ -22,7 +22,7 @@ import { useCategory } from '@/hooks/useCategory'
 import { Category } from '@/hooks/useDexie';
 import { ref } from 'vue';
 
-const { addCategory, getCategorysByPid, getNoteCountByPid } = useCategory()
+const { addCategory, getCategorysByPid, getNoteCountByPid, onUpdateCategory } = useCategory()
 
 const dataList = ref<Category[]>([])
 const addButtons: AlertButton[] = [
@@ -58,7 +58,11 @@ function init() {
 }
 
 init()
-
+onUpdateCategory((item) => {
+  if (item.pid === 0) {
+    init()
+  }
+})
 </script>
 
 <template>

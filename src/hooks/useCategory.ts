@@ -1,15 +1,43 @@
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { Category, useDexie } from './useDexie'
+
+type UpdateFn = (item: Category) => void
 
 const categorys = ref<Category[]>([])
 let isInitialized = false
+const onCategoryUpdateArr: UpdateFn[] = []
 
-export  function useCategory() {
+function notifyCategoryUpdate(item: Category) {
+  onCategoryUpdateArr.forEach((fn) => {
+    fn(item)
+  })
+}
+
+export function useCategory() {
   const { db, init } = useDexie()
+  const privateCategoryUpdateArr: UpdateFn[] = []
+
   if (!isInitialized) {
     init()
     fetchCategorys().then(() => {
-      isInitialized = true
+      if (categorys.value.length === 0) {
+        const id1 = {
+          id: 1,
+          title: '备忘录',
+          newstime: Date.now(),
+          newstext: '',
+          type: 'folder',
+          pid: 0,
+        } as Category
+        addCategory(id1).then(() => {
+          fetchCategorys().then(() => {
+            isInitialized = true
+            notifyCategoryUpdate(id1)
+          })
+        })
+      } else {
+        isInitialized = true
+      }
     })
   }
 
@@ -55,24 +83,35 @@ export  function useCategory() {
 
   async function getNoteCountByPid(pid: number) {
     // 获取当前 pid 下的所有分类
-    const categories = await db.value.categorys.where('pid').equals(pid).toArray();
-    
-    let count = 0;
-    
+    const categories = await db.value.categorys.where('pid').equals(pid).toArray()
+
+    let count = 0
+
     // 遍历所有分类
     for (const category of categories) {
       // 如果是笔记类型，计数加1
       if (category.type === 'note') {
-        count++;
+        count++
       }
       // 如果是文件夹类型，递归获取其中的笔记数量
       else if (category.type === 'folder') {
-        count += await getNoteCountByPid(category.id!);
+        count += await getNoteCountByPid(category.id!)
       }
     }
-    
-    return count;
+
+    return count
   }
+
+  function onUpdateCategory(fn: UpdateFn) {
+    onCategoryUpdateArr.push(fn)
+    privateCategoryUpdateArr.push(fn)
+  }
+
+  onUnmounted(() => {
+    privateCategoryUpdateArr.forEach(fn => {
+      onCategoryUpdateArr.splice(onCategoryUpdateArr.indexOf(fn), 1)
+    })
+  })
 
   return {
     categorys,
@@ -84,5 +123,6 @@ export  function useCategory() {
     updateCategory,
     getCategorysByPid,
     getNoteCountByPid,
+    onUpdateCategory,
   }
 }
