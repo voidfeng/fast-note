@@ -5,9 +5,12 @@ import { chevronForward, folderOutline } from 'ionicons/icons'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+defineEmits(['selected'])
+
 const props = withDefaults(
   defineProps<{
     data: Category
+    noteDesktop: boolean
   }>(),
   {
     data: () => ({} as Category),
@@ -17,9 +20,12 @@ const props = withDefaults(
 const route = useRoute()
 
 const routerLink = computed(() => {
+  if (props.noteDesktop) return undefined
+
   if (props.data.type === 'folder') {
     /**
      * 文件夹跳转逻辑
+     * 1. noteDesktop 不跳转
      * 1. 首页到文件夹: /f/ + id
      * 2. 文件夹到文件夹: 当前路径 + id
      */
@@ -35,7 +41,13 @@ const routerLink = computed(() => {
 </script>
 
 <template>
-  <ion-item v-if="data" :routerLink="routerLink" :detail="false" class="list-item">
+  <ion-item
+    v-if="data"
+    :routerLink="routerLink"
+    :detail="false"
+    class="list-item"
+    @click="$emit('selected', $props.data.id)"
+  >
     <template v-if="data.type === 'folder'">
       <ion-icon :icon="folderOutline" class="mr-3" />
       <ion-label class="ion-text-wrap">
@@ -43,10 +55,10 @@ const routerLink = computed(() => {
           {{ data.title }}
           <span class="date">
             <ion-note>{{ data.noteCount }}</ion-note>
-            <ion-icon aria-hidden="true" :icon="chevronForward" size="small" />
           </span>
         </h2>
       </ion-label>
+      <ion-icon aria-hidden="true" :icon="chevronForward" size="small" />
     </template>
     <template v-else>
       <ion-label class="ion-text-wrap">
@@ -62,10 +74,15 @@ const routerLink = computed(() => {
   </ion-item>
 </template>
 
-<style scoped>
-.list-item ion-label {
-  margin-top: 12px;
-  margin-bottom: 12px;
+<style lang="scss" scoped>
+.list-item {
+  &.active {
+    --background: #4d8dff;
+  }
+  ion-label {
+    margin-top: 12px;
+    margin-bottom: 12px;
+  }
 }
 
 .list-item h2 {

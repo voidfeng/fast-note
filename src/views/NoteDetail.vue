@@ -1,9 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRaw } from 'vue'
+import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/vue'
 import editor from '@/components/YYEditor.vue'
 import { useCategory } from '@/hooks/useCategory'
+
+const props = withDefaults(
+  defineProps<{
+    currentDetail: number
+  }>(),
+  {
+    currentDetail: 0,
+  },
+)
 
 const route = useRoute()
 const { addCategory, getCategory, updateCategory, deleteCategory } = useCategory()
@@ -18,6 +27,15 @@ const getBackButtonText = () => {
   const mode = win && win.Ionic && win.Ionic.mode
   return mode === 'ios' ? '备忘录' : ''
 }
+
+watch(
+  () => props.currentDetail,
+  () => {
+    console.log('更新了id', props.currentDetail)
+    init(props.currentDetail)
+  },
+  { immediate: true },
+)
 
 async function onBlur() {
   /**
@@ -62,9 +80,15 @@ async function onBlur() {
   }
 }
 
-onMounted(async () => {
-  data.value = await getCategory(noteId.value)
+async function init(id: number) {
+  data.value = await getCategory(id)
   if (data.value) editorRef.value?.setContent(data.value.newstext)
+}
+
+onMounted(async () => {
+  if (noteId.value) {
+    init(noteId.value)
+  }
 })
 </script>
 

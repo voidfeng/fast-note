@@ -19,15 +19,29 @@ import { addOutline, createOutline } from 'ionicons/icons'
 
 import MessageListItem from '@/components/MessageListItem.vue'
 import { useCategory } from '@/hooks/useCategory'
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Category } from '@/hooks/useDexie'
+
+const props = withDefaults(
+  defineProps<{
+    currentFolder: number
+  }>(),
+  {
+    currentFolder: 0,
+  },
+)
 
 const route = useRoute()
 const { addCategory, getCategory, getCategorysByPid, getNoteCountByPid } = useCategory()
 
 const data = ref<Category>({} as Category)
 const dataList = ref<Category[]>([])
+
+const state = reactive({
+  windowWidth: 0,
+  currentDetail: 0,
+})
 
 const folderId = computed(() => {
   const path = route.path
@@ -46,7 +60,7 @@ const addButtons: AlertButton[] = [
         type: 'folder',
         pid: folderId.value,
       })
-      init()
+      init(folderId.value)
     },
   },
 ]
@@ -81,12 +95,24 @@ const defaultHref = computed(() => {
   return newPath
 })
 
-function init() {
-  getCategory(folderId.value).then((res) => {
+const noteDesktop = computed(() => {
+  return state.windowWidth >= 640
+})
+
+watch(
+  () => props.currentFolder,
+  () => {
+    init(props.currentFolder)
+  },
+  { immediate: true },
+)
+
+function init(id: number) {
+  getCategory(id).then((res) => {
     if (res) data.value = res
   })
 
-  getCategorysByPid(folderId.value).then(async (res) => {
+  getCategorysByPid(id).then(async (res) => {
     dataList.value = res
 
     for (let i = 0; i < dataList.value.length; i++) {
@@ -98,13 +124,29 @@ function init() {
 }
 
 onIonViewWillEnter(() => {
-  init()
+  if (!noteDesktop.value) init(folderId.value)
+})
+
+// 更新窗口宽度的函数
+function updateWindowWidth() {
+  state.windowWidth = window.innerWidth
+}
+
+// 组件挂载时添加监听
+onMounted(() => {
+  state.windowWidth = window.innerWidth
+  window.addEventListener('resize', updateWindowWidth)
+})
+
+// 组件卸载时移除监听
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth)
 })
 </script>
 
 <template>
   <ion-page>
-    <ion-header :translucent="true">
+    <ion-header v-if="!noteDesktop" :translucent="true">
       <ion-toolbar>
         <ion-buttons slot="start">
           <ion-back-button :text="isTopFolder ? '备忘录' : '返回'" :default-href="defaultHref" />
@@ -120,10 +162,20 @@ onIonViewWillEnter(() => {
       </ion-header>
 
       <ion-list>
-        <MessageListItem v-for="d in dataList" :key="d.id" :data="d" />
+        <MessageListItem
+          v-for="d in dataList"
+          :key="d.id"
+          :data="d"
+          :note-desktop
+          :class="{ active: state.currentDetail === d.id }"
+          @selected="(id: number) => {
+            state.currentDetail = id
+            $emit('selected', id)
+          }"
+        />
       </ion-list>
     </ion-content>
-    <ion-footer>
+    <ion-footer v-if="!noteDesktop">
       <ion-toolbar>
         <ion-buttons slot="start">
           <ion-button id="add-folder2">

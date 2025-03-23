@@ -22,6 +22,8 @@ import MessageListItem from '@/components/MessageListItem.vue'
 import { useCategory } from '@/hooks/useCategory'
 import { Category } from '@/hooks/useDexie'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import FolderPage from './FolderPage.vue'
+import NoteDetail from './NoteDetail.vue'
 
 const { addCategory, getCategorysByPid, getNoteCountByPid, onUpdateCategory } = useCategory()
 
@@ -42,6 +44,8 @@ const addButtons: AlertButton[] = [
 ]
 const state = reactive({
   windowWidth: 0,
+  currentFolder: 1,
+  currentDetail: 0,
 })
 
 const noteDesktop = computed(() => {
@@ -113,7 +117,14 @@ onUnmounted(() => {
       </ion-header>
 
       <ion-list>
-        <MessageListItem v-for="d in dataList" :key="d.id" :data="d" />
+        <MessageListItem
+          v-for="d in dataList"
+          :key="d.id"
+          :data="d"
+          :note-desktop
+          :class="{ active: state.currentFolder === d.id }"
+          @selected="(id: number) => state.currentFolder = id"
+        />
       </ion-list>
     </ion-content>
     <ion-footer>
@@ -137,6 +148,15 @@ onUnmounted(() => {
       :buttons="addButtons"
       :inputs="[{ name: 'newFolderName', placeholder: '请输入文件夹名称' }]"
     />
+    <div v-if="noteDesktop" class="home-list">
+      <FolderPage
+        :current-folder="state.currentFolder"
+        @selected="(id: number) => state.currentDetail = id"
+      />
+    </div>
+    <div v-if="noteDesktop" class="home-detail">
+      <NoteDetail :current-detail="state.currentDetail" />
+    </div>
   </ion-page>
 </template>
 
@@ -144,8 +164,21 @@ onUnmounted(() => {
 .ion-page {
   .note-desktop {
     right: initial;
-    width: 33%;
+    width: 33.33333%;
     border-right: 1px solid #333;
+  }
+  .home-list {
+    position: absolute;
+    left: calc(100% + 1px);
+    width: 100%;
+    height: 100%;
+    border-right: 1px solid #333;
+  }
+  .home-detail {
+    position: absolute;
+    left: calc(200% + 1px);
+    width: calc(100% + 2px);
+    height: 100%;
   }
 }
 </style>
