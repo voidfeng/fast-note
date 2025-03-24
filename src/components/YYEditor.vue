@@ -7,7 +7,7 @@ import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 import Image from '@tiptap/extension-image'
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
-import UploadFile from '@/components/extensions/uploadFile'
+import { FileUpload } from './extensions/FileUpload/FileUpload'
 import StarterKit from '@tiptap/starter-kit'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import { onBeforeMount, onMounted, ref } from 'vue'
@@ -73,7 +73,7 @@ onMounted(() => {
       TaskList,
       TaskItem,
       Image,
-      UploadFile,
+      FileUpload,
       GlobalDragHandle.configure({
         dragHandleWidth: 20, // default
 
@@ -112,6 +112,20 @@ function setContent(content: string): void {
   editor.value?.commands.setContent(content)
 }
 
+const insertFile = () => {
+  editor.value!.commands.setFileUpload({
+    url: 'https://example.com/path/to/file.pdf',
+    localId: 'file-123',
+  })
+}
+
+const insertImage = () => {
+  editor.value!.commands.setFileUpload({
+    url: 'https://placehold.co/400x200.png',
+    localId: 'image-' + Date.now(),
+  })
+}
+
 onBeforeMount(() => {
   editor.value?.destroy()
 })
@@ -127,6 +141,8 @@ defineExpose({
   <div v-if="editor" class="yy-editor">
     <editor-content :editor="editor as any" />
     <div class="button-group">
+    <button @click="insertFile">插入文件</button>
+    <button @click="insertImage">插入图片</button>
       <button
         @click="editor.chain().focus().toggleBold().run()"
         :disabled="!editor.can().chain().focus().toggleBold().run()"
