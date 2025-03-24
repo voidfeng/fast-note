@@ -35,9 +35,13 @@ const props = defineProps({
 const nodeProps = computed(() => ({
   url: props.node.attrs.url,
   localId: props.node.attrs.localId,
+  type: props.node.attrs.type,
 }))
 
 const isImage = computed(() => {
+  if (nodeProps.value.type) {
+    return nodeProps.value.type.match(/(jpg|jpeg|png|gif|webp)$/i)
+  }
   const url = nodeProps.value.url
   return url?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
 })

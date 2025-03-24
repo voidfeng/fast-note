@@ -20,22 +20,23 @@ const emit = defineEmits<{
 }>()
 
 const editor = ref<EditorInstance>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 function getTitle(): string {
   const json = editor.value?.getJSON()
   if (!json || !json.content || json.content.length === 0) {
     return ''
   }
-  
+
   // 递归遍历节点提取文本
   function extractTextFromNode(node: any): string {
     if (!node) return ''
-    
+
     // 如果是文本节点，直接返回文本内容
     if (node.type === 'text') {
       return node.text || ''
     }
-    
+
     // 如果是heading、listItem或paragraph，提取其内部文本并直接返回
     if (['heading', 'listItem', 'paragraph'].includes(node.type)) {
       let text = ''
@@ -48,16 +49,16 @@ function getTitle(): string {
       }
       return text
     }
-    
+
     // 其他类型节点，返回节点类型
     return `[${node.type}]`
   }
-  
+
   // 从第一个节点提取文本作为标题
   if (json.content.length > 0) {
     return extractTextFromNode(json.content[0]).trim()
   }
-  
+
   return ''
 }
 
@@ -86,8 +87,7 @@ onMounted(() => {
         // The css selector to query for the drag handle. (eg: '.custom-handle').
         // If handle element is found, that element will be used as drag handle.
         // If not, a default handle will be created
-        dragHandleSelector: ".custom-drag-handle", // default is undefined
-
+        dragHandleSelector: '.custom-drag-handle', // default is undefined
 
         // Tags to be excluded for drag handle
         // If you want to hide the global drag handle for specific HTML tags, you can use this option.
@@ -99,7 +99,7 @@ onMounted(() => {
         // Then add it to this list as ['alert']
         //
         customNodes: [],
-    }),
+      }),
     ],
     content: '',
     onBlur: () => {
@@ -126,6 +126,27 @@ const insertImage = () => {
   })
 }
 
+/**
+ * 1. 获取所选择文件，可能为多个
+ * 2. 将文件转换为blob地址，并且正确匹配blob的文件类型
+ * 3. 将blob地址使用setFileUpload插入到编辑器中
+ */
+function onSelectFile() {
+  const files = fileInput.value?.files
+  if (!files) return
+
+  Array.from(files).forEach(file => {
+    const blob = new Blob([file], { type: file.type })
+    const url = URL.createObjectURL(blob)
+    console.log(file.type)
+    editor.value!.commands.setFileUpload({
+      url,
+      localId: '',
+      type: file.type,
+    })
+  })
+}
+
 onBeforeMount(() => {
   editor.value?.destroy()
 })
@@ -141,8 +162,9 @@ defineExpose({
   <div v-if="editor" class="yy-editor">
     <editor-content :editor="editor as any" />
     <div class="button-group">
-    <button @click="insertFile">插入文件</button>
-    <button @click="insertImage">插入图片</button>
+      <input ref="fileInput" type="file" @change="onSelectFile" />
+      <button @click="insertFile">插入文件</button>
+      <button @click="insertImage">插入图片</button>
       <button
         @click="editor.chain().focus().toggleBold().run()"
         :disabled="!editor.can().chain().focus().toggleBold().run()"
@@ -277,6 +299,18 @@ defineExpose({
 </template>
 
 <style lang="scss">
+.yy-editor {
+  .button-group {
+    button {
+      padding: 6px 12px;
+      border-radius: 4px;
+      background: #161616;
+      color: #a1a1a1;
+      cursor: pointer;
+      margin: 2px;
+    }
+  }
+}
 /* Basic editor styles */
 .tiptap {
   outline: none;
@@ -311,7 +345,6 @@ defineExpose({
     line-height: 1.6;
     text-wrap: pretty;
   }
-
 
   h1 {
     font-size: 1.75rem;
