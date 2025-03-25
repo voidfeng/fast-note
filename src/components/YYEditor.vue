@@ -139,9 +139,9 @@ async function onSelectFile() {
   if (!files) return
 
   for (const file of Array.from(files)) {
-    const localId = await addFile({ file })
+    const id = await addFile({ file })
     editor.value!.commands.setFileUpload({
-      localId,
+      id,
     })
   }
 }

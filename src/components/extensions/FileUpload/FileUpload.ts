@@ -9,7 +9,7 @@ export interface FileUploadOptions {
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     fileUpload: {
-      setFileUpload: (attributes: { url?: string; localId?: number; type?: string }) => ReturnType
+      setFileUpload: (attributes: { url?: string; id?: number; type?: string }) => ReturnType
     }
   }
 }
@@ -27,7 +27,7 @@ export const FileUpload = Node.create({
       url: {
         default: null,
       },
-      localId: {
+      id: {
         default: null,
       },
       type: {

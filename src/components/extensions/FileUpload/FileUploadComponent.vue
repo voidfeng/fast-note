@@ -8,7 +8,7 @@
         <div v-if="!imageLoaded" class="loading-wrapper">
           <div class="loading-spinner"></div>
         </div>
-        <img v-if="imageLoaded" :src="nodeProps.url" :alt="nodeProps.localId" ref="imageRef" />
+        <img v-if="imageLoaded" :src="fileTempUrl" :alt="nodeProps.id" ref="imageRef" />
       </div>
       <div v-else class="file-preview">
         <img :src="fileTypeIcon" :alt="fileType" />
@@ -18,8 +18,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { NodeViewWrapper } from '@tiptap/vue-3'
+import { useFiles } from '@/hooks/useFiles'
 
 const props = defineProps({
   node: {
@@ -32,18 +33,22 @@ const props = defineProps({
   },
 })
 
+const { getFile } = useFiles()
+
+const fileData = ref()
+const fileTempUrl = ref()
+
 const nodeProps = computed(() => ({
   url: props.node.attrs.url,
-  localId: props.node.attrs.localId,
+  id: props.node.attrs.id,
   type: props.node.attrs.type,
 }))
 
 const isImage = computed(() => {
-  if (nodeProps.value.type) {
-    return nodeProps.value.type.match(/(jpg|jpeg|png|gif|webp)$/i)
+  if (fileData.value) {
+    return fileData.value.file.type.match(/(jpg|jpeg|png|gif|webp)$/i)
   }
-  const url = nodeProps.value.url
-  return url?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+  return false
 })
 
 const fileType = computed(() => {
@@ -129,6 +134,24 @@ const wrapperStyle = computed(() => {
     }
   }
   return containerSize.value
+})
+
+onMounted(() => {
+  console.log(nodeProps.value)
+  /**
+   * 附件同步逻辑：
+   * 1. 本地上传: 只有 id 没有 url
+   * 2. 云端返回: 富文本只有 url 没有 id
+   *   - 如果是图片，下载后保存到indexeddb
+   * 富文本同步逻辑：保存时，替换id为url
+   */
+  if (nodeProps.value.id) {
+    getFile(nodeProps.value.id).then((file) => {
+      fileData.value = file
+      fileTempUrl.value = URL.createObjectURL(file!.file!)
+      imageLoaded.value = true
+    })
+  }
 })
 </script>
 

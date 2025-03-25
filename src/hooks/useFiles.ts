@@ -11,8 +11,8 @@ export function useFiles() {
     return db.value?.files.add(data)
   }
 
-  function getFile(localId: string) {
-    return db.value?.files.where('localId').equals(localId).first()
+  function getFile(id: number) {
+    return db.value?.files.where('id').equals(id).first()
   }
 
   return {
