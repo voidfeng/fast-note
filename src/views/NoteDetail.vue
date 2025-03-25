@@ -7,7 +7,7 @@ import { useCategory } from '@/hooks/useCategory'
 
 const props = withDefaults(
   defineProps<{
-    currentDetail: number
+    currentDetail?: number
   }>(),
   {
     currentDetail: 0,

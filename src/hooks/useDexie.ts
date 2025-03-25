@@ -14,11 +14,9 @@ export interface Category {
 }
 
 export interface TypedFile {
-  localId: string
-  name: string
-  type: string
-  url: string
-  blob: Blob
+  localId?: string
+  url?: string
+  file?: File
 }
 
 interface NoteDatabase extends Dexie {
@@ -38,7 +36,7 @@ export function useDexie() {
     // 定义表结构和索引
     db.value.version(1).stores({
       categorys: '++id, title, newstime, type, pid, newstext',
-      files: '++id, localId, type, url',
+      files: '++id, url',
     })
   }
 

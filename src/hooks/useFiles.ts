@@ -2,14 +2,13 @@ import { TypedFile, useDexie } from "./useDexie"
 
 let isInitialized = false
 export function useFiles() {
-  const { db, init } = useDexie()
+  const { db} = useDexie()
   if (!isInitialized) {
-    init()
     isInitialized = true
   }
 
   function addFile(data: TypedFile) {
-    db.value?.files.add(data)
+    return db.value?.files.add(data)
   }
 
   function getFile(localId: string) {

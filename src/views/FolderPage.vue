@@ -25,7 +25,7 @@ import { Category } from '@/hooks/useDexie'
 
 const props = withDefaults(
   defineProps<{
-    currentFolder: number
+    currentFolder?: number
   }>(),
   {
     currentFolder: 0,

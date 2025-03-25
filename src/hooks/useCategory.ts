@@ -14,11 +14,10 @@ function notifyCategoryUpdate(item: Category) {
 }
 
 export function useCategory() {
-  const { db, init } = useDexie()
+  const { db } = useDexie()
   const privateCategoryUpdateArr: UpdateFn[] = []
 
   if (!isInitialized) {
-    init()
     fetchCategorys().then(() => {
       if (categorys.value.length === 0) {
         const id1 = {
@@ -108,7 +107,7 @@ export function useCategory() {
   }
 
   onUnmounted(() => {
-    privateCategoryUpdateArr.forEach(fn => {
+    privateCategoryUpdateArr.forEach((fn) => {
       onCategoryUpdateArr.splice(onCategoryUpdateArr.indexOf(fn), 1)
     })
   })

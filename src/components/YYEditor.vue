@@ -11,6 +11,7 @@ import { FileUpload } from './extensions/FileUpload/FileUpload'
 import StarterKit from '@tiptap/starter-kit'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import { onBeforeMount, onMounted, ref } from 'vue'
+import { useFiles } from '@/hooks/useFiles'
 
 // 定义编辑器类型
 type EditorInstance = Editor | null
@@ -18,6 +19,8 @@ type EditorInstance = Editor | null
 const emit = defineEmits<{
   (e: 'blur'): void
 }>()
+
+const { addFile } = useFiles()
 
 const editor = ref<EditorInstance>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -131,20 +134,16 @@ const insertImage = () => {
  * 2. 将文件转换为blob地址，并且正确匹配blob的文件类型
  * 3. 将blob地址使用setFileUpload插入到编辑器中
  */
-function onSelectFile() {
+async function onSelectFile() {
   const files = fileInput.value?.files
   if (!files) return
 
-  Array.from(files).forEach(file => {
-    const blob = new Blob([file], { type: file.type })
-    const url = URL.createObjectURL(blob)
-    console.log(file.type)
+  for (const file of Array.from(files)) {
+    const localId = await addFile({ file })
     editor.value!.commands.setFileUpload({
-      url,
-      localId: '',
-      type: file.type,
+      localId,
     })
-  })
+  }
 }
 
 onBeforeMount(() => {
