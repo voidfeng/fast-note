@@ -15,8 +15,13 @@ export function useFiles() {
     return db.value?.files.where('id').equals(id).first()
   }
 
+  function getFileByHash(hash: string) {
+    return db.value?.files.where('hash').equals(hash).first()
+  }
+
   return {
     addFile,
     getFile,
+    getFileByHash,
   }
 }

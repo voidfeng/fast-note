@@ -12,6 +12,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import { onBeforeMount, onMounted, ref } from 'vue'
 import { useFiles } from '@/hooks/useFiles'
+import { getFileHash } from '@/utils'
 
 // 定义编辑器类型
 type EditorInstance = Editor | null
@@ -20,7 +21,7 @@ const emit = defineEmits<{
   (e: 'blur'): void
 }>()
 
-const { addFile } = useFiles()
+const { addFile, getFileByHash } = useFiles()
 
 const editor = ref<EditorInstance>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -139,7 +140,16 @@ async function onSelectFile() {
   if (!files) return
 
   for (const file of Array.from(files)) {
-    const id = await addFile({ file })
+    const hash = await getFileHash(file)
+    const exist = await getFileByHash(hash)
+    if (exist) {
+      editor.value!.commands.setFileUpload({
+        id: exist?.id,
+        url: exist?.url,
+      })
+      continue
+    }
+    const id = await addFile({ file, hash })
     editor.value!.commands.setFileUpload({
       id,
     })

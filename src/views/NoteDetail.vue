@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/vue'
 import editor from '@/components/YYEditor.vue'
 import { useCategory } from '@/hooks/useCategory'
+import { ellipsisHorizontalCircleOutline } from 'ionicons/icons'
+import { IonPopover, IonIcon, IonButton } from '@ionic/vue'
 
 const props = withDefaults(
   defineProps<{
@@ -99,6 +101,11 @@ onMounted(async () => {
         <ion-buttons slot="start">
           <ion-back-button :text="getBackButtonText()" default-href="/"></ion-back-button>
         </ion-buttons>
+        <ion-buttons slot="end">
+          <ion-button id="more-trigger">
+            <ion-icon :icon="ellipsisHorizontalCircleOutline" />
+          </ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
@@ -120,6 +127,9 @@ onMounted(async () => {
         <editor ref="editorRef" @blur="onBlur" />
       </div>
     </ion-content>
+    <ion-popover trigger="more-trigger" trigger-action="click">
+      <ion-content class="ion-padding">Hello World!</ion-content>
+    </ion-popover>
   </ion-page>
 </template>
 
