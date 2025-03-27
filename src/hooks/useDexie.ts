@@ -14,6 +14,7 @@ export interface Category {
 }
 
 export interface TypedFile {
+  ids: number[]
   localId?: string
   url?: string
   file?: File

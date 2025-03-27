@@ -5,7 +5,8 @@ import { IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonToolbar }
 import editor from '@/components/YYEditor.vue'
 import { useCategory } from '@/hooks/useCategory'
 import { ellipsisHorizontalCircleOutline } from 'ionicons/icons'
-import { IonPopover, IonIcon, IonButton } from '@ionic/vue'
+import { IonIcon, IonButton } from '@ionic/vue'
+import NoteMore from '@/components/NoteMore.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -127,9 +128,7 @@ onMounted(async () => {
         <editor ref="editorRef" @blur="onBlur" />
       </div>
     </ion-content>
-    <ion-popover trigger="more-trigger" trigger-action="click">
-      <ion-content class="ion-padding">Hello World!</ion-content>
-    </ion-popover>
+    <NoteMore />
   </ion-page>
 </template>
 
