@@ -19,21 +19,21 @@ import {
 import { addOutline, createOutline } from 'ionicons/icons'
 
 import MessageListItem from '@/components/MessageListItem.vue'
-import { useCategory } from '@/hooks/useCategory'
-import { Category } from '@/hooks/useDexie'
+import { useNote } from '@/hooks/useNote'
+import { Note } from '@/hooks/useDexie'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
-const { addCategory, getCategorysByPid, getNoteCountByPid, onUpdateCategory } = useCategory()
+const { addNote, getNotesByPid, getNoteCountByPid, onUpdateNote } = useNote()
 
-const dataList = ref<Category[]>([])
+const dataList = ref<Note[]>([])
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
   {
     text: '确认',
     handler: async (d) => {
-      await addCategory({
+      await addNote({
         title: d.newFolderName,
         newstime: Date.now(),
         type: 'folder',
@@ -59,7 +59,7 @@ const refresh = (ev: CustomEvent) => {
 }
 
 function init() {
-  getCategorysByPid(0).then(async (res) => {
+  getNotesByPid(0).then(async (res) => {
     dataList.value = res
     for (let i = 0; i < dataList.value.length; i++) {
       const item = dataList.value[i]
@@ -70,7 +70,7 @@ function init() {
 }
 
 init()
-onUpdateCategory((item) => {
+onUpdateNote((item) => {
   if (item.pid === 0) {
     init()
   }

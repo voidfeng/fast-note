@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCategory } from '@/hooks/useCategory';
+import { useNote } from '@/hooks/useNote';
 import { useFiles } from '@/hooks/useFiles';
 import { useIonRouter, IonPopover, IonList, IonIcon, IonLabel, IonItem } from '@ionic/vue';
 import { trashOutline } from 'ionicons/icons'
@@ -7,13 +7,13 @@ import { useRoute } from 'vue-router';
 
 const route = useRoute()
 const router = useIonRouter()
-const { deleteCategory } = useCategory()
+const { deleteNote } = useNote()
 const { deleteFileByNoteId } = useFiles()
 
 function onDelete() {
   console.log('delete', route.params.id)
   const id = route.params.id
-  deleteCategory(parseInt(id as string)).then(() => {
+  deleteNote(parseInt(id as string)).then(() => {
     router.back()
   })
   deleteFileByNoteId(parseInt(id as string))

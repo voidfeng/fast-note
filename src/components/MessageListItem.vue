@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Category } from '@/hooks/useDexie'
+import { Note } from '@/hooks/useDexie'
 import { IonIcon, IonItem, IonLabel, IonNote } from '@ionic/vue'
 import { chevronForward, folderOutline } from 'ionicons/icons'
 import { computed } from 'vue'
@@ -9,11 +9,11 @@ defineEmits(['selected'])
 
 const props = withDefaults(
   defineProps<{
-    data: Category
+    data: Note
     noteDesktop: boolean
   }>(),
   {
-    data: () => ({} as Category),
+    data: () => ({} as Note),
   },
 )
 

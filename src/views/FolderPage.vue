@@ -18,10 +18,10 @@ import {
 import { addOutline, createOutline } from 'ionicons/icons'
 
 import MessageListItem from '@/components/MessageListItem.vue'
-import { useCategory } from '@/hooks/useCategory'
+import { useNote } from '@/hooks/useNote'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Category } from '@/hooks/useDexie'
+import { Note } from '@/hooks/useDexie'
 
 const props = withDefaults(
   defineProps<{
@@ -33,10 +33,10 @@ const props = withDefaults(
 )
 
 const route = useRoute()
-const { addCategory, getCategory, getCategorysByPid, getNoteCountByPid } = useCategory()
+const { addNote, getNote, getNotesByPid, getNoteCountByPid } = useNote()
 
-const data = ref<Category>({} as Category)
-const dataList = ref<Category[]>([])
+const data = ref<Note>({} as Note)
+const dataList = ref<Note[]>([])
 
 const state = reactive({
   windowWidth: 0,
@@ -54,7 +54,7 @@ const addButtons: AlertButton[] = [
   {
     text: '确认',
     handler: async (d) => {
-      await addCategory({
+      await addNote({
         title: d.newFolderName,
         newstime: Date.now(),
         type: 'folder',
@@ -108,11 +108,11 @@ watch(
 )
 
 function init(id: number) {
-  getCategory(id).then((res) => {
+  getNote(id).then((res) => {
     if (res) data.value = res
   })
 
-  getCategorysByPid(id).then(async (res) => {
+  getNotesByPid(id).then(async (res) => {
     dataList.value = res
 
     for (let i = 0; i < dataList.value.length; i++) {

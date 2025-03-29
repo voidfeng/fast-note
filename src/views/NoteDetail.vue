@@ -3,7 +3,7 @@ import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/vue'
 import editor from '@/components/YYEditor.vue'
-import { useCategory } from '@/hooks/useCategory'
+import { useNote } from '@/hooks/useNote'
 import { ellipsisHorizontalCircleOutline } from 'ionicons/icons'
 import { IonIcon, IonButton } from '@ionic/vue'
 import NoteMore from '@/components/NoteMore.vue'
@@ -18,7 +18,7 @@ const props = withDefaults(
 )
 
 const route = useRoute()
-const { addCategory, getCategory, updateCategory, deleteCategory } = useCategory()
+const { addNote, getNote, updateNote, deleteNote } = useNote()
 
 const editorRef = ref()
 const data = ref()
@@ -54,7 +54,7 @@ async function onBlur() {
   // 新增
   if (noteId.value === 0 && content) {
     const time = Date.now()
-    const id = await addCategory({
+    const id = await addNote({
       title,
       newstext: content,
       newstime: time,
@@ -67,7 +67,7 @@ async function onBlur() {
   // 编辑
   else if (content) {
     const time = Date.now()
-    updateCategory(
+    updateNote(
       noteId.value,
       Object.assign(toRaw(data.value), {
         title,
@@ -79,12 +79,12 @@ async function onBlur() {
   }
   // 删除
   else {
-    await deleteCategory(noteId.value)
+    await deleteNote(noteId.value)
   }
 }
 
 async function init(id: number) {
-  data.value = await getCategory(id)
+  data.value = await getNote(id)
   if (data.value) editorRef.value?.setContent(data.value.newstext)
 }
 
