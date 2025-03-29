@@ -25,10 +25,10 @@ import { Note } from '@/hooks/useDexie'
 
 const props = withDefaults(
   defineProps<{
-    currentFolder?: number
+    currentFolder?: string
   }>(),
   {
-    currentFolder: 0,
+    currentFolder: '0',
   },
 )
 
@@ -46,7 +46,7 @@ const state = reactive({
 const folderId = computed(() => {
   const path = route.path
   const lastId = path.split('/')
-  return parseInt(lastId[lastId.length - 1], 10)
+  return lastId[lastId.length - 1]
 })
 
 const addButtons: AlertButton[] = [
@@ -107,17 +107,17 @@ watch(
   { immediate: true },
 )
 
-function init(id: number) {
-  getNote(id).then((res) => {
+function init(uuid: string) {
+  getNote(uuid).then((res) => {
     if (res) data.value = res
   })
 
-  getNotesByUuid(id).then(async (res) => {
+  getNotesByUuid(uuid).then(async (res) => {
     dataList.value = res
 
     for (let i = 0; i < dataList.value.length; i++) {
       const item = dataList.value[i]
-      const count = await getNoteCountByUuid(item.id!)
+      const count = await getNoteCountByUuid(item.uuid!)
       item.noteCount = count
     }
   })
