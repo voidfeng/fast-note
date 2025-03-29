@@ -38,7 +38,7 @@ export function useDexie() {
 
     // 定义表结构和索引
     db.value.version(1).stores({
-      categorys: '++id, title, newstime, type, pid, newstext',
+      categorys: '++id, title, newstime, type, pid, newstext, lastdotime, version, uuid',
       files: '++id, url, ids, hash',
     })
   }
