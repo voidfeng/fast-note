@@ -24,6 +24,7 @@ import { Note } from '@/hooks/useDexie'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
+import { nanoid } from 'nanoid'
 
 const { addNote, getNotesByUuid, getNoteCountByUuid, onUpdateNote } = useNote()
 
@@ -33,19 +34,23 @@ const addButtons: AlertButton[] = [
   {
     text: '确认',
     handler: async (d) => {
+      const time = Math.floor(Date.now() / 1000)
       await addNote({
         title: d.newFolderName,
-        newstime: Date.now(),
+        newstime: time,
+        lastdotime: time,
         type: 'folder',
-        puuid: 0,
+        puuid: '',
+        uuid: nanoid(12),
+        version: 1,
       })
     },
   },
 ]
 const state = reactive({
   windowWidth: 0,
-  currentFolder: 1,
-  currentDetail: 0,
+  currentFolder: '',
+  currentDetail: '',
 })
 
 const noteDesktop = computed(() => {
@@ -119,11 +124,11 @@ onUnmounted(() => {
       <ion-list>
         <MessageListItem
           v-for="d in dataList"
-          :key="d.id"
+          :key="d.uuid"
           :data="d"
           :note-desktop
-          :class="{ active: state.currentFolder === d.id }"
-          @selected="(id: number) => state.currentFolder = id"
+          :class="{ active: state.currentFolder === d.uuid }"
+          @selected="(id: string) => state.currentFolder = id"
         />
       </ion-list>
     </ion-content>
@@ -151,7 +156,7 @@ onUnmounted(() => {
     <div v-if="noteDesktop" class="home-list">
       <FolderPage
         :current-folder="state.currentFolder"
-        @selected="(id: number) => state.currentDetail = id"
+        @selected="(id: string) => state.currentDetail = id"
       />
     </div>
     <div v-if="noteDesktop" class="home-detail">

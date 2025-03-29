@@ -22,6 +22,7 @@ import { useNote } from '@/hooks/useNote'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Note } from '@/hooks/useDexie'
+import { nanoid } from 'nanoid'
 
 const props = withDefaults(
   defineProps<{
@@ -40,7 +41,7 @@ const dataList = ref<Note[]>([])
 
 const state = reactive({
   windowWidth: 0,
-  currentDetail: 0,
+  currentDetail: '',
 })
 
 const folderId = computed(() => {
@@ -54,11 +55,15 @@ const addButtons: AlertButton[] = [
   {
     text: '确认',
     handler: async (d) => {
+      const time = Math.floor(Date.now() / 1000)
       await addNote({
         title: d.newFolderName,
-        newstime: Date.now(),
+        newstime: time,
+        lastdotime: time,
         type: 'folder',
         puuid: folderId.value,
+        uuid: nanoid(12),
+        version: 1,
       })
       init(folderId.value)
     },
@@ -164,13 +169,13 @@ onUnmounted(() => {
       <ion-list>
         <MessageListItem
           v-for="d in dataList"
-          :key="d.id"
+          :key="d.uuid"
           :data="d"
           :note-desktop
-          :class="{ active: state.currentDetail === d.id }"
-          @selected="(id: number) => {
-            state.currentDetail = id
-            $emit('selected', id)
+          :class="{ active: state.currentDetail === d.uuid }"
+          @selected="(uuid: string) => {
+            state.currentDetail = uuid
+            $emit('selected', uuid)
           }"
         />
       </ion-list>

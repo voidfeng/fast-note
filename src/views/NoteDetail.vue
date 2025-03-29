@@ -10,10 +10,10 @@ import { IonIcon, IonButton } from '@ionic/vue'
 import NoteMore from '@/components/NoteMore.vue'
 const props = withDefaults(
   defineProps<{
-    currentDetail?: number
+    currentDetail?: string
   }>(),
   {
-    currentDetail: 0,
+    currentDetail: '',
   },
 )
 

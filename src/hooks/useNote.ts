@@ -102,7 +102,7 @@ export function useNote() {
       }
       // 如果是文件夹类型，递归获取其中的笔记数量
       else if (category.type === 'folder') {
-        count += await getNoteCountByUuid(category.id!)
+        count += await getNoteCountByUuid(category.uuid!)
       }
     }
 
