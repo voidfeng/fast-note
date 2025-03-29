@@ -2,12 +2,12 @@
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/vue'
-import editor from '@/components/YYEditor.vue'
 import { useNote } from '@/hooks/useNote'
 import { ellipsisHorizontalCircleOutline } from 'ionicons/icons'
+import { nanoid } from 'nanoid'
+import editor from '@/components/YYEditor.vue'
 import { IonIcon, IonButton } from '@ionic/vue'
 import NoteMore from '@/components/NoteMore.vue'
-
 const props = withDefaults(
   defineProps<{
     currentDetail?: number
@@ -51,29 +51,29 @@ async function onBlur() {
    */
   const title = editorRef.value?.getTitle()
   const content = editorRef.value?.getContent()
-  // 新增
+  const time = Math.floor(Date.now() / 1000)
+    // 新增
   if (noteId.value === 0 && content) {
-    const time = Date.now()
     const id = await addNote({
       title,
       newstext: content,
       newstime: time,
-      updatetime: time,
+      lastdotime: time,
       type: 'note',
       pid: parseInt(route.query.pid as string, 10) || 1,
+      uuid: nanoid(12),
     })
     window.history.replaceState(null, '', `/n/${id}`)
   }
   // 编辑
   else if (content) {
-    const time = Date.now()
     updateNote(
       noteId.value,
       Object.assign(toRaw(data.value), {
         title,
         newstext: content,
         newstime: time,
-        updatetime: time,
+        lastdotime: time,
       }),
     )
   }
