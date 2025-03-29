@@ -13,27 +13,27 @@ const routes: Array<RouteRecordRaw> = [
     component: HomePage
   },
   {
-    path: '/n/:id',
+    path: '/n/:uuid',
     component: () => import('../views/NoteDetail.vue')
   },
   {
-    path: '/f/:id/',
+    path: '/f/:uuid/',
     component: () => import('../views/FolderPage.vue')
   },
   {
-    path: '/f/:id/:id2',
+    path: '/f/:uuid/:uuid2',
     component: () => import('../views/FolderPage.vue')
   },
   {
-    path: '/f/:id/:id2/:id3',
+    path: '/f/:uuid/:uuid2/:uuid3',
     component: () => import('../views/FolderPage.vue')
   },
   {
-    path: '/f/:id/:id2/:id3/:id4',
+    path: '/f/:uuid/:uuid2/:uuid3/:uuid4',
     component: () => import('../views/FolderPage.vue')
   },
   {
-    path: '/f/:id/:id2/:id3/:id4/:id5',
+    path: '/f/:uuid/:uuid2/:uuid3/:uuid4/:uuid5',
     component: () => import('../views/FolderPage.vue')
   }
 ]

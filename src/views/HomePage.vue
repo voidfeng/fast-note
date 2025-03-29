@@ -25,7 +25,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
-const { addNote, getNotesByPid, getNoteCountByPid, onUpdateNote } = useNote()
+const { addNote, getNotesByUuid, getNoteCountByUuid, onUpdateNote } = useNote()
 
 const dataList = ref<Note[]>([])
 const addButtons: AlertButton[] = [
@@ -37,7 +37,7 @@ const addButtons: AlertButton[] = [
         title: d.newFolderName,
         newstime: Date.now(),
         type: 'folder',
-        pid: 0,
+        puuid: 0,
       })
     },
   },
@@ -59,11 +59,11 @@ const refresh = (ev: CustomEvent) => {
 }
 
 function init() {
-  getNotesByPid(0).then(async (res) => {
+  getNotesByUuid('').then(async (res) => {
     dataList.value = res
     for (let i = 0; i < dataList.value.length; i++) {
       const item = dataList.value[i]
-      const count = await getNoteCountByPid(item.id!)
+      const count = await getNoteCountByUuid(item.uuid!)
       item.noteCount = count
     }
   })
@@ -71,7 +71,7 @@ function init() {
 
 init()
 onUpdateNote((item) => {
-  if (item.pid === 0) {
+  if (item.puuid === '') {
     init()
   }
 })

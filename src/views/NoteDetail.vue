@@ -18,12 +18,12 @@ const props = withDefaults(
 )
 
 const route = useRoute()
-const { addNote, getNote, updateNote, deleteNote } = useNote()
+const { getFirstNote, addNote, getNote, updateNote, deleteNote } = useNote()
 
 const editorRef = ref()
 const data = ref()
 
-const noteId = computed(() => parseInt(route.params.id as string, 10))
+const noteUuid = computed(() => route.params.uuid as string)
 
 const getBackButtonText = () => {
   const win = window as any
@@ -53,14 +53,15 @@ async function onBlur() {
   const content = editorRef.value?.getContent()
   const time = Math.floor(Date.now() / 1000)
     // 新增
-  if (noteId.value === 0 && content) {
+  if (noteUuid.value === '0' && content) {
+    const firstNote = await getFirstNote()
     const id = await addNote({
       title,
       newstext: content,
       newstime: time,
       lastdotime: time,
       type: 'note',
-      pid: parseInt(route.query.pid as string, 10) || 1,
+      puuid: route.query.puuid as string || firstNote?.uuid,
       uuid: nanoid(12),
     })
     window.history.replaceState(null, '', `/n/${id}`)
@@ -68,7 +69,7 @@ async function onBlur() {
   // 编辑
   else if (content) {
     updateNote(
-      noteId.value,
+      noteUuid.value,
       Object.assign(toRaw(data.value), {
         title,
         newstext: content,
@@ -79,18 +80,18 @@ async function onBlur() {
   }
   // 删除
   else {
-    await deleteNote(noteId.value)
+    await deleteNote(noteUuid.value)
   }
 }
 
-async function init(id: number) {
-  data.value = await getNote(id)
+async function init(uuid: string) {
+  data.value = await getNote(uuid)
   if (data.value) editorRef.value?.setContent(data.value.newstext)
 }
 
 onMounted(async () => {
-  if (noteId.value) {
-    init(noteId.value)
+  if (noteUuid.value) {
+    init(noteUuid.value)
   }
 })
 </script>

@@ -5,11 +5,12 @@ import { Ref, ref } from 'vue'
 
 export interface Note {
   id?: number
+  uuid: string
   title: string
   newstime: number
   newstext: string
   type: 'folder' | 'note'
-  pid: number
+  puuid: string
   noteCount?: number
 }
 
@@ -23,7 +24,7 @@ export interface TypedFile {
 }
 
 interface NoteDatabase extends Dexie {
-  notes: Dexie.Table<Note, number>
+  notes: Dexie.Table<Note, string>
   files: Dexie.Table<TypedFile, number>
 }
 
@@ -38,7 +39,7 @@ export function useDexie() {
 
     // 定义表结构和索引
     db.value.version(1).stores({
-      notes: '++id, title, newstime, type, pid, newstext, lastdotime, version, uuid',
+      notes: '&uuid, title, newstime, type, puuid, newstext, lastdotime, version',
       files: '++id, url, ids, hash',
     })
   }

@@ -1,5 +1,6 @@
 import { onUnmounted, ref } from 'vue'
 import { Note, useDexie } from './useDexie'
+import { nanoid } from 'nanoid'
 
 type UpdateFn = (item: Note) => void
 
@@ -16,17 +17,19 @@ function notifyNoteUpdate(item: Note) {
 export function useNote() {
   const { db } = useDexie()
   const privateNoteUpdateArr: UpdateFn[] = []
-
+  const time = Math.floor(Date.now() / 1000)
   if (!isInitialized) {
     fetchNotes().then(() => {
       if (notes.value.length === 0) {
         const id1 = {
           id: 1,
+          uuid: nanoid(12),
           title: '备忘录',
-          newstime: Date.now(),
+          newstime: time,
           newstext: '',
           type: 'folder',
-          pid: 0,
+          puuid: '',
+          lastdotime: time,
         } as Note
         addNote(id1).then(() => {
           fetchNotes().then(() => {
@@ -41,6 +44,10 @@ export function useNote() {
   }
 
   async function syncNote() {}
+
+  function getFirstNote() {
+    return db.value.notes.orderBy('newstime').first()
+  }
 
   function fetchNotes() {
     return db.value.notes
@@ -60,29 +67,30 @@ export function useNote() {
     return r
   }
 
-  async function getNote(id: number) {
-    const r = await db.value.notes.get(id)
+  async function getNote(uuid: string) {
+    const r = await db.value.notes.where('uuid').equals(uuid).first()
     return r
   }
 
-  async function deleteNote(id: number) {
-    await db.value.notes.delete(id)
+  async function deleteNote(uuid: string) {
+    await db.value.notes.where('uuid').equals(uuid).delete()
     fetchNotes()
   }
 
-  async function updateNote(id: number, note: any) {
-    await db.value.notes.put(note, id)
+  async function updateNote(uuid: string, note: any) {
+    await db.value.notes.put(note, uuid)
     fetchNotes()
+  
   }
 
-  async function getNotesByPid(pid: number) {
-    const r = await db.value.notes.where('pid').equals(pid).toArray()
+  async function getNotesByUuid(puuid: string) {
+    const r = await db.value.notes.where('puuid').equals(puuid).toArray()
     return r
   }
 
-  async function getNoteCountByPid(pid: number) {
-    // 获取当前 pid 下的所有分类
-    const categories = await db.value.notes.where('pid').equals(pid).toArray()
+  async function getNoteCountByUuid(puuid: string) {
+    // 获取当前 puuid 下的所有分类
+    const categories = await db.value.notes.where('puuid').equals(puuid).toArray()
 
     let count = 0
 
@@ -94,7 +102,7 @@ export function useNote() {
       }
       // 如果是文件夹类型，递归获取其中的笔记数量
       else if (category.type === 'folder') {
-        count += await getNoteCountByPid(category.id!)
+        count += await getNoteCountByUuid(category.id!)
       }
     }
 
@@ -113,6 +121,7 @@ export function useNote() {
   })
 
   return {
+    getFirstNote,
     notes,
     syncNote,
     fetchNotes,
@@ -120,8 +129,8 @@ export function useNote() {
     getNote,
     deleteNote,
     updateNote,
-    getNotesByPid,
-    getNoteCountByPid,
+    getNotesByUuid,
+    getNoteCountByUuid,
     onUpdateNote,
   }
 }

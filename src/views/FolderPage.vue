@@ -33,7 +33,7 @@ const props = withDefaults(
 )
 
 const route = useRoute()
-const { addNote, getNote, getNotesByPid, getNoteCountByPid } = useNote()
+const { addNote, getNote, getNotesByUuid, getNoteCountByUuid } = useNote()
 
 const data = ref<Note>({} as Note)
 const dataList = ref<Note[]>([])
@@ -58,7 +58,7 @@ const addButtons: AlertButton[] = [
         title: d.newFolderName,
         newstime: Date.now(),
         type: 'folder',
-        pid: folderId.value,
+        puuid: folderId.value,
       })
       init(folderId.value)
     },
@@ -112,12 +112,12 @@ function init(id: number) {
     if (res) data.value = res
   })
 
-  getNotesByPid(id).then(async (res) => {
+  getNotesByUuid(id).then(async (res) => {
     dataList.value = res
 
     for (let i = 0; i < dataList.value.length; i++) {
       const item = dataList.value[i]
-      const count = await getNoteCountByPid(item.id!)
+      const count = await getNoteCountByUuid(item.id!)
       item.noteCount = count
     }
   })
@@ -187,7 +187,7 @@ onUnmounted(() => {
           {{ notes.length > 0 ? `${notes.length}个备忘录` : '无备忘录' }}
         </ion-title>
         <ion-buttons slot="end">
-          <ion-button :router-link="`/n/0?pid=${folderId}`" router-direction="forward">
+          <ion-button :router-link="`/n/0?puuid=${folderId}`" router-direction="forward">
             <ion-icon :icon="createOutline" />
           </ion-button>
         </ion-buttons>

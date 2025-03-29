@@ -31,12 +31,12 @@ const routerLink = computed(() => {
      */
     const isHome = route.path === '/home'
     if (isHome) {
-      return '/f/' + props.data.id
+      return '/f/' + props.data.uuid
     } else {
-      return route.path + '/' + props.data.id
+      return route.path + '/' + props.data.uuid
     }
   }
-  return '/n/' + props.data.id
+  return '/n/' + props.data.uuid
 })
 </script>
 
@@ -46,7 +46,7 @@ const routerLink = computed(() => {
     :routerLink="routerLink"
     :detail="false"
     class="list-item"
-    @click="$emit('selected', $props.data.id)"
+    @click="$emit('selected', $props.data.uuid)"
   >
     <template v-if="data.type === 'folder'">
       <ion-icon :icon="folderOutline" class="mr-3" />
