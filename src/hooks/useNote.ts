@@ -80,7 +80,6 @@ export function useNote() {
   async function updateNote(uuid: string, note: any) {
     await db.value.notes.put(note, uuid)
     fetchNotes()
-  
   }
 
   async function getNotesByUuid(puuid: string) {

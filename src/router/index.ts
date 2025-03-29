@@ -13,6 +13,11 @@ const routes: Array<RouteRecordRaw> = [
     component: HomePage
   },
   {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/LoginPage.vue')
+  },
+  {
     path: '/n/:uuid',
     component: () => import('../views/NoteDetail.vue')
   },

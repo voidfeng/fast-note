@@ -52,7 +52,7 @@ async function onBlur() {
   const title = editorRef.value?.getTitle()
   const content = editorRef.value?.getContent()
   const time = Math.floor(Date.now() / 1000)
-    // 新增
+  // 新增
   if (noteUuid.value === '0' && content) {
     const firstNote = await getFirstNote()
     const id = await addNote({
@@ -61,7 +61,7 @@ async function onBlur() {
       newstime: time,
       lastdotime: time,
       type: 'note',
-      puuid: route.query.puuid as string || firstNote?.uuid,
+      puuid: (route.query.puuid as string) || firstNote?.uuid,
       uuid: nanoid(12),
     })
     window.history.replaceState(null, '', `/n/${id}`)

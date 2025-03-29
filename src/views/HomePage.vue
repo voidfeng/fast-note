@@ -22,10 +22,10 @@ import MessageListItem from '@/components/MessageListItem.vue'
 import { useNote } from '@/hooks/useNote'
 import { Note } from '@/hooks/useDexie'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { nanoid } from 'nanoid'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
-import { nanoid } from 'nanoid'
-
+import SyncState from '@/components/SyncState.vue'
 const { addNote, getNotesByUuid, getNoteCountByUuid, onUpdateNote } = useNote()
 
 const dataList = ref<Note[]>([])
@@ -105,9 +105,7 @@ onUnmounted(() => {
 <template>
   <ion-page :class="{ 'note-desktop': noteDesktop }">
     <ion-header :translucent="true">
-      <ion-toolbar>
-        <ion-title>备忘录</ion-title>
-      </ion-toolbar>
+      <ion-toolbar> </ion-toolbar>
     </ion-header>
 
     <ion-content :fullscreen="true">
@@ -119,6 +117,7 @@ onUnmounted(() => {
         <ion-toolbar>
           <ion-title size="large">备忘录</ion-title>
         </ion-toolbar>
+        <SyncState class="ml4 mb4" />
       </ion-header>
 
       <ion-list>
