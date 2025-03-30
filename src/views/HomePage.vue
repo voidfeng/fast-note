@@ -117,7 +117,7 @@ onUnmounted(() => {
         <ion-toolbar>
           <ion-title size="large">备忘录</ion-title>
         </ion-toolbar>
-        <SyncState class="ml4 mb4" />
+        <SyncState />
       </ion-header>
 
       <ion-list>
