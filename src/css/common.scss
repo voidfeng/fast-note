@@ -1,5 +1,5 @@
-@import './var.scss';
-@import './var-class.scss';
+@use './var.scss';
+@use './var-class.scss';
 
 ion-footer {
   .title-default {
