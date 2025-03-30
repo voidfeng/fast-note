@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import {
-  IonPage,
-  IonHeader,
-  IonToolbar,
-  IonButtons,
   IonBackButton,
+  IonButton,
+  IonButtons,
+  IonContent,
+  IonHeader,
   IonInput,
   IonList,
+  IonPage,
+  IonToolbar,
 } from '@ionic/vue'
 import { inject } from 'vue';
 
