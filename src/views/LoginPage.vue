@@ -10,11 +10,15 @@ import {
   IonList,
   IonPage,
   IonToolbar,
+  useIonRouter,
 } from '@ionic/vue'
 import { inject, ref } from 'vue'
 import { login } from '@/api'
 
 const noteDesktop = inject('noteDesktop')
+
+ const router = useIonRouter()
+
 const username = ref('')
 const password = ref('')
 async function onLogin() {
@@ -23,9 +27,8 @@ async function onLogin() {
     alert.present();
     return 
   }
-  login(username.value, password.value).then((res) => {
-    console.log(res)
-  })
+  await login(username.value, password.value)
+  router.back()
 }
 </script>
 

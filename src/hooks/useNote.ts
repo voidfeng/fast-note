@@ -113,6 +113,10 @@ export function useNote() {
     privateNoteUpdateArr.push(fn)
   }
 
+  function getNotesByLastdotime(lastdotime: number) {
+    return db.value.notes.where('lastdotime').aboveOrEqual(lastdotime).toArray()
+  }
+
   onUnmounted(() => {
     privateNoteUpdateArr.forEach((fn) => {
       onNoteUpdateArr.splice(onNoteUpdateArr.indexOf(fn), 1)
@@ -130,6 +134,7 @@ export function useNote() {
     updateNote,
     getNotesByUuid,
     getNoteCountByUuid,
+    getNotesByLastdotime,
     onUpdateNote,
   }
 }

@@ -4,6 +4,8 @@ import { Ref, ref } from 'vue'
 // 定义数据库结构
 
 export interface Note {
+  version: number
+  lastdotime: number
   id?: number
   uuid: string
   title: string

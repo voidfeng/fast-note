@@ -4,6 +4,7 @@ import type {
 } from 'axios'
 import { apiService } from './apiService'
 import { alertController } from '@ionic/vue'
+import { Note } from '@/hooks/useDexie'
 
 export interface ApiResponse<T> {
   s: number
@@ -75,5 +76,49 @@ export function login(username: string, password: string) {
       .catch((e) => {
         rej(e)
       })
+  })
+}
+
+// 获取云端备忘录列表
+export function getCloudNodesByLastdotime(lastdotime: number) {
+  return request({ url: `/e/eapi/DtUserpage.php?aid=1&lastdotime=${lastdotime}` })
+}
+
+// 添加备忘录
+export function addCloudNote(note: Note) {
+  const formData = new FormData()
+  formData.append('enews', 'MAddInfo')
+  formData.append('classid', '2')
+  formData.append('mid', '9')
+  formData.append('id', '0')
+  formData.append('addnews', '提交')
+
+  Object.entries(note).forEach(([key, value]) => {
+    if (value !== undefined) {
+      formData.append(key, value.toString())
+    }
+  })
+  return request({
+    url: `/e/DoInfo/ecms.php`,
+    method: 'post',
+    data: formData
+  })
+}
+
+// 更新备忘录
+export function updateCloudNote(note: Note) {
+  const formData = new FormData()
+  formData.append('enews', 'MEditInfo')
+  formData.append('classid', '2')
+  formData.append('mid', '9')
+  Object.entries(note).forEach(([key, value]) => {
+    if (value !== undefined) {
+      formData.append(key, value.toString())
+    }
+  })
+  return request({ 
+    url: `/e/DoInfo/ecms.php`,
+    method: 'post',
+    data: note 
   })
 }

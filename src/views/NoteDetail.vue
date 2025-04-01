@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRaw, watch } from 'vue'
+import { computed, onMounted, ref, toRaw, version, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/vue'
 import { useNote } from '@/hooks/useNote'
@@ -63,6 +63,7 @@ async function onBlur() {
       type: 'note',
       puuid: (route.query.puuid as string) || firstNote?.uuid,
       uuid: nanoid(12),
+      version: 1,
     })
     window.history.replaceState(null, '', `/n/${id}`)
   }
@@ -75,6 +76,7 @@ async function onBlur() {
         newstext: content,
         newstime: time,
         lastdotime: time,
+        version: (data.value.version || 1) + 1,
       }),
     )
   }
