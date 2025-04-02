@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { IonApp, IonRouterOutlet } from '@ionic/vue'
-import { useDesktop } from './hooks/useDesktip';
-import { provide } from 'vue';
+import { provide } from 'vue'
+import { useDesktop } from './hooks/useDesktip'
 
-const {noteDesktop} = useDesktop()
+const { noteDesktop } = useDesktop()
 provide('noteDesktop', noteDesktop)
 </script>
 
 <template>
-  <ion-app>
-    <ion-router-outlet />
-  </ion-app>
+  <IonApp>
+    <IonRouterOutlet />
+  </IonApp>
 </template>
