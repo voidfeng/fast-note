@@ -1,7 +1,15 @@
 <?php
+require("../../e/member/class/user.php");
 
 // 设置响应头为 JSON 格式
 header('Content-Type: application/json; charset=utf-8');
+
+
+//是否登陆
+$user=islogin();
+$r=ReturnUserInfo($user['userid']);
+
+print_r($user['userid']);
 
 // 获取 lastdotime 参数
 $lastdotime = isset($_GET['lastdotime']) ? $_GET['lastdotime'] : null;
@@ -10,7 +18,7 @@ $lastdotime = isset($_GET['lastdotime']) ? $_GET['lastdotime'] : null;
 if ($lastdotime === null) {
     // 如果参数不存在，返回错误信息
     $response = [
-        's' => 0,
+        's' => 1,
         'm' => '参数错误'
     ];
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
@@ -20,7 +28,7 @@ if ($lastdotime === null) {
 // 验证 lastdotime 是否为有效的秒级时间戳
 if (!is_numeric($lastdotime) || strlen($lastdotime) !== 10 || $lastdotime <= 0) {
     $response = [
-        's' => 0,
+        's' => 1,
         'm' => '参数格式错误'
     ];
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
@@ -33,7 +41,7 @@ $maxTimestamp = time();
 
 if ($lastdotime < $minTimestamp || $lastdotime > $maxTimestamp) {
     $response = [
-        's' => 0,
+        's' => 1,
         'm' => '参数值超出范围'
     ];
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
@@ -44,7 +52,7 @@ if ($lastdotime < $minTimestamp || $lastdotime > $maxTimestamp) {
 $lastdotime = intval($lastdotime);
 
 // 查询大于等于指定lastdotime的信息列表
-$sql = "SELECT id, title, classid, newstime, titlepic, smalltext, lastdotime, version, uuid, puuid, type
+$sql = "SELECT id, title, classid, newstime, titlepic, smalltext, lastdotime, version, uuid, puuid, type, isdeleted
         FROM phome_ecms_note
         WHERE lastdotime >= $lastdotime 
         ORDER BY lastdotime ASC";
@@ -84,7 +92,7 @@ try {
 
     // 返回成功响应
     $response = [
-        's' => 1,
+        's' => 0,
         'lastdotime' => $new_lastdotime,
         'count' => count($data),
         'd' => $data
@@ -94,7 +102,7 @@ try {
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
 } catch (Exception $e) {
     $response = [
-        's' => 0,
+        's' => 1,
         'm' => '服务器内部错误'
     ];
     echo json_encode($response, JSON_UNESCAPED_UNICODE);
