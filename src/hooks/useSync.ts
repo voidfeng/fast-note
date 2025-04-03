@@ -1,8 +1,8 @@
-import { ref } from 'vue'
-import { useNote } from './useNote'
+import type { Note } from './useDexie'
 import { addCloudNote, getCloudNodesByLastdotime, updateCloudNote } from '@/api'
 import { getTime } from '@/utils/date'
-import { Note } from './useDexie'
+import { ref } from 'vue'
+import { useNote } from './useNote'
 
 const lastdotime = ref(JSON.parse(localStorage.lastdotime || getTime('2010/01/01 00:00:00')))
 
@@ -14,109 +14,96 @@ export function useSync() {
     const localNotes = await getNotesByLastdotime(lastdotime.value)
     // 获取云端变更数据
     const cloudNotes = await getCloudNodesByLastdotime(lastdotime.value)
-    
+
     // 创建UUID映射以便快速查找
     const localNotesMap = new Map(localNotes.map(note => [note.uuid, note]))
     const cloudNotesMap = new Map((cloudNotes.d as Note[]).map(note => [note.uuid, note]))
-    
-    // 记录最新的lastdotime，用于更新同步时间点
-    let newLastdotime = lastdotime.value
-    
-    // 处理本地存在但云端不存在的数据 - 上传到云端
-    const notesToUpload: Note[] = []
-    for (const localNote of localNotes) {
-      // 更新最新的lastdotime
-      if (localNote.lastdotime > newLastdotime) {
-        newLastdotime = localNote.lastdotime
-      }
-      
-      if (!cloudNotesMap.has(localNote.uuid)) {
-        notesToUpload.push(localNote)
-      }
+
+    // 准备需要处理的操作列表
+    interface SyncOperation {
+      note: Note
+      action: 'upload' | 'update' | 'download'
     }
-    
-    // 处理云端存在但本地不存在的数据 - 下载到本地
-    const notesToDownload: Note[] = []
-    for (const cloudNote of cloudNotes.d) {
-      // 更新最新的lastdotime
-      if (cloudNote.lastdotime > newLastdotime) {
-        newLastdotime = cloudNote.lastdotime
+
+    const operations: SyncOperation[] = []
+
+    // 处理本地笔记
+    for (const note of localNotes) {
+      const cloudNote = cloudNotesMap.get(note.uuid)
+      if (!cloudNote) {
+        // 本地存在但云端不存在 - 上传到云端
+        operations.push({ note, action: 'upload' })
       }
-      
-      if (!localNotesMap.has(cloudNote.uuid)) {
-        notesToDownload.push(cloudNote)
-      }
-    }
-    
-    // 处理本地和云端都存在的数据 - 比较版本号
-    const notesToUpdate: Note[] = []
-    const localNotesToUpdate: Note[] = []
-    
-    for (const localNote of localNotes) {
-      const cloudNote = cloudNotesMap.get(localNote.uuid)
-      if (cloudNote) {
-        // 比较版本号
-        const localVersion = localNote.version || 0
+      else {
+        // 本地和云端都存在 - 比较版本号
+        const localVersion = note.version || 0
         const cloudVersion = cloudNote.version || 0
-        
+
         if (localVersion > cloudVersion) {
           // 本地版本更新，上传到云端
-          localNote.id = cloudNote.id
-          notesToUpdate.push(localNote)
-        } else if (cloudVersion > localVersion) {
-          // 云端版本更新，更新本地数据
-          localNotesToUpdate.push(cloudNote)
+          const noteToUpdate = { ...note, id: cloudNote.id }
+          operations.push({ note: noteToUpdate, action: 'update' })
         }
       }
     }
-    
-    // 执行同步操作
-    if (notesToUpload.length > 0) {
-      await uploadNotesToCloud(notesToUpload)
+
+    // 处理云端笔记
+    for (const note of cloudNotes.d as Note[]) {
+      const localNote = localNotesMap.get(note.uuid)
+      if (!localNote) {
+        // 云端存在但本地不存在 - 下载到本地
+        operations.push({ note, action: 'download' })
+      }
+      else {
+        // 本地和云端都存在 - 比较版本号
+        const localVersion = localNote.version || 0
+        const cloudVersion = note.version || 0
+
+        if (cloudVersion > localVersion) {
+          // 云端版本更新，更新本地数据
+          operations.push({ note, action: 'download' })
+        }
+      }
     }
-    
-    if (notesToUpdate.length > 0) {
-      await updateNotesInCloud(notesToUpdate)
+
+    // 按照lastdotime顺序排序所有操作
+    operations.sort((a, b) => a.note.lastdotime - b.note.lastdotime)
+
+    // 统计同步结果
+    let uploadedCount = 0
+    let downloadedCount = 0
+
+    // 按顺序执行所有同步操作
+    for (const { note, action } of operations) {
+      try {
+        if (action === 'upload') {
+          await addCloudNote(note)
+          uploadedCount++
+        }
+        else if (action === 'update') {
+          await updateCloudNote(note)
+          uploadedCount++
+        }
+        else if (action === 'download') {
+          await addNote(note)
+          downloadedCount++
+        }
+
+        // 每成功同步一条记录，就更新lastdotime
+        if (note.lastdotime > lastdotime.value) {
+          lastdotime.value = note.lastdotime
+          localStorage.lastdotime = JSON.stringify(note.lastdotime)
+        }
+      }
+      catch (error) {
+        console.error(`同步操作失败 (${action}):`, error)
+        // 继续处理下一条记录
+      }
     }
-    
-    if (notesToDownload.length > 0 || localNotesToUpdate.length > 0) {
-      await saveNotesToLocal([...notesToDownload, ...localNotesToUpdate])
-    }
-    
-    // 更新最后同步时间
-    lastdotime.value = newLastdotime
-    localStorage.lastdotime = JSON.stringify(newLastdotime)
-    
+
     return {
-      uploaded: notesToUpload.length + notesToUpdate.length,
-      downloaded: notesToDownload.length + localNotesToUpdate.length
-    }
-  }
-
-  // 辅助函数：上传笔记到云端
-  async function uploadNotesToCloud(notes: Note[]) {
-    // 这里需要实现上传到云端的API调用
-    // 例如: await api.addNotes(notes)
-    for (const note of notes) {
-      await addCloudNote(note)
-    }
-  }
-
-  // 辅助函数：更新云端笔记
-  async function updateNotesInCloud(notes: Note[]) {
-    // 这里需要实现更新云端笔记的API调用
-    // 例如: await api.updateNotes(notes)
-    for (const note of notes) {
-      await updateCloudNote(note)
-    }
-  }
-
-  // 辅助函数：保存笔记到本地
-  async function saveNotesToLocal(notes: Note[]) {
-    // 这里需要实现保存到本地IndexedDB的逻辑
-    // 例如: await db.notes.bulkPut(notes)
-    for (const note of notes) {
-      await addNote(note)
+      uploaded: uploadedCount,
+      downloaded: downloadedCount,
     }
   }
 
