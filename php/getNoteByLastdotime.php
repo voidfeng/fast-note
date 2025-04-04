@@ -7,9 +7,8 @@ header('Content-Type: application/json; charset=utf-8');
 
 //是否登陆
 $user=islogin();
-$r=ReturnUserInfo($user['userid']);
-
-print_r($user['userid']);
+// 用户信息
+// $r=ReturnUserInfo($user['userid']);
 
 // 获取 lastdotime 参数
 $lastdotime = isset($_GET['lastdotime']) ? $_GET['lastdotime'] : null;
@@ -54,7 +53,7 @@ $lastdotime = intval($lastdotime);
 // 查询大于等于指定lastdotime的信息列表
 $sql = "SELECT id, title, classid, newstime, titlepic, smalltext, lastdotime, version, uuid, puuid, type, isdeleted
         FROM phome_ecms_note
-        WHERE lastdotime >= $lastdotime 
+        WHERE lastdotime >= $lastdotime AND userid = {$user['userid']}
         ORDER BY lastdotime ASC";
 
 try {
@@ -62,7 +61,7 @@ try {
     $data = [];
 
     // 数字字段列表
-    $numeric_fields = ['id', 'classid', 'newstime', 'lastdotime', 'version'];
+    $numeric_fields = ['id', 'classid', 'newstime', 'lastdotime', 'version', 'isdeleted'];
 
     // 帝国CMS的查询结果需要循环获取
     // 使用关联数组模式，去除数字索引
