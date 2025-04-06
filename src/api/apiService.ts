@@ -7,6 +7,7 @@ class ApiService {
   private checkPromise: Promise<void> | null = null
   private defaultTimeout: number = 30000
   private localStorageKey: string = 'fastestApiUrl'
+  private useFastUrl: boolean = true
 
   private constructor() {
     // 私有构造函数，防止外部直接实例化
@@ -19,12 +20,23 @@ class ApiService {
     return ApiService.instance
   }
 
-  public initializeUrls(apiUrls: string[]) {
+  public initializeUrls(apiUrls: string[], options?: { useFastUrl?: boolean }) {
     if (!apiUrls || apiUrls.length === 0) {
       throw new Error('At least one API URL must be provided')
     }
     this.apiUrls = apiUrls
-    this.fastestUrl = this.getFastestUrlFromStorage()
+    
+    if (options?.useFastUrl !== undefined) {
+      this.useFastUrl = options.useFastUrl
+    }
+    
+    if (this.useFastUrl) {
+      this.fastestUrl = this.getFastestUrlFromStorage()
+    } else {
+      // 如果禁用了最快URL功能，直接使用第一个URL
+      this.fastestUrl = apiUrls[0]
+    }
+    
     this.checkPromise = null
   }
 
@@ -48,6 +60,11 @@ class ApiService {
   async getFastestUrl(forceCheck: boolean = false): Promise<string | null> {
     if (this.apiUrls.length === 0) {
       throw new Error('API URLs have not been initialized')
+    }
+
+    // 如果禁用了最快URL功能，直接返回第一个URL
+    if (!this.useFastUrl) {
+      return this.apiUrls[0]
     }
 
     if (this.fastestUrl && !forceCheck) {
@@ -106,11 +123,29 @@ class ApiService {
     }
 
     const getUrl = async (forceCheck: boolean = false): Promise<string> => {
+      // 判断是否为相对路径的辅助函数
+      const isRelativePath = (url: string): boolean => {
+        return !url.includes('://') && !url.startsWith('//')
+      }
+      
+      // 格式化URL，如果不是相对路径，添加协议前缀
+      const formatUrl = (url: string): string => {
+        if (isRelativePath(url)) {
+          return url
+        }
+        return `${location.protocol}//${url}`
+      }
+      
+      // 如果禁用了最快URL功能，直接使用第一个URL
+      if (!this.useFastUrl) {
+        return formatUrl(this.apiUrls[0])
+      }
+      
       const url = await this.getFastestUrl(forceCheck)
       if (!url) {
         throw new Error('No available API URL')
       }
-      return `${location.protocol}//${url}`
+      return formatUrl(url)
     }
 
     try {
@@ -137,8 +172,8 @@ class ApiService {
   }
 
   // 更新 API URLs 的方法
-  updateApiUrls(newUrls: string[]) {
-    this.initializeUrls(newUrls)
+  updateApiUrls(newUrls: string[], options?: { useFastUrl?: boolean }) {
+    this.initializeUrls(newUrls, options)
   }
 }
 
