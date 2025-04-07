@@ -1,5 +1,6 @@
+import type { Ref } from 'vue'
 import Dexie from 'dexie'
-import { Ref, ref } from 'vue'
+import { ref } from 'vue'
 
 // 定义数据库结构
 
@@ -10,6 +11,7 @@ export interface Note {
   id?: number
   uuid: string
   title: string
+  ftitle: string
   newstime: number
   newstext: string
   type: 'folder' | 'note'
@@ -39,7 +41,7 @@ export function useDexie() {
 
   async function init() {
     db.value = new Dexie('note') as NoteDatabase
-
+    (window as any).db = db.value
     // 定义表结构和索引
     db.value.version(1).stores({
       notes: '&uuid, title, newstime, type, puuid, newstext, lastdotime, version',

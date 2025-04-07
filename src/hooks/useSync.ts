@@ -7,13 +7,27 @@ import { useNote } from './useNote'
 const lastdotime = ref(JSON.parse(localStorage.lastdotime || getTime('2010/01/01 00:00:00')))
 
 export function useSync() {
-  const { getNotesByLastdotime, getNote, addNote, deleteNote, updateNote } = useNote()
+  const { getNotesByLastdotime, getNote, getNotesByPUuid, addNote, deleteNote, updateNote } = useNote()
 
   async function sync() {
     // 获取本地变更数据
     const localNotes = await getNotesByLastdotime(lastdotime.value)
     // 获取云端变更数据
     const cloudNotes = await getCloudNodesByLastdotime(lastdotime.value)
+
+    // 合并 本地的备忘录 和 云端的备忘录: 移除本地
+    const localDefaultFoler = localNotes.find(note => note.ftitle === 'default-folder')
+    const cloudDefaultFoler = cloudNotes.d.find((note: Note) => note.ftitle === 'default-folder')
+    if (localDefaultFoler && cloudDefaultFoler) {
+      const index = localNotes.indexOf(localDefaultFoler)
+      localNotes.splice(index, 1)
+      await deleteNote(localDefaultFoler.uuid)
+      const changePUuidNotes = await getNotesByPUuid(localDefaultFoler.uuid)
+      for (const note of changePUuidNotes) {
+        note.puuid = cloudDefaultFoler.uuid
+        await updateNote(note.uuid, note)
+      }
+    }
 
     // 创建UUID映射以便快速查找
     const localNotesMap = new Map(localNotes.map(note => [note.uuid, note]))

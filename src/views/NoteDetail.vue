@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRaw, version, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonPage, IonToolbar } from '@ionic/vue'
+import NoteMore from '@/components/NoteMore.vue'
+import editor from '@/components/YYEditor.vue'
 import { useNote } from '@/hooks/useNote'
+import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
 import { ellipsisHorizontalCircleOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import editor from '@/components/YYEditor.vue'
-import { IonIcon, IonButton } from '@ionic/vue'
-import NoteMore from '@/components/NoteMore.vue'
+import { computed, onMounted, ref, toRaw, version, watch } from 'vue'
+import { useRoute } from 'vue-router'
+
 const props = withDefaults(
   defineProps<{
     currentDetail?: string
@@ -25,7 +25,7 @@ const data = ref()
 
 const noteUuid = computed(() => route.params.uuid as string)
 
-const getBackButtonText = () => {
+function getBackButtonText() {
   const win = window as any
   const mode = win && win.Ionic && win.Ionic.mode
   return mode === 'ios' ? '备忘录' : ''
@@ -88,7 +88,10 @@ async function onBlur() {
 
 async function init(uuid: string) {
   data.value = await getNote(uuid)
-  if (data.value) editorRef.value?.setContent(data.value.newstext)
+  if (data.value) {
+    console.log('data', uuid, data.value.newstext)
+    editorRef.value?.setContent(data.value.newstext)
+  }
 }
 
 onMounted(async () => {
@@ -99,21 +102,25 @@ onMounted(async () => {
 </script>
 
 <template>
-  <ion-page>
-    <ion-header :translucent="true">
-      <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-back-button :text="getBackButtonText()" default-href="/"></ion-back-button>
-        </ion-buttons>
-        <ion-buttons slot="end">
-          <ion-button id="more-trigger">
-            <ion-icon :icon="ellipsisHorizontalCircleOutline" />
-          </ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
+  <IonPage>
+    <IonHeader :translucent="true">
+      <IonToolbar>
+        <template #start>
+          <IonButtons>
+            <IonBackButton :text="getBackButtonText()" default-href="/" />
+          </IonButtons>
+        </template>
+        <template #end>
+          <IonButtons>
+            <IonButton id="more-trigger">
+              <IonIcon :icon="ellipsisHorizontalCircleOutline" />
+            </IonButton>
+          </IonButtons>
+        </template>
+      </IonToolbar>
+    </IonHeader>
 
-    <ion-content :fullscreen="true">
+    <IonContent :fullscreen="true">
       <!-- <ion-item>
         <ion-icon aria-hidden="true" :icon="personCircle" color="primary"></ion-icon>
         <ion-label class="ion-text-wrap">
@@ -130,9 +137,9 @@ onMounted(async () => {
       <div class="ion-padding">
         <editor ref="editorRef" @blur="onBlur" />
       </div>
-    </ion-content>
+    </IonContent>
     <NoteMore />
-  </ion-page>
+  </IonPage>
 </template>
 
 <style scoped>

@@ -1,5 +1,14 @@
 <script setup lang="ts">
+import type { Note } from '@/hooks/useDexie'
+import type {
+  AlertButton,
+} from '@ionic/vue'
+import MessageListItem from '@/components/MessageListItem.vue'
+
+import SyncState from '@/components/SyncState.vue'
+import { useNote } from '@/hooks/useNote'
 import {
+  IonAlert,
   IonButton,
   IonButtons,
   IonContent,
@@ -12,21 +21,15 @@ import {
   IonRefresherContent,
   IonTitle,
   IonToolbar,
-  IonAlert,
-  AlertButton,
   onIonViewWillEnter,
 } from '@ionic/vue'
 import { addOutline, createOutline } from 'ionicons/icons'
-
-import MessageListItem from '@/components/MessageListItem.vue'
-import { useNote } from '@/hooks/useNote'
-import { Note } from '@/hooks/useDexie'
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { nanoid } from 'nanoid'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
-import SyncState from '@/components/SyncState.vue'
-const { addNote, getNotesByUuid, getNoteCountByUuid, onUpdateNote } = useNote()
+
+const { addNote, getNotesByPUuid, getNoteCountByUuid, onUpdateNote } = useNote()
 
 const dataList = ref<Note[]>([])
 const addButtons: AlertButton[] = [
@@ -57,14 +60,14 @@ const noteDesktop = computed(() => {
   return state.windowWidth >= 640
 })
 
-const refresh = (ev: CustomEvent) => {
+function refresh(ev: CustomEvent) {
   setTimeout(() => {
     ev.detail.complete()
   }, 3000)
 }
 
 function init() {
-  getNotesByUuid('').then(async (res) => {
+  getNotesByPUuid('').then(async (res) => {
     dataList.value = res
     for (let i = 0; i < dataList.value.length; i++) {
       const item = dataList.value[i]
@@ -103,24 +106,28 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <ion-page :class="{ 'note-desktop': noteDesktop }">
-    <ion-header :translucent="true">
-      <ion-toolbar> </ion-toolbar>
-    </ion-header>
+  <IonPage :class="{ 'note-desktop': noteDesktop }">
+    <IonHeader :translucent="true">
+      <IonToolbar />
+    </IonHeader>
 
-    <ion-content :fullscreen="true">
-      <ion-refresher slot="fixed" @ionRefresh="refresh($event)">
-        <ion-refresher-content></ion-refresher-content>
-      </ion-refresher>
+    <IonContent :fullscreen="true">
+      <template #fixed>
+        <IonRefresher @ion-refresh="refresh($event)">
+          <IonRefresherContent />
+        </IonRefresher>
+      </template>
 
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">备忘录</ion-title>
-        </ion-toolbar>
+      <IonHeader collapse="condense">
+        <IonToolbar>
+          <IonTitle size="large">
+            备忘录
+          </IonTitle>
+        </IonToolbar>
         <SyncState />
-      </ion-header>
+      </IonHeader>
 
-      <ion-list>
+      <IonList>
         <MessageListItem
           v-for="d in dataList"
           :key="d.uuid"
@@ -129,24 +136,28 @@ onUnmounted(() => {
           :class="{ active: state.currentFolder === d.uuid }"
           @selected="(id: string) => state.currentFolder = id"
         />
-      </ion-list>
-    </ion-content>
-    <ion-footer>
-      <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-button id="add-folder">
-            <ion-icon :icon="addOutline" />
-          </ion-button>
-        </ion-buttons>
-        <ion-title></ion-title>
-        <ion-buttons slot="end">
-          <ion-button router-link="/n/0" router-direction="forward">
-            <ion-icon :icon="createOutline" />
-          </ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-footer>
-    <ion-alert
+      </IonList>
+    </IonContent>
+    <IonFooter>
+      <IonToolbar>
+        <template #start>
+          <IonButtons>
+            <IonButton id="add-folder">
+              <IonIcon :icon="addOutline" />
+            </IonButton>
+          </IonButtons>
+        </template>
+        <IonTitle />
+        <template #end>
+          <IonButtons>
+            <IonButton router-link="/n/0" router-direction="forward">
+              <IonIcon :icon="createOutline" />
+            </IonButton>
+          </IonButtons>
+        </template>
+      </IonToolbar>
+    </IonFooter>
+    <IonAlert
       trigger="add-folder"
       header="请输入文件夹名称"
       :buttons="addButtons"
@@ -161,7 +172,7 @@ onUnmounted(() => {
     <div v-if="noteDesktop" class="home-detail">
       <NoteDetail :current-detail="state.currentDetail" />
     </div>
-  </ion-page>
+  </IonPage>
 </template>
 
 <style lang="scss">

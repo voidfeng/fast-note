@@ -1,5 +1,13 @@
 <script setup lang="ts">
+import type { Note } from '@/hooks/useDexie'
+import type {
+  AlertButton,
+} from '@ionic/vue'
+import MessageListItem from '@/components/MessageListItem.vue'
+
+import { useNote } from '@/hooks/useNote'
 import {
+  IonAlert,
   IonBackButton,
   IonButton,
   IonButtons,
@@ -11,18 +19,12 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
-  IonAlert,
-  AlertButton,
   onIonViewWillEnter,
 } from '@ionic/vue'
 import { addOutline, createOutline } from 'ionicons/icons'
-
-import MessageListItem from '@/components/MessageListItem.vue'
-import { useNote } from '@/hooks/useNote'
+import { nanoid } from 'nanoid'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { Note } from '@/hooks/useDexie'
-import { nanoid } from 'nanoid'
 
 const props = withDefaults(
   defineProps<{
@@ -34,7 +36,7 @@ const props = withDefaults(
 )
 
 const route = useRoute()
-const { addNote, getNote, getNotesByUuid, getNoteCountByUuid } = useNote()
+const { addNote, getNote, getNotesByPUuid, getNoteCountByUuid } = useNote()
 
 const data = ref<Note>({} as Note)
 const dataList = ref<Note[]>([])
@@ -78,11 +80,11 @@ const isTopFolder = computed(() => {
 })
 
 const folders = computed(() => {
-  return dataList.value.filter((d) => d.type === 'folder')
+  return dataList.value.filter(d => d.type === 'folder')
 })
 
 const notes = computed(() => {
-  return dataList.value.filter((d) => d.type === 'note')
+  return dataList.value.filter(d => d.type === 'note')
 })
 
 const defaultHref = computed(() => {
@@ -114,10 +116,11 @@ watch(
 
 function init(uuid: string) {
   getNote(uuid).then((res) => {
-    if (res) data.value = res
+    if (res)
+      data.value = res
   })
 
-  getNotesByUuid(uuid).then(async (res) => {
+  getNotesByPUuid(uuid).then(async (res) => {
     dataList.value = res
 
     for (let i = 0; i < dataList.value.length; i++) {
@@ -129,7 +132,8 @@ function init(uuid: string) {
 }
 
 onIonViewWillEnter(() => {
-  if (!noteDesktop.value) init(folderId.value)
+  if (!noteDesktop.value)
+    init(folderId.value)
 })
 
 // 更新窗口宽度的函数
@@ -150,23 +154,27 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <ion-page>
-    <ion-header v-if="!noteDesktop" :translucent="true">
-      <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-back-button :text="isTopFolder ? '备忘录' : '返回'" :default-href="defaultHref" />
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
+  <IonPage>
+    <IonHeader v-if="!noteDesktop" :translucent="true">
+      <IonToolbar>
+        <template #start>
+          <IonButtons>
+            <IonBackButton :text="isTopFolder ? '备忘录' : '返回'" :default-href="defaultHref" />
+          </IonButtons>
+        </template>
+      </IonToolbar>
+    </IonHeader>
 
-    <ion-content :fullscreen="true">
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">{{ data.title }}</ion-title>
-        </ion-toolbar>
-      </ion-header>
+    <IonContent :fullscreen="true">
+      <IonHeader collapse="condense">
+        <IonToolbar>
+          <IonTitle size="large">
+            {{ data.title }}
+          </IonTitle>
+        </IonToolbar>
+      </IonHeader>
 
-      <ion-list>
+      <IonList>
         <MessageListItem
           v-for="d in dataList"
           :key="d.uuid"
@@ -178,31 +186,35 @@ onUnmounted(() => {
             $emit('selected', uuid)
           }"
         />
-      </ion-list>
-    </ion-content>
-    <ion-footer v-if="!noteDesktop">
-      <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-button id="add-folder2">
-            <ion-icon :icon="addOutline" />
-          </ion-button>
-        </ion-buttons>
-        <ion-title>
+      </IonList>
+    </IonContent>
+    <IonFooter v-if="!noteDesktop">
+      <IonToolbar>
+        <template #start>
+          <IonButtons>
+            <IonButton id="add-folder2">
+              <IonIcon :icon="addOutline" />
+            </IonButton>
+          </IonButtons>
+        </template>
+        <IonTitle>
           {{ folders.length > 0 ? `${folders.length}个文件夹 ·` : '' }}
           {{ notes.length > 0 ? `${notes.length}个备忘录` : '无备忘录' }}
-        </ion-title>
-        <ion-buttons slot="end">
-          <ion-button :router-link="`/n/0?puuid=${folderId}`" router-direction="forward">
-            <ion-icon :icon="createOutline" />
-          </ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-footer>
-    <ion-alert
+        </IonTitle>
+        <template #end>
+          <IonButtons>
+            <IonButton :router-link="`/n/0?puuid=${folderId}`" router-direction="forward">
+              <IonIcon :icon="createOutline" />
+            </IonButton>
+          </IonButtons>
+        </template>
+      </IonToolbar>
+    </IonFooter>
+    <IonAlert
       trigger="add-folder2"
       header="请输入文件夹名称"
       :buttons="addButtons"
       :inputs="[{ name: 'newFolderName', placeholder: '请输入文件夹名称' }]"
     />
-  </ion-page>
+  </IonPage>
 </template>

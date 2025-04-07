@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { Note } from '@/hooks/useDexie'
+import type { Note } from '@/hooks/useDexie'
 import { IonIcon, IonItem, IonLabel, IonNote } from '@ionic/vue'
 import { chevronForward, folderOutline } from 'ionicons/icons'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-
-defineEmits(['selected'])
 
 const props = withDefaults(
   defineProps<{
@@ -17,10 +15,13 @@ const props = withDefaults(
   },
 )
 
+defineEmits(['selected'])
+
 const route = useRoute()
 
 const routerLink = computed(() => {
-  if (props.noteDesktop) return undefined
+  if (props.noteDesktop)
+    return undefined
 
   if (props.data.type === 'folder') {
     /**
@@ -31,37 +32,38 @@ const routerLink = computed(() => {
      */
     const isHome = route.path === '/home'
     if (isHome) {
-      return '/f/' + props.data.uuid
-    } else {
-      return route.path + '/' + props.data.uuid
+      return `/f/${props.data.uuid}`
+    }
+    else {
+      return `${route.path}/${props.data.uuid}`
     }
   }
-  return '/n/' + props.data.uuid
+  return `/n/${props.data.uuid}`
 })
 </script>
 
 <template>
-  <ion-item
+  <IonItem
     v-if="data"
-    :routerLink="routerLink"
+    :router-link="routerLink"
     :detail="false"
     class="list-item"
     @click="$emit('selected', $props.data.uuid)"
   >
     <template v-if="data.type === 'folder'">
-      <ion-icon :icon="folderOutline" class="mr-3" />
-      <ion-label class="ion-text-wrap">
+      <IonIcon :icon="folderOutline" class="mr-3" />
+      <IonLabel class="ion-text-wrap">
         <h2>
           {{ data.title }}
           <span class="date">
-            <ion-note>{{ data.noteCount }}</ion-note>
+            <IonNote>{{ data.noteCount }}</IonNote>
           </span>
         </h2>
-      </ion-label>
-      <ion-icon aria-hidden="true" :icon="chevronForward" size="small" />
+      </IonLabel>
+      <IonIcon aria-hidden="true" :icon="chevronForward" size="small" />
     </template>
     <template v-else>
-      <ion-label class="ion-text-wrap">
+      <IonLabel class="ion-text-wrap">
         <h2>
           {{ data.title }}
           <span class="date">
@@ -69,9 +71,9 @@ const routerLink = computed(() => {
             <!-- <ion-icon aria-hidden="true" :icon="chevronForward" size="small" /> -->
           </span>
         </h2>
-      </ion-label>
+      </IonLabel>
     </template>
-  </ion-item>
+  </IonItem>
 </template>
 
 <style lang="scss" scoped>

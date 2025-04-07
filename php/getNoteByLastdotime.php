@@ -51,7 +51,7 @@ if ($lastdotime < $minTimestamp || $lastdotime > $maxTimestamp) {
 $lastdotime = intval($lastdotime);
 
 // 查询大于等于指定lastdotime的信息列表
-$sql = "SELECT id, title, classid, newstime, titlepic, smalltext, lastdotime, version, uuid, puuid, type, isdeleted
+$sql = "SELECT id, title, ftitle, classid, newstime, titlepic, newstext, lastdotime, version, uuid, puuid, type, isdeleted
         FROM phome_ecms_note
         WHERE lastdotime > $lastdotime AND userid = {$user['userid']}
         ORDER BY lastdotime ASC";

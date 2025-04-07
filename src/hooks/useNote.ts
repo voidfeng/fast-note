@@ -1,10 +1,12 @@
-import { onUnmounted, ref } from 'vue'
-import { Note, useDexie } from './useDexie'
+import type { Note } from './useDexie'
 import { nanoid } from 'nanoid'
+import { onUnmounted, ref } from 'vue'
+import { useDexie } from './useDexie'
 
 type UpdateFn = (item: Note) => void
 
 const notes = ref<Note[]>([])
+let initializing = false
 let isInitialized = false
 const onNoteUpdateArr: UpdateFn[] = []
 
@@ -18,13 +20,15 @@ export function useNote() {
   const { db } = useDexie()
   const privateNoteUpdateArr: UpdateFn[] = []
   const time = Math.floor(Date.now() / 1000)
-  if (!isInitialized) {
+  if (!isInitialized && !initializing) {
+    initializing = true
     fetchNotes().then(() => {
       if (notes.value.length === 0) {
         const id1 = {
           id: 1,
           uuid: nanoid(12),
           title: '备忘录',
+          ftitle: 'default-folder',
           newstime: time,
           newstext: '',
           type: 'folder',
@@ -37,9 +41,11 @@ export function useNote() {
             notifyNoteUpdate(id1)
           })
         })
-      } else {
+      }
+      else {
         isInitialized = true
       }
+      initializing = false
     })
   }
 
@@ -73,6 +79,7 @@ export function useNote() {
   }
 
   async function deleteNote(uuid: string) {
+    console.log('deleteNote', uuid)
     await db.value.notes.where('uuid').equals(uuid).delete()
     fetchNotes()
   }
@@ -82,7 +89,7 @@ export function useNote() {
     fetchNotes()
   }
 
-  async function getNotesByUuid(puuid: string) {
+  async function getNotesByPUuid(puuid: string) {
     const r = await db.value.notes.where('puuid').equals(puuid).toArray()
     return r
   }
@@ -132,7 +139,7 @@ export function useNote() {
     getNote,
     deleteNote,
     updateNote,
-    getNotesByUuid,
+    getNotesByPUuid,
     getNoteCountByUuid,
     getNotesByLastdotime,
     onUpdateNote,
