@@ -112,11 +112,9 @@ onUnmounted(() => {
     </IonHeader>
 
     <IonContent :fullscreen="true">
-      <template #fixed>
-        <IonRefresher @ion-refresh="refresh($event)">
-          <IonRefresherContent />
-        </IonRefresher>
-      </template>
+      <IonRefresher slot="fixed" @ion-refresh="refresh($event)">
+        <IonRefresherContent />
+      </IonRefresher>
 
       <IonHeader collapse="condense">
         <IonToolbar>
@@ -140,21 +138,17 @@ onUnmounted(() => {
     </IonContent>
     <IonFooter>
       <IonToolbar>
-        <template #start>
-          <IonButtons>
-            <IonButton id="add-folder">
-              <IonIcon :icon="addOutline" />
-            </IonButton>
-          </IonButtons>
-        </template>
+        <IonButtons slot="start">
+          <IonButton id="add-folder">
+            <IonIcon :icon="addOutline" />
+          </IonButton>
+        </IonButtons>
         <IonTitle />
-        <template #end>
-          <IonButtons>
-            <IonButton router-link="/n/0" router-direction="forward">
-              <IonIcon :icon="createOutline" />
-            </IonButton>
-          </IonButtons>
-        </template>
+        <IonButtons slot="end">
+          <IonButton router-link="/n/0" router-direction="forward">
+            <IonIcon :icon="createOutline" />
+          </IonButton>
+        </IonButtons>
       </IonToolbar>
     </IonFooter>
     <IonAlert
