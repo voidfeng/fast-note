@@ -14,6 +14,10 @@ export function useSync() {
     const localNotes = await getNotesByLastdotime(lastdotime.value)
     // 获取云端变更数据
     const cloudNotes = await getCloudNodesByLastdotime(lastdotime.value)
+    // newstext 转义
+    cloudNotes.d.forEach((note: Note) => {
+      note.newstext = note.newstext.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    })
 
     // 合并 本地的备忘录 和 云端的备忘录: 移除本地
     const localDefaultFoler = localNotes.find(note => note.ftitle === 'default-folder')
