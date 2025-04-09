@@ -82,8 +82,13 @@ export function useSync() {
 
       // 处理未删除的笔记（原有逻辑）
       if (!cloudNote) {
-        // 本地存在但云端不存在 - 上传到云端
-        operations.push({ note, action: 'upload' })
+        // 本地存在但云端为变更 - 更新或新增到云端
+        if (note.id) {
+          operations.push({ note, action: 'update' })
+        }
+        else {
+          operations.push({ note, action: 'upload' })
+        }
       }
       else {
         // 本地和云端都存在 - 比较版本号

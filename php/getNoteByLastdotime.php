@@ -1,5 +1,6 @@
 <?php
 require("../../e/member/class/user.php");
+require("../../e/class/qinfofun.php");
 
 // 设置响应头为 JSON 格式
 header('Content-Type: application/json; charset=utf-8');
@@ -75,7 +76,11 @@ try {
                 if (in_array($key, $numeric_fields) && is_numeric($value)) {
                     $clean_row[$key] = (int)$value; // 或者用 (float)$value 对于小数
                 } else {
-                    $clean_row[$key] = $value;
+                    if ($key == 'newstext') {
+                        $clean_row[$key] = DoReqValue('9','newstext',stripSlashes($value));
+                    } else {
+                        $clean_row[$key] = $value;
+                    }
                 }
             }
         }

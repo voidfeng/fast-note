@@ -135,6 +135,6 @@ export function updateCloudNote(note: Note) {
   return request({
     url: `/e/DoInfo/ecms.php`,
     method: 'post',
-    data: note,
+    data: formData,
   })
 }

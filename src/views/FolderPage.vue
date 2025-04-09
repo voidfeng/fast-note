@@ -35,6 +35,8 @@ const props = withDefaults(
   },
 )
 
+defineEmits(['selected'])
+
 const route = useRoute()
 const { addNote, getNote, getNotesByPUuid, getNoteCountByUuid } = useNote()
 
