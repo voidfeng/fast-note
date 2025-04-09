@@ -157,11 +157,9 @@ onUnmounted(() => {
   <IonPage>
     <IonHeader v-if="!noteDesktop" :translucent="true">
       <IonToolbar>
-        <template #start>
-          <IonButtons>
-            <IonBackButton :text="isTopFolder ? '备忘录' : '返回'" :default-href="defaultHref" />
-          </IonButtons>
-        </template>
+        <IonButtons slot="start">
+          <IonBackButton :text="isTopFolder ? '备忘录' : '返回'" :default-href="defaultHref" />
+        </IonButtons>
       </IonToolbar>
     </IonHeader>
 
@@ -190,24 +188,20 @@ onUnmounted(() => {
     </IonContent>
     <IonFooter v-if="!noteDesktop">
       <IonToolbar>
-        <template #start>
-          <IonButtons>
-            <IonButton id="add-folder2">
-              <IonIcon :icon="addOutline" />
-            </IonButton>
-          </IonButtons>
-        </template>
+        <IonButtons slot="start">
+          <IonButton id="add-folder2">
+            <IonIcon :icon="addOutline" />
+          </IonButton>
+        </IonButtons>
         <IonTitle>
           {{ folders.length > 0 ? `${folders.length}个文件夹 ·` : '' }}
           {{ notes.length > 0 ? `${notes.length}个备忘录` : '无备忘录' }}
         </IonTitle>
-        <template #end>
-          <IonButtons>
-            <IonButton :router-link="`/n/0?puuid=${folderId}`" router-direction="forward">
-              <IonIcon :icon="createOutline" />
-            </IonButton>
-          </IonButtons>
-        </template>
+        <IonButtons slot="end">
+          <IonButton :router-link="`/n/0?puuid=${folderId}`" router-direction="forward">
+            <IonIcon :icon="createOutline" />
+          </IonButton>
+        </IonButtons>
       </IonToolbar>
     </IonFooter>
     <IonAlert

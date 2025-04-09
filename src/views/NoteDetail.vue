@@ -5,7 +5,7 @@ import { useNote } from '@/hooks/useNote'
 import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
 import { ellipsisHorizontalCircleOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import { computed, onMounted, ref, toRaw, version, watch } from 'vue'
+import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const props = withDefaults(
@@ -105,18 +105,14 @@ onMounted(async () => {
   <IonPage>
     <IonHeader :translucent="true">
       <IonToolbar>
-        <template #start>
-          <IonButtons>
-            <IonBackButton :text="getBackButtonText()" default-href="/" />
-          </IonButtons>
-        </template>
-        <template #end>
-          <IonButtons>
-            <IonButton id="more-trigger">
-              <IonIcon :icon="ellipsisHorizontalCircleOutline" />
-            </IonButton>
-          </IonButtons>
-        </template>
+        <IonButtons slot="start">
+          <IonBackButton :text="getBackButtonText()" default-href="/" />
+        </IonButtons>
+        <IonButtons slot="end">
+          <IonButton id="more-trigger">
+            <IonIcon :icon="ellipsisHorizontalCircleOutline" />
+          </IonButton>
+        </IonButtons>
       </IonToolbar>
     </IonHeader>
 
