@@ -22,6 +22,7 @@ const { getFirstNote, addNote, getNote, updateNote, deleteNote } = useNote()
 
 const editorRef = ref()
 const data = ref()
+let newNoteUuid = '0'
 
 const noteUuid = computed(() => route.params.uuid as string)
 
@@ -34,7 +35,6 @@ function getBackButtonText() {
 watch(
   () => props.currentDetail,
   () => {
-    console.log('更新了id', props.currentDetail)
     init(props.currentDetail)
   },
   { immediate: true },
@@ -53,24 +53,28 @@ async function onBlur() {
   const content = editorRef.value?.getContent()
   const time = Math.floor(Date.now() / 1000)
   // 新增
-  if (noteUuid.value === '0' && content) {
+  if ((noteUuid.value === '0' && newNoteUuid === '0') && content) {
     const firstNote = await getFirstNote()
-    const id = await addNote({
+    const uuid = nanoid(12)
+    const newNote = {
       title,
       newstext: content,
       newstime: time,
       lastdotime: time,
       type: 'note',
       puuid: (route.query.puuid as string) || firstNote?.uuid,
-      uuid: nanoid(12),
+      uuid,
       version: 1,
-    })
+    }
+    const id = await addNote(newNote)
     window.history.replaceState(null, '', `/n/${id}`)
+    newNoteUuid = uuid
+    data.value = newNote
   }
   // 编辑
   else if (content) {
     updateNote(
-      noteUuid.value,
+      noteUuid.value || newNoteUuid,
       Object.assign(toRaw(data.value), {
         title,
         newstext: content,
@@ -89,7 +93,6 @@ async function onBlur() {
 async function init(uuid: string) {
   data.value = await getNote(uuid)
   if (data.value) {
-    console.log('data', uuid, data.value.newstext)
     editorRef.value?.setContent(data.value.newstext)
   }
 }
