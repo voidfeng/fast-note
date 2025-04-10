@@ -9,7 +9,7 @@ export interface FileUploadOptions {
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     fileUpload: {
-      setFileUpload: (attributes: { url?: string; id?: number; type?: string }) => ReturnType
+      setFileUpload: (attributes: { url?: string, id?: number, type?: string }) => ReturnType
     }
   }
 }
@@ -17,8 +17,8 @@ declare module '@tiptap/core' {
 export const FileUpload = Node.create({
   name: 'fileUpload',
 
-  group: 'inline',  // 将 block 改为 inline
-  inline: true,     // 添加 inline: true 属性
+  group: 'inline', // 将 block 改为 inline
+  inline: true, // 添加 inline: true 属性
 
   atom: true,
 
@@ -59,8 +59,7 @@ export const FileUpload = Node.create({
         },
     }
   },
-
   addNodeView() {
-    return VueNodeViewRenderer(FileUploadComponent)
+    return VueNodeViewRenderer(FileUploadComponent as any)
   },
 })

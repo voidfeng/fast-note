@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { useNote } from '@/hooks/useNote';
-import { useFiles } from '@/hooks/useFiles';
-import { useIonRouter, IonPopover, IonList, IonIcon, IonLabel, IonItem } from '@ionic/vue';
+import { useFiles } from '@/hooks/useFiles'
+import { useNote } from '@/hooks/useNote'
+import { IonIcon, IonItem, IonLabel, IonList, IonPopover, useIonRouter } from '@ionic/vue'
 import { trashOutline } from 'ionicons/icons'
-import { useRoute } from 'vue-router';
+import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const router = useIonRouter()
@@ -13,22 +13,24 @@ const { deleteFileByNoteId } = useFiles()
 function onDelete() {
   console.log('delete', route.params.id)
   const id = route.params.id
-  deleteNote(parseInt(id as string)).then(() => {
+  deleteNote(id as string).then(() => {
     router.back()
   })
-  deleteFileByNoteId(parseInt(id as string))
+  deleteFileByNoteId(Number.parseInt(id as string))
 }
 </script>
 
 <template>
-  <ion-popover :dismiss-on-select="true" trigger="more-trigger" trigger-action="click" class="note-more">
-    <ion-list lines="full">
-      <ion-item @click="onDelete">
-        <ion-label class="danger">删除</ion-label>
-        <ion-icon :icon="trashOutline" color="danger" size="small"></ion-icon>
-      </ion-item>
-    </ion-list>
-  </ion-popover>
+  <IonPopover :dismiss-on-select="true" trigger="more-trigger" trigger-action="click" class="note-more">
+    <IonList lines="full">
+      <IonItem @click="onDelete">
+        <IonLabel class="danger">
+          删除
+        </IonLabel>
+        <IonIcon :icon="trashOutline" color="danger" size="small" />
+      </IonItem>
+    </IonList>
+  </IonPopover>
 </template>
 
 <style lang="scss">
