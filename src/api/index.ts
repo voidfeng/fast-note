@@ -3,6 +3,7 @@ import type {
   /* AxiosProgressEvent, */ AxiosRequestConfig,
   AxiosResponse /* CancelToken */,
 } from 'axios'
+import { useUserInfo } from '@/hooks/useUserInfo'
 import { alertController } from '@ionic/vue'
 import { apiService } from './apiService'
 
@@ -30,6 +31,14 @@ export function request<T = any>(config: AxiosRequestConfig): Promise<ApiRespons
           }
           throw new Error(message)
         }
+        else if (typeof d.data === 'string') {
+          const error = checkHtmlLoginError(d.data)
+          if (error) {
+            const { userLogout } = useUserInfo()
+            userLogout()
+            throw new Error(error)
+          }
+        }
         resolve(d.data)
       })
       .catch((e: any) => {
@@ -46,6 +55,21 @@ export function request<T = any>(config: AxiosRequestConfig): Promise<ApiRespons
         reject(new Error(`未知错误：${e.message}`))
       })
   })
+}
+
+// 检测HTML响应中的错误信息
+function checkHtmlLoginError(html: string): string | null {
+  enum LoginError {
+    isLogout = '您还没登录!',
+    isLoginOtherPlace = '同一帐号同一时刻只能一人在线!',
+  }
+  if (html.includes(LoginError.isLogout)) {
+    return LoginError.isLogout
+  }
+  else if (html.includes(LoginError.isLoginOtherPlace)) {
+    return LoginError.isLoginOtherPlace
+  }
+  return null
 }
 
 export function login(username: string, password: string) {

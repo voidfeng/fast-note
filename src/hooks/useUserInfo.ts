@@ -1,4 +1,4 @@
-import { ref } from "vue"
+import { ref } from 'vue'
 
 export const cookieKey = 'xanimml'
 
@@ -7,17 +7,30 @@ export interface UserInfo {
   userid: string
 }
 
-export function useUserInfo() {
-  const userInfo = ref<UserInfo>({
-    username: '',
-    userid: '',
-  })
+const userInfo = ref<UserInfo>({
+  username: '',
+  userid: '',
+})
 
+refreshUserInfoFromCookie()
+
+function refreshUserInfoFromCookie() {
   document.cookie.split('; ').forEach((row) => {
     userInfo.value[row.split('=')[0].replace(cookieKey, '') as keyof UserInfo] = row.split('=')[1]
   })
+}
+
+export function useUserInfo() {
+  function userLogout() {
+    userInfo.value = {
+      username: '',
+      userid: '',
+    }
+  }
 
   return {
     userInfo,
+    userLogout,
+    refreshUserInfoFromCookie,
   }
 }

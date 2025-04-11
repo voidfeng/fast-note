@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { login } from '@/api'
+import { useUserInfo } from '@/hooks/useUserInfo'
 import {
   alertController,
   IonBackButton,
@@ -18,6 +19,7 @@ import { inject, ref } from 'vue'
 const noteDesktop = inject('noteDesktop')
 
 const router = useIonRouter()
+const { refreshUserInfoFromCookie } = useUserInfo()
 
 const username = ref('')
 const password = ref('')
@@ -28,6 +30,7 @@ async function onLogin() {
     return
   }
   await login(username.value, password.value)
+  refreshUserInfoFromCookie()
   router.back()
 }
 </script>

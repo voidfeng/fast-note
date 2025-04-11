@@ -1,20 +1,19 @@
 <script setup lang="ts">
-import { IonButton } from '@ionic/vue'
-import { useUserInfo } from '@/hooks/useUserInfo'
 import { useSync } from '@/hooks/useSync'
+import { useUserInfo } from '@/hooks/useUserInfo'
+import { IonButton } from '@ionic/vue'
 
 const { sync } = useSync()
 
 const { userInfo } = useUserInfo()
 
 function onSync() {
-  console.log('手动同步')
   sync()
 }
 </script>
 
 <template>
-  <ion-button
+  <IonButton
     v-if="!userInfo.userid"
     router-link="/login"
     router-direction="forward"
@@ -23,6 +22,8 @@ function onSync() {
     class="ml4 mb4"
   >
     开启同步
-  </ion-button>
-  <ion-button v-else size="small" fill="outline" class="ml4 mb4" @click="onSync"> 同步 </ion-button>
+  </IonButton>
+  <IonButton v-else size="small" fill="outline" class="ml4 mb4" @click="onSync">
+    同步
+  </IonButton>
 </template>
