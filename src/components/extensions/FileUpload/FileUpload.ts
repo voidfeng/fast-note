@@ -1,9 +1,15 @@
+import type { NodeViewRendererProps } from '@tiptap/vue-3'
 import { mergeAttributes, Node } from '@tiptap/core'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
 import FileUploadComponent from './FileUploadComponent.vue'
 
 export interface FileUploadOptions {
   HTMLAttributes: Record<string, any>
+  loadImage?: (url: string) => Promise<{
+    url: string
+    isLoading: boolean
+    error: Error | null
+  }>
 }
 
 declare module '@tiptap/core' {
@@ -14,13 +20,26 @@ declare module '@tiptap/core' {
   }
 }
 
-export const FileUpload = Node.create({
+export const FileUpload = Node.create<FileUploadOptions>({
   name: 'fileUpload',
 
-  group: 'inline', // 将 block 改为 inline
-  inline: true, // 添加 inline: true 属性
+  group: 'inline',
+  inline: true,
 
   atom: true,
+
+  addOptions() {
+    return {
+      HTMLAttributes: {},
+      loadImage: async (url: string) => {
+        return {
+          url,
+          isLoading: false,
+          error: null,
+        }
+      },
+    }
+  },
 
   addAttributes() {
     return {
@@ -59,6 +78,7 @@ export const FileUpload = Node.create({
         },
     }
   },
+
   addNodeView() {
     return VueNodeViewRenderer(FileUploadComponent as any)
   },

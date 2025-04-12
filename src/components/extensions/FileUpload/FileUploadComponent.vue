@@ -1,26 +1,13 @@
-<template>
-  <node-view-wrapper
-    :class="['file-upload-wrapper', { 'is-selected': selected }]"
-    :style="wrapperStyle"
-  >
-    <div class="file-upload-content">
-      <div v-if="isImage" class="image-preview">
-        <div v-if="!imageLoaded" class="loading-wrapper">
-          <div class="loading-spinner"></div>
-        </div>
-        <img v-if="imageLoaded" :src="fileTempUrl" :alt="nodeProps.id" ref="imageRef" />
-      </div>
-      <div v-else class="file-preview">
-        <img :src="fileTypeIcon" :alt="fileType" />
-      </div>
-    </div>
-  </node-view-wrapper>
-</template>
-
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
 import { NodeViewWrapper } from '@tiptap/vue-3'
-import { useFiles } from '@/hooks/useFiles'
+import { computed, onMounted, ref, watch } from 'vue'
+
+interface Extension {
+  name: string
+  options: {
+    loadImage?: (url: string) => Promise<string>
+  }
+}
 
 const props = defineProps({
   node: {
@@ -31,51 +18,64 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  getPos: {
+    type: Function,
+    required: true,
+  },
+  editor: {
+    type: Object,
+    required: true,
+  },
 })
-
-const { getFile } = useFiles()
-
-const fileData = ref()
-const fileTempUrl = ref()
 
 const nodeProps = computed(() => ({
   url: props.node.attrs.url,
-  id: props.node.attrs.id,
-  type: props.node.attrs.type,
 }))
 
+// 获取 fileUpload 扩展实例
+const fileUploadExtension = computed<Extension | undefined>(() => {
+  // 使用 as 类型断言
+  return (props.editor?.extensionManager?.extensions as Extension[] | undefined)?.find(
+    ext => ext.name === 'fileUpload',
+  )
+})
+
 const isImage = computed(() => {
-  if (fileData.value) {
-    return fileData.value.file.type.match(/(jpg|jpeg|png|gif|webp)$/i)
-  }
-  return false
+  const url = nodeProps.value.url
+  if (!url)
+    return false
+  const extension = url.split('.').pop()?.toLowerCase()
+  return extension?.match(/(jpg|jpeg|png|gif|webp)$/i)
 })
 
 const fileType = computed(() => {
-  if (isImage.value) return 'picture'
+  if (isImage.value)
+    return 'picture'
 
   const url = nodeProps.value.url
-  const extension = url?.split('.')?.pop()?.toLowerCase()
+  if (!url)
+    return 'unknown'
+  const extension = url.split('.').pop()?.toLowerCase()
 
   const typeMap: Record<string, string> = {
-    xlsx: 'excel',
-    xls: 'excel',
-    ai: 'ai',
-    mp3: 'audio',
-    wav: 'audio',
-    doc: 'doc',
-    docx: 'doc',
-    pdf: 'pdf',
-    ppt: 'ppt',
-    pptx: 'ppt',
-    psd: 'psd',
-    rtf: 'rtf',
-    txt: 'txt',
-    mp4: 'video',
-    avi: 'video',
-    mov: 'video',
-    zip: 'zip',
-    rar: 'zip',
+    'xlsx': 'excel',
+    'xls': 'excel',
+    'ai': 'ai',
+    'mp3': 'audio',
+    'wav': 'audio',
+    'doc': 'doc',
+    'docx': 'doc',
+    'pdf': 'pdf',
+    'ppt': 'ppt',
+    'pptx': 'ppt',
+    'psd': 'psd',
+    'rtf': 'rtf',
+    'txt': 'txt',
+    'mp4': 'video',
+    'avi': 'video',
+    'mov': 'video',
+    'zip': 'zip',
+    'rar': 'zip',
     '7z': 'zip',
   }
 
@@ -87,43 +87,79 @@ const fileTypeIcon = computed(() => {
 })
 
 const imageRef = ref<HTMLImageElement | null>(null)
-const imageLoaded = ref(false)
 const containerSize = ref({ width: '86px', height: '86px' })
+const imageUrl = ref('')
+const isLoading = ref(false)
+const hasError = ref(false)
 
-const preloadImage = () => {
-  const img = new Image()
-  img.onload = () => {
-    const aspectRatio = img.naturalWidth / img.naturalHeight
+// 图片加载完成后计算尺寸
+function handleImageLoad(event: Event) {
+  const img = event.target as HTMLImageElement
+  const aspectRatio = img.naturalWidth / img.naturalHeight
 
-    if (aspectRatio >= 1) {
-      // 宽图，以宽度200px为基准
-      containerSize.value = {
-        width: '200px',
-        height: `${200 / aspectRatio}px`,
-      }
-    } else {
-      // 高图，以高度200px为基准
-      containerSize.value = {
-        width: `${200 * aspectRatio}px`,
-        height: '200px',
-      }
+  if (aspectRatio >= 1) {
+    containerSize.value = {
+      width: '200px',
+      height: `${200 / aspectRatio}px`,
     }
-
-    imageLoaded.value = true
   }
-  img.src = nodeProps.value.url
+  else {
+    containerSize.value = {
+      width: `${200 * aspectRatio}px`,
+      height: '200px',
+    }
+  }
 }
 
-// 添加 watch 来监听 url 变化并触发预加载
+// 使用扩展的 loadImage 方法加载图片
+async function loadImageWithExtension(url: string) {
+  if (!url)
+    return
+
+  // 设置加载状态
+  isLoading.value = true
+  hasError.value = false
+  imageUrl.value = url // 默认使用原始URL
+
+  try {
+    // 获取 loadImage 方法
+    const loadImage = fileUploadExtension.value?.options?.loadImage
+
+    if (!loadImage) {
+      // 如果没有 loadImage 方法，直接使用原始 URL
+      isLoading.value = false
+      return
+    }
+
+    // 使用扩展的 loadImage 方法
+    try {
+      const loadedUrl = await loadImage(url)
+      if (loadedUrl) {
+        imageUrl.value = loadedUrl
+      }
+    }
+    catch (extensionError) {
+      // 如果扩展方法抛出错误，直接使用原始 URL
+      console.warn('扩展加载图片失败，使用原始URL:', extensionError)
+    }
+  }
+  catch (error) {
+    console.warn('图片加载失败，使用原始URL:', error)
+    hasError.value = true
+  }
+  finally {
+    isLoading.value = false
+  }
+}
+
+// 监听URL变化，加载图片
 watch(
   () => nodeProps.value.url,
   (newUrl) => {
     if (newUrl && isImage.value) {
-      imageLoaded.value = false
-      preloadImage()
+      loadImageWithExtension(newUrl)
     }
   },
-  { immediate: true },
 )
 
 const wrapperStyle = computed(() => {
@@ -136,24 +172,42 @@ const wrapperStyle = computed(() => {
   return containerSize.value
 })
 
+// 组件挂载时加载图片
 onMounted(() => {
-  console.log(nodeProps.value)
-  /**
-   * 附件同步逻辑：
-   * 1. 本地上传: 只有 id 没有 url
-   * 2. 云端返回: 富文本只有 url 没有 id
-   *   - 如果是图片，下载后保存到indexeddb
-   * 富文本同步逻辑：保存时，替换id为url
-   */
-  if (nodeProps.value.id) {
-    getFile(nodeProps.value.id).then((file) => {
-      fileData.value = file
-      fileTempUrl.value = URL.createObjectURL(file!.file!)
-      imageLoaded.value = true
-    })
+  if (isImage.value && nodeProps.value.url) {
+    loadImageWithExtension(nodeProps.value.url)
   }
 })
 </script>
+
+<template>
+  <NodeViewWrapper
+    class="file-upload-wrapper" :class="[{ 'is-selected': selected }]"
+    :style="wrapperStyle"
+  >
+    <div class="file-upload-content">
+      <div v-if="isImage" class="image-preview">
+        <div v-if="isLoading" class="loading-wrapper">
+          <div class="loading-spinner" />
+        </div>
+        <div v-else-if="hasError" class="error-wrapper">
+          <span class="error-text">图片加载失败</span>
+        </div>
+        <img
+          v-else
+          ref="imageRef"
+          :src="imageUrl"
+          :alt="fileType"
+          @load="handleImageLoad"
+          @error="() => hasError = true"
+        >
+      </div>
+      <div v-else class="file-preview">
+        <img :src="fileTypeIcon" :alt="fileType">
+      </div>
+    </div>
+  </NodeViewWrapper>
+</template>
 
 <style scoped>
 .file-upload-wrapper {
@@ -167,7 +221,7 @@ onMounted(() => {
   border: 1px solid #ddd;
   border-radius: 4px;
 }
-.file-upload-content .file-upload-wrapper.is-selected  {
+.file-upload-content .file-upload-wrapper.is-selected {
   border-color: #2196f3;
   box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
 }
@@ -194,7 +248,8 @@ onMounted(() => {
   object-fit: contain;
 }
 
-.loading-wrapper {
+.loading-wrapper,
+.error-wrapper {
   position: absolute;
   top: 0;
   left: 0;
@@ -214,6 +269,11 @@ onMounted(() => {
   border-top-color: #2196f3;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+.error-text {
+  color: #f44336;
+  font-size: 14px;
 }
 
 @keyframes spin {

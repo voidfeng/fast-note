@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { login } from '@/api'
+import { useSync } from '@/hooks/useSync'
 import { useUserInfo } from '@/hooks/useUserInfo'
 import {
   alertController,
@@ -12,6 +13,7 @@ import {
   IonList,
   IonPage,
   IonToolbar,
+  loadingController,
   useIonRouter,
 } from '@ionic/vue'
 import { inject, ref } from 'vue'
@@ -19,6 +21,8 @@ import { inject, ref } from 'vue'
 const noteDesktop = inject('noteDesktop')
 
 const router = useIonRouter()
+const { sync } = useSync()
+
 const { refreshUserInfoFromCookie } = useUserInfo()
 
 const username = ref('')
@@ -29,9 +33,25 @@ async function onLogin() {
     alert.present()
     return
   }
-  await login(username.value, password.value)
-  refreshUserInfoFromCookie()
-  router.back()
+  const loginLoading = await loadingController.create({ message: '正在登录...' })
+  loginLoading.present()
+  try {
+    await login(username.value, password.value)
+    refreshUserInfoFromCookie()
+    router.back()
+  }
+  finally {
+    loginLoading.dismiss()
+  }
+
+  const syncLoading = await loadingController.create({ message: '正在同步...' })
+  syncLoading.present()
+  try {
+    await sync()
+  }
+  finally {
+    syncLoading.dismiss()
+  }
 }
 </script>
 

@@ -77,7 +77,9 @@ try {
                     $clean_row[$key] = (int)$value; // 或者用 (float)$value 对于小数
                 } else {
                     if ($key == 'newstext') {
-                        $clean_row[$key] = DoReqValue('9','newstext',stripSlashes($value));
+                        // 先处理帝国CMS的特殊值，然后添加反斜杠
+                        $newstext = DoReqValue('9','newstext',stripSlashes($value));
+                        $clean_row[$key] = addslashes($newstext);
                     } else {
                         $clean_row[$key] = $value;
                     }

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useSync } from '@/hooks/useSync'
 import { useUserInfo } from '@/hooks/useUserInfo'
-import { IonButton } from '@ionic/vue'
+import { IonButton, IonSpinner } from '@ionic/vue'
 
-const { sync } = useSync()
+const { sync, syncing } = useSync()
 
 const { userInfo } = useUserInfo()
 
@@ -24,6 +24,7 @@ function onSync() {
     开启同步
   </IonButton>
   <IonButton v-else size="small" fill="outline" class="ml4 mb4" @click="onSync">
-    同步
+    <IonSpinner v-if="syncing" slot="start" class="w-4 h-4 mr-1" />
+    {{ syncing ? '同步中...' : '同步' }}
   </IonButton>
 </template>
