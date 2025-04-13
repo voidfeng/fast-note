@@ -2,7 +2,6 @@
 import { useFiles } from '@/hooks/useFiles'
 import { getFileHash } from '@/utils'
 import { Color } from '@tiptap/extension-color'
-import Image from '@tiptap/extension-image'
 import ListItem from '@tiptap/extension-list-item'
 import TaskItem from '@tiptap/extension-task-item'
 import TaskList from '@tiptap/extension-task-list'
@@ -25,45 +24,6 @@ const { addFile, getFileByHash } = useFiles()
 
 const editor = ref<EditorInstance>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
-
-// 图片加载状态管理
-const imageLoadingStates = new Map<string, { isLoading: boolean, error: Error | null, url: string | null }>()
-
-// 用于给 FileUpload 扩展使用的函数
-async function _loadImage(url: string) {
-  if (!imageLoadingStates.has(url)) {
-    imageLoadingStates.set(url, { isLoading: true, error: null, url: null })
-  }
-
-  const state = imageLoadingStates.get(url)!
-
-  try {
-    const response = await fetch(url)
-    if (!response.ok) {
-      throw new Error(`Failed to load image: ${response.status}`)
-    }
-
-    const blob = await response.blob()
-    state.url = URL.createObjectURL(blob)
-  }
-  catch (err) {
-    state.error = err as Error
-    state.url = url // 如果获取失败，使用原始 URL
-  }
-  finally {
-    state.isLoading = false
-  }
-
-  return state
-}
-
-function cleanupImage(url: string) {
-  const state = imageLoadingStates.get(url)
-  if (state?.url && state.url.startsWith('blob:')) {
-    URL.revokeObjectURL(state.url)
-  }
-  imageLoadingStates.delete(url)
-}
 
 function getTitle(): string {
   const json = editor.value?.getJSON()
@@ -124,9 +84,13 @@ onMounted(() => {
          * @param url 文件url
          */
         async loadImage(url: string) {
-          // return 'https://next.0122.vip/eadmin/admin/adminstyle/1/images/logo.gif'
-          console.warn('通过从配置获取文件url', url)
-          throw new Error('没有图片')
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              resolve('https://next.0122.vip/eadmin/admin/adminstyle/1/images/logo.gif')
+              console.warn('通过从配置获取文件url', url)
+              throw new Error('没有图片')
+            }, 1000)
+          })
         },
       }),
       GlobalDragHandle.configure({
@@ -208,8 +172,6 @@ async function onSelectFile() {
 }
 
 onBeforeMount(() => {
-  // 清理所有图片的 blob URL
-  imageLoadingStates.forEach((_, url) => cleanupImage(url))
   editor.value?.destroy()
 })
 

@@ -1,15 +1,10 @@
-import type { NodeViewRendererProps } from '@tiptap/vue-3'
 import { mergeAttributes, Node } from '@tiptap/core'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
 import FileUploadComponent from './FileUploadComponent.vue'
 
 export interface FileUploadOptions {
   HTMLAttributes: Record<string, any>
-  loadImage?: (url: string) => Promise<{
-    url: string
-    isLoading: boolean
-    error: Error | null
-  }>
+  loadImage?: (url: string) => Promise<string>
 }
 
 declare module '@tiptap/core' {
@@ -31,13 +26,7 @@ export const FileUpload = Node.create<FileUploadOptions>({
   addOptions() {
     return {
       HTMLAttributes: {},
-      loadImage: async (url: string) => {
-        return {
-          url,
-          isLoading: false,
-          error: null,
-        }
-      },
+      loadImage: async (url: string) => url,
     }
   },
 

@@ -87,50 +87,73 @@ const fileTypeIcon = computed(() => {
 })
 
 const imageRef = ref<HTMLImageElement | null>(null)
-const containerSize = ref({ width: '86px', height: '86px' })
+const containerSize = ref({ width: '88px', height: '88px' })
 const imageUrl = ref('')
-const isLoading = ref(false)
+const isLoading = ref(true)
 const hasError = ref(false)
 
-// 图片加载完成后计算尺寸
+// 图片尺寸常量
+const DEFAULT_SIZE = 88
+const MAX_SIZE = 208
+
+/**
+ * 图片加载完成后计算尺寸：等比例缩放图片尺寸
+ * 1. 高度等比例缩放到DEFAULT_SIZE，检查宽度
+ * 2. 宽度等比例缩放到DEFAULT_SIZE，检查高度
+ * 3. 否则，宽度设置为DEFAULT_SIZE，高度等比例缩放
+ * @param event 事件对象
+ */
 function handleImageLoad(event: Event) {
   const img = event.target as HTMLImageElement
-  const aspectRatio = img.naturalWidth / img.naturalHeight
+  const naturalWidth = img.naturalWidth
+  const naturalHeight = img.naturalHeight
+  const aspectRatio = naturalWidth / naturalHeight
 
-  if (aspectRatio >= 1) {
-    containerSize.value = {
-      width: '200px',
-      height: `${200 / aspectRatio}px`,
-    }
+  // 1. 高度等比例缩放到DEFAULT_SIZE，检查宽度
+  let height = DEFAULT_SIZE
+  let width = height * aspectRatio
+  if (width > MAX_SIZE) {
+    // 如果宽度大于MAX_SIZE，则宽度等比例缩放到MAX_SIZE
+    width = MAX_SIZE
+    height = width / aspectRatio
   }
   else {
-    containerSize.value = {
-      width: `${200 * aspectRatio}px`,
-      height: '200px',
+    // 2. 宽度等比例缩放到DEFAULT_SIZE，检查高度
+    width = DEFAULT_SIZE
+    height = width / aspectRatio
+    if (height > MAX_SIZE) {
+      // 如果高度大于MAX_SIZE，则高度等比例缩放到MAX_SIZE
+      height = MAX_SIZE
+      width = height * aspectRatio
+    }
+    else {
+      // 3. 否则，宽度设置为DEFAULT_SIZE，高度等比例缩放
+      width = DEFAULT_SIZE
+      height = width / aspectRatio
     }
   }
+
+  containerSize.value = {
+    width: `${width}px`,
+    height: `${height}px`,
+  }
+}
+
+// 图片加载失败
+function handleImageError() {
+  hasError.value = true
 }
 
 // 使用扩展的 loadImage 方法加载图片
 async function loadImageWithExtension(url: string) {
-  if (!url)
-    return
-
   // 设置加载状态
   isLoading.value = true
   hasError.value = false
   imageUrl.value = url // 默认使用原始URL
 
-  try {
-    // 获取 loadImage 方法
-    const loadImage = fileUploadExtension.value?.options?.loadImage
+  const loadImage = fileUploadExtension.value?.options?.loadImage
 
-    if (!loadImage) {
-      // 如果没有 loadImage 方法，直接使用原始 URL
-      isLoading.value = false
-      return
-    }
-
+  if (loadImage) {
     // 使用扩展的 loadImage 方法
     try {
       const loadedUrl = await loadImage(url)
@@ -143,13 +166,7 @@ async function loadImageWithExtension(url: string) {
       console.warn('扩展加载图片失败，使用原始URL:', extensionError)
     }
   }
-  catch (error) {
-    console.warn('图片加载失败，使用原始URL:', error)
-    hasError.value = true
-  }
-  finally {
-    isLoading.value = false
-  }
+  isLoading.value = false
 }
 
 // 监听URL变化，加载图片
@@ -165,8 +182,8 @@ watch(
 const wrapperStyle = computed(() => {
   if (!isImage.value) {
     return {
-      width: '86px',
-      height: '86px',
+      width: '88px',
+      height: '88px',
     }
   }
   return containerSize.value
@@ -185,12 +202,12 @@ onMounted(() => {
     class="file-upload-wrapper" :class="[{ 'is-selected': selected }]"
     :style="wrapperStyle"
   >
-    <div class="file-upload-content">
+    <div class="file-upload-content w-full h-full">
       <div v-if="isImage" class="image-preview">
         <div v-if="isLoading" class="loading-wrapper">
           <div class="loading-spinner" />
         </div>
-        <div v-else-if="hasError" class="error-wrapper">
+        <div v-else-if="!isLoading && hasError" class="error-wrapper">
           <span class="error-text">图片加载失败</span>
         </div>
         <img
@@ -199,7 +216,7 @@ onMounted(() => {
           :src="imageUrl"
           :alt="fileType"
           @load="handleImageLoad"
-          @error="() => hasError = true"
+          @error="handleImageError"
         >
       </div>
       <div v-else class="file-preview">
@@ -214,11 +231,12 @@ onMounted(() => {
   padding: 0;
   padding: 4px;
   display: inline-block;
-  transition: all 0.2s ease;
+  /* transition: all 20s ease; */
   position: relative;
 }
 .file-upload-content {
-  border: 1px solid #ddd;
+  /* border: 1px solid #ddd; */
+  box-shadow: 0 0 0 1px #ddd;
   border-radius: 4px;
 }
 .file-upload-content .file-upload-wrapper.is-selected {
