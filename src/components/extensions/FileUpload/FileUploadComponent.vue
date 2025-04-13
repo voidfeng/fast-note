@@ -6,6 +6,7 @@ interface Extension {
   name: string
   options: {
     loadImage?: (url: string) => Promise<string>
+    onImageLoaded?: (url: string, width: number, height: number) => void
   }
 }
 
@@ -103,7 +104,7 @@ const MAX_SIZE = 208
  * 3. 否则，宽度设置为DEFAULT_SIZE，高度等比例缩放
  * @param event 事件对象
  */
-function handleImageLoad(event: Event) {
+function onImageLoad(event: Event) {
   const img = event.target as HTMLImageElement
   const naturalWidth = img.naturalWidth
   const naturalHeight = img.naturalHeight
@@ -137,10 +138,21 @@ function handleImageLoad(event: Event) {
     width: `${width}px`,
     height: `${height}px`,
   }
+
+  // 通知YYEditor中配置的onImageLoaded方法图片已加载完成
+  try {
+    const onImageLoaded = fileUploadExtension.value?.options?.onImageLoaded
+    if (onImageLoaded && imageUrl.value) {
+      onImageLoaded(imageUrl.value, naturalWidth, naturalHeight)
+    }
+  }
+  catch (error) {
+    console.warn('调用onImageLoaded方法失败:', error)
+  }
 }
 
 // 图片加载失败
-function handleImageError() {
+function onImageError() {
   hasError.value = true
 }
 
@@ -215,8 +227,8 @@ onMounted(() => {
           ref="imageRef"
           :src="imageUrl"
           :alt="fileType"
-          @load="handleImageLoad"
-          @error="handleImageError"
+          @load="onImageLoad"
+          @error="onImageError"
         >
       </div>
       <div v-else class="file-preview">

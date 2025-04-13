@@ -92,6 +92,16 @@ onMounted(() => {
             }, 1000)
           })
         },
+        /**
+         * 图片加载完成后的回调
+         * @param url 图片url
+         * @param width 图片原始宽度
+         * @param height 图片原始高度
+         */
+        onImageLoaded(url: string, width: number, height: number) {
+          console.warn('图片加载完成', url, width, height)
+          // 这里可以添加图片加载完成后的处理逻辑
+        },
       }),
       GlobalDragHandle.configure({
         dragHandleWidth: 20, // default

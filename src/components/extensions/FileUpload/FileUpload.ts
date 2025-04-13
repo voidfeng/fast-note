@@ -5,6 +5,7 @@ import FileUploadComponent from './FileUploadComponent.vue'
 export interface FileUploadOptions {
   HTMLAttributes: Record<string, any>
   loadImage?: (url: string) => Promise<string>
+  onImageLoaded?: (url: string, width: number, height: number) => void
 }
 
 declare module '@tiptap/core' {
@@ -26,7 +27,12 @@ export const FileUpload = Node.create<FileUploadOptions>({
   addOptions() {
     return {
       HTMLAttributes: {},
-      loadImage: async (url: string) => url,
+      loadImage: async (url: string) => {
+        return url
+      },
+      onImageLoaded: (_url: string, _width: number, _height: number) => {
+        // 默认实现是空的，由YYEditor提供具体实现
+      },
     }
   },
 
