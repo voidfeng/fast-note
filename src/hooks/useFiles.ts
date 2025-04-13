@@ -17,19 +17,23 @@ export function useFiles() {
   }
 
   function addFile(data: TypedFile) {
-    return db.value?.files.add(data)
+    return db.value?.file.add(data)
   }
 
-  function getFile(id: number) {
-    return db.value?.files.where('id').equals(id).first()
+  function getFile(id: string) {
+    return db.value?.file.where('id').equals(id).first()
   }
 
   function getFileByHash(hash: string) {
-    return db.value?.files.get(hash)
+    return db.value?.file.get(hash)
+  }
+
+  function getFileByUrl(url: string) {
+    return db.value?.file.where('url').equals(url).first()
   }
 
   function getFileByNoteId(noteId: number) {
-    return db.value?.files.where('ids').anyOf([noteId]).toArray()
+    return db.value?.file.where('ids').anyOf([noteId]).toArray()
   }
 
   async function deleteFileByNoteId(noteId: number) {
@@ -39,27 +43,32 @@ export function useFiles() {
       return
 
     for (const file of files) {
-      if (file.ids.length === 1 && file.ids[0] === noteId) {
+      if (file.ids && file.ids.length === 1 && file.ids[0] === noteId) {
         // 如果ids数组中只有这一个noteId，则删除整个文件记录
-        await db.value?.files.delete(file.id!)
+        if (file.hash) {
+          await db.value?.file.delete(file.hash)
+        }
       }
-      else {
+      else if (file.ids) {
         // 如果ids数组中还有其他id，则只移除这个noteId
         const updatedIds = file.ids.filter(id => id !== noteId)
-        await db.value?.files.update(file.id!, { ids: updatedIds })
+        if (file.hash) {
+          await db.value?.file.update(file.hash, { ids: updatedIds })
+        }
       }
     }
   }
 
-  // 需要添加deleteFile方法，因为在return中有引用
-  function deleteFile(id: number) {
-    return db.value?.files.delete(id)
+  // 使用hash作为主键删除文件
+  function deleteFile(hash: string) {
+    return db.value?.file.delete(hash)
   }
 
   return {
     addFile,
     getFile,
     getFileByHash,
+    getFileByUrl,
     getFileByNoteId,
     deleteFile,
     deleteFileByNoteId,

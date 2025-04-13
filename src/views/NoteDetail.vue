@@ -88,6 +88,8 @@ async function onBlur() {
   else {
     await deleteNote(noteUuid.value)
   }
+
+  // 检查附件引用情况
 }
 
 async function init(uuid: string) {

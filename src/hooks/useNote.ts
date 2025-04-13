@@ -52,11 +52,11 @@ export function useNote() {
   async function syncNote() {}
 
   function getFirstNote() {
-    return db.value.notes.orderBy('newstime').first()
+    return db.value.note.orderBy('newstime').first()
   }
 
   function fetchNotes() {
-    return db.value.notes
+    return db.value.note
       .orderBy('newstime') // 按 newstime 排序
       .toArray() // 将结果转换为数组
       .then((data: Note[]) => {
@@ -68,35 +68,34 @@ export function useNote() {
   }
 
   async function addNote(note: any) {
-    const r = await db.value.notes.add(note)
+    const r = await db.value.note.add(note)
     fetchNotes()
     return r
   }
 
   async function getNote(uuid: string) {
-    const r = await db.value.notes.where('uuid').equals(uuid).first()
+    const r = await db.value.note.where('uuid').equals(uuid).first()
     return r
   }
 
   async function deleteNote(uuid: string) {
-    console.log('deleteNote', uuid)
-    await db.value.notes.where('uuid').equals(uuid).delete()
+    await db.value.note.where('uuid').equals(uuid).delete()
     fetchNotes()
   }
 
   async function updateNote(uuid: string, note: any) {
-    await db.value.notes.put(note, uuid)
+    await db.value.note.put(note, uuid)
     fetchNotes()
   }
 
   async function getNotesByPUuid(puuid: string) {
-    const r = await db.value.notes.where('puuid').equals(puuid).toArray()
+    const r = await db.value.note.where('puuid').equals(puuid).toArray()
     return r
   }
 
   async function getNoteCountByUuid(puuid: string) {
     // 获取当前 puuid 下的所有分类
-    const categories = await db.value.notes.where('puuid').equals(puuid).toArray()
+    const categories = await db.value.note.where('puuid').equals(puuid).toArray()
 
     let count = 0
 
@@ -121,7 +120,7 @@ export function useNote() {
   }
 
   function getNotesByLastdotime(lastdotime: number) {
-    return db.value.notes.where('lastdotime').aboveOrEqual(lastdotime).toArray()
+    return db.value.note.where('lastdotime').aboveOrEqual(lastdotime).toArray()
   }
 
   onUnmounted(() => {

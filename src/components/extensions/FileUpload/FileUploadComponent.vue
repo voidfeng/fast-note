@@ -5,7 +5,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 interface Extension {
   name: string
   options: {
-    loadFile?: (url: string) => Promise<string>
+    loadFile?: (url: string) => Promise<{ url: string, type: string }>
     onImageLoaded?: (url: string, width: number, height: number) => void
   }
 }
@@ -49,7 +49,54 @@ const isImage = computed(() => {
   return extension?.match(/(jpg|jpeg|png|gif|webp)$/i)
 })
 
+// 检查URL是否为SHA256哈希值格式
+const isSha256Hash = computed(() => {
+  const url = nodeProps.value.url
+  if (!url)
+    return false
+  // SHA256哈希通常是64个16进制字符
+  return /^[a-f0-9]{64}$/i.test(url)
+})
+
+const imageRef = ref<HTMLImageElement | null>(null)
+const containerSize = ref({ width: '88px', height: '88px' })
+const imageUrl = ref('')
+const isLoading = ref(true)
+const hasError = ref(false)
+const fileTypeName = ref('') // 存储从loadFile返回的文件类型
+
 const fileType = computed(() => {
+  // 如果有从服务器返回的文件类型，优先使用
+  if (fileTypeName.value) {
+  // MIME类型映射
+    const mimeTypeMap: Record<string, string> = {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'excel', // xlsx
+      'application/vnd.ms-excel': 'excel', // xls
+      'application/illustrator': 'ai',
+      'audio/mpeg': 'audio', // mp3
+      'audio/wav': 'audio',
+      'application/msword': 'doc', // doc
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'doc', // docx
+      'application/pdf': 'pdf',
+      'application/vnd.ms-powerpoint': 'ppt', // ppt
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'ppt', // pptx
+      'image/vnd.adobe.photoshop': 'psd',
+      'application/rtf': 'rtf',
+      'text/plain': 'txt',
+      'video/mp4': 'video',
+      'video/x-msvideo': 'video', // avi
+      'video/quicktime': 'video', // mov
+      'application/zip': 'zip',
+      'application/x-rar-compressed': 'zip', // rar
+      'application/x-7z-compressed': 'zip', // 7z
+      'image/jpeg': 'picture',
+      'image/png': 'picture',
+      'image/gif': 'picture',
+      'image/webp': 'picture',
+    }
+    return mimeTypeMap[fileTypeName.value] || 'unknown'
+  }
+
   if (isImage.value)
     return 'picture'
 
@@ -83,15 +130,14 @@ const fileType = computed(() => {
   return typeMap[extension || ''] || 'unknown'
 })
 
+// 从fileType派生是否是图片
+const isPictureType = computed(() => {
+  return fileType.value === 'picture'
+})
+
 const fileTypeIcon = computed(() => {
   return `/file/${fileType.value}.svg`
 })
-
-const imageRef = ref<HTMLImageElement | null>(null)
-const containerSize = ref({ width: '88px', height: '88px' })
-const imageUrl = ref('')
-const isLoading = ref(true)
-const hasError = ref(false)
 
 // 图片尺寸常量
 const DEFAULT_SIZE = 88
@@ -168,9 +214,11 @@ async function loadFileWithExtension(url: string) {
   if (loadFile) {
     // 使用扩展的 loadFile 方法
     try {
-      const loadedUrl = await loadFile(url)
-      if (loadedUrl) {
-        imageUrl.value = loadedUrl
+      const result = await loadFile(url)
+      if (result && 'url' in result) {
+        imageUrl.value = result.url
+
+        fileTypeName.value = result.type || '' // 存储文件类型
       }
     }
     catch (extensionError) {
@@ -181,18 +229,21 @@ async function loadFileWithExtension(url: string) {
   isLoading.value = false
 }
 
-// 监听URL变化，加载图片
+// 监听URL变化，加载文件
 watch(
   () => nodeProps.value.url,
   (newUrl) => {
-    if (newUrl && isImage.value) {
+    if (newUrl && (isImage.value || isSha256Hash.value)) {
       loadFileWithExtension(newUrl)
+    }
+    else {
+      isLoading.value = false
     }
   },
 )
 
 const wrapperStyle = computed(() => {
-  if (!isImage.value) {
+  if (!isImage.value && !isPictureType.value) {
     return {
       width: '88px',
       height: '88px',
@@ -201,11 +252,14 @@ const wrapperStyle = computed(() => {
   return containerSize.value
 })
 
-// 组件挂载时加载图片
+// 组件挂载时加载文件
 onMounted(() => {
-  console.warn('nodeProps.value', nodeProps.value)
-  if (isImage.value && nodeProps.value.url) {
+  // 加载文件
+  if (nodeProps.value.url && (isImage.value || isSha256Hash.value)) {
     loadFileWithExtension(nodeProps.value.url)
+  }
+  else {
+    isLoading.value = false
   }
 })
 </script>
@@ -216,11 +270,11 @@ onMounted(() => {
     :style="wrapperStyle"
   >
     <div class="file-upload-content w-full h-full">
-      <div v-if="isImage" class="image-preview">
-        <div v-if="isLoading" class="loading-wrapper">
-          <div class="loading-spinner" />
-        </div>
-        <div v-else-if="!isLoading && hasError" class="error-wrapper">
+      <div v-if="isLoading" class="loading-wrapper">
+        <div class="loading-spinner" />
+      </div>
+      <div v-else-if="isImage || isPictureType" class="image-preview">
+        <div v-if="!isLoading && hasError" class="error-wrapper">
           <span class="error-text">图片加载失败</span>
         </div>
         <img

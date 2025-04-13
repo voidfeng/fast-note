@@ -28,9 +28,15 @@ export interface TypedFile {
   ids?: number[]
 }
 
+export interface FileRef {
+  hash: string
+  refid: string
+}
+
 interface NoteDatabase extends Dexie {
-  notes: Dexie.Table<Note, string>
-  files: Dexie.Table<TypedFile, string>
+  note: Dexie.Table<Note, string>
+  file: Dexie.Table<TypedFile, string>
+  file_refs: Dexie.Table<FileRef, string>
 }
 
 const db = ref<NoteDatabase>()
@@ -44,8 +50,9 @@ export function useDexie() {
     (window as any).db = db.value
     // 定义表结构和索引
     db.value.version(1).stores({
-      notes: '&uuid, title, newstime, type, puuid, newstext, lastdotime, version',
-      files: '&hash, url, ids',
+      note: '&uuid, title, newstime, type, puuid, newstext, lastdotime, version',
+      file: '&hash, url, ids',
+      file_refs: '[hash+refid], hash, refid',
     })
   }
 

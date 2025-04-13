@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { getFileHash } from '@/utils'
 import { Color } from '@tiptap/extension-color'
@@ -20,7 +21,8 @@ const emit = defineEmits<{
   (e: 'blur'): void
 }>()
 
-const { addFile, getFileByHash } = useFiles()
+const { addFile, getFileByHash, getFileByUrl } = useFiles()
+const { addFileRef } = useFileRefs()
 
 const editor = ref<EditorInstance>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -84,13 +86,42 @@ onMounted(() => {
          * @param url 文件url
          */
         async loadFile(url: string) {
-          return new Promise((resolve) => {
-            setTimeout(() => {
-              resolve('https://next.0122.vip/eadmin/admin/adminstyle/1/images/logo.gif')
-              console.warn('通过从配置获取文件url', url)
-              throw new Error('没有图片')
-            }, 1000)
-          })
+          let fileObj
+          // 判断是否为SHA256哈希
+          if (/^[a-f0-9]{64}$/i.test(url)) {
+            // 如果是SHA256哈希，使用getFileByHash获取文件
+            fileObj = await getFileByHash(url)
+          }
+          else {
+            // 否则使用getFileByUrl获取文件
+            fileObj = await getFileByUrl(url)
+          }
+
+          if (!fileObj) {
+            console.warn('文件不存在:', url)
+            throw new Error('文件不存在')
+          }
+
+          if (fileObj.file) {
+            // 如果有文件对象，创建URL
+            const fileType = fileObj.file.type || 'unknown'
+            const fileUrl = URL.createObjectURL(fileObj.file)
+
+            return {
+              url: fileUrl,
+              type: fileType,
+            }
+          }
+          else if (fileObj.url) {
+            // 如果有URL但没有文件对象，直接返回URL
+            return {
+              url: fileObj.url,
+              type: 'unknown',
+            }
+          }
+
+          // 如果没有文件也没有URL，抛出错误
+          throw new Error('文件格式不支持')
         },
         /**
          * 图片加载完成后的回调
@@ -174,6 +205,7 @@ async function onSelectFile() {
       continue
     }
     await addFile({ hash, file })
+    await addFileRef({ hash, refid: hash })
     editor.value!.commands.setFileUpload({
       url: hash,
     })

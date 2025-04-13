@@ -4,7 +4,7 @@ import FileUploadComponent from './FileUploadComponent.vue'
 
 export interface FileUploadOptions {
   HTMLAttributes: Record<string, any>
-  loadFile?: (url: string) => Promise<string>
+  loadFile?: (url: string) => Promise<{ url: string, type: string }>
   onImageLoaded?: (url: string, width: number, height: number) => void
 }
 
@@ -28,7 +28,7 @@ export const FileUpload = Node.create<FileUploadOptions>({
     return {
       HTMLAttributes: {},
       loadFile: async (url: string) => {
-        return url
+        return { url, type: 'unknown' }
       },
       onImageLoaded: (_url: string, _width: number, _height: number) => {
         // 默认实现是空的，由YYEditor提供具体实现
