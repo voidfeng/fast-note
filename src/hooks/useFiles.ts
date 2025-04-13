@@ -1,8 +1,17 @@
-import { TypedFile, useDexie } from "./useDexie"
+import type { TypedFile } from './useDexie'
+import { useDexie } from './useDexie'
+
+// 为window.db添加类型声明
+declare global {
+  interface Window {
+    db: any
+  }
+}
 
 let isInitialized = false
 export function useFiles() {
-  const { db} = useDexie()
+  const { db } = useDexie()
+  window.db = db
   if (!isInitialized) {
     isInitialized = true
   }
@@ -16,7 +25,7 @@ export function useFiles() {
   }
 
   function getFileByHash(hash: string) {
-    return db.value?.files.where('hash').equals(hash).first()
+    return db.value?.files.get(hash)
   }
 
   function getFileByNoteId(noteId: number) {
@@ -25,14 +34,16 @@ export function useFiles() {
 
   async function deleteFileByNoteId(noteId: number) {
     const files = await getFileByNoteId(noteId)
-    
-    if (!files || files.length === 0) return
-    
+
+    if (!files || files.length === 0)
+      return
+
     for (const file of files) {
       if (file.ids.length === 1 && file.ids[0] === noteId) {
         // 如果ids数组中只有这一个noteId，则删除整个文件记录
         await db.value?.files.delete(file.id!)
-      } else {
+      }
+      else {
         // 如果ids数组中还有其他id，则只移除这个noteId
         const updatedIds = file.ids.filter(id => id !== noteId)
         await db.value?.files.update(file.id!, { ids: updatedIds })

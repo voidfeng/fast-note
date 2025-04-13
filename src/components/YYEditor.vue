@@ -83,7 +83,7 @@ onMounted(() => {
          * 如果没有获取到就直接抛出错误
          * @param url 文件url
          */
-        async loadImage(url: string) {
+        async loadFile(url: string) {
           return new Promise((resolve) => {
             setTimeout(() => {
               resolve('https://next.0122.vip/eadmin/admin/adminstyle/1/images/logo.gif')
@@ -169,14 +169,13 @@ async function onSelectFile() {
     const exist = await getFileByHash(hash)
     if (exist) {
       editor.value!.commands.setFileUpload({
-        id: exist?.id,
-        url: exist?.url,
+        url: exist?.url || hash,
       })
       continue
     }
-    const id = await addFile({ file, hash, ids: [] })
+    await addFile({ hash, file })
     editor.value!.commands.setFileUpload({
-      id,
+      url: hash,
     })
   }
 }

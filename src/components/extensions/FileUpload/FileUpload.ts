@@ -4,7 +4,7 @@ import FileUploadComponent from './FileUploadComponent.vue'
 
 export interface FileUploadOptions {
   HTMLAttributes: Record<string, any>
-  loadImage?: (url: string) => Promise<string>
+  loadFile?: (url: string) => Promise<string>
   onImageLoaded?: (url: string, width: number, height: number) => void
 }
 
@@ -27,7 +27,7 @@ export const FileUpload = Node.create<FileUploadOptions>({
   addOptions() {
     return {
       HTMLAttributes: {},
-      loadImage: async (url: string) => {
+      loadFile: async (url: string) => {
         return url
       },
       onImageLoaded: (_url: string, _width: number, _height: number) => {

@@ -5,7 +5,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 interface Extension {
   name: string
   options: {
-    loadImage?: (url: string) => Promise<string>
+    loadFile?: (url: string) => Promise<string>
     onImageLoaded?: (url: string, width: number, height: number) => void
   }
 }
@@ -156,26 +156,26 @@ function onImageError() {
   hasError.value = true
 }
 
-// 使用扩展的 loadImage 方法加载图片
-async function loadImageWithExtension(url: string) {
+// 使用扩展的 loadFile 方法加载文件
+async function loadFileWithExtension(url: string) {
   // 设置加载状态
   isLoading.value = true
   hasError.value = false
   imageUrl.value = url // 默认使用原始URL
 
-  const loadImage = fileUploadExtension.value?.options?.loadImage
+  const loadFile = fileUploadExtension.value?.options?.loadFile
 
-  if (loadImage) {
-    // 使用扩展的 loadImage 方法
+  if (loadFile) {
+    // 使用扩展的 loadFile 方法
     try {
-      const loadedUrl = await loadImage(url)
+      const loadedUrl = await loadFile(url)
       if (loadedUrl) {
         imageUrl.value = loadedUrl
       }
     }
     catch (extensionError) {
       // 如果扩展方法抛出错误，直接使用原始 URL
-      console.warn('扩展加载图片失败，使用原始URL:', extensionError)
+      console.warn('扩展加载文件失败，使用原始URL:', extensionError)
     }
   }
   isLoading.value = false
@@ -186,7 +186,7 @@ watch(
   () => nodeProps.value.url,
   (newUrl) => {
     if (newUrl && isImage.value) {
-      loadImageWithExtension(newUrl)
+      loadFileWithExtension(newUrl)
     }
   },
 )
@@ -203,8 +203,9 @@ const wrapperStyle = computed(() => {
 
 // 组件挂载时加载图片
 onMounted(() => {
+  console.warn('nodeProps.value', nodeProps.value)
   if (isImage.value && nodeProps.value.url) {
-    loadImageWithExtension(nodeProps.value.url)
+    loadFileWithExtension(nodeProps.value.url)
   }
 })
 </script>
