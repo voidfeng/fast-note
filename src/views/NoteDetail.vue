@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import NoteMore from '@/components/NoteMore.vue'
 import editor from '@/components/YYEditor.vue'
+import { useFileRefs } from '@/hooks/useFileRefs'
+import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
 import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
 import { ellipsisHorizontalCircleOutline } from 'ionicons/icons'
@@ -19,6 +21,8 @@ const props = withDefaults(
 
 const route = useRoute()
 const { getFirstNote, addNote, getNote, updateNote, deleteNote } = useNote()
+const { getFileByUrl, deleteFile } = useFiles()
+const { getFileRefsByRefid, deleteFilesRefByHashAndRefid, getRefCount } = useFileRefs()
 
 const editorRef = ref()
 const data = ref()
@@ -52,10 +56,11 @@ async function onBlur() {
   const title = editorRef.value?.getTitle()
   const content = editorRef.value?.getContent()
   const time = Math.floor(Date.now() / 1000)
+  const uuid = noteUuid.value === '0' ? newNoteUuid : noteUuid.value
+  const isExist = await getNote(uuid)
   // 新增
-  if ((noteUuid.value === '0' && newNoteUuid === '0') && content) {
+  if (!isExist) {
     const firstNote = await getFirstNote()
-    const uuid = nanoid(12)
     const newNote = {
       title,
       newstext: content,
@@ -64,17 +69,14 @@ async function onBlur() {
       type: 'note',
       puuid: (route.query.puuid as string) || firstNote?.uuid,
       uuid,
-      version: 1,
     }
-    const id = await addNote(newNote)
-    window.history.replaceState(null, '', `/n/${id}`)
-    newNoteUuid = uuid
+    await addNote(newNote)
     data.value = newNote
   }
   // 编辑
   else if (content) {
     updateNote(
-      noteUuid.value || newNoteUuid,
+      uuid,
       Object.assign(toRaw(data.value), {
         title,
         newstext: content,
@@ -86,10 +88,42 @@ async function onBlur() {
   }
   // 删除
   else {
-    await deleteNote(noteUuid.value)
+    await deleteNote(uuid)
   }
 
   // 检查附件引用情况
+  const matches = content.matchAll(/<file-upload url="([\w.:/-]+)"/g)
+  const fileUrls = Array.from(matches, (match: RegExpMatchArray) => match[1])
+  console.warn('fileUrls', fileUrls)
+  const dbFiles = await getFileRefsByRefid(uuid)
+  console.warn('dbFiles', dbFiles)
+
+  const hashArr = []
+  for (const url of fileUrls) {
+    if (!/^[a-f0-9]{64}$/i.test(url)) {
+      const fileObj = await getFileByUrl(url)
+      if (fileObj && fileObj.hash) {
+        hashArr.push(fileObj.hash)
+      }
+      else {
+        continue
+      }
+    }
+    else {
+      hashArr.push(url)
+    }
+  }
+
+  for (const dbFile of dbFiles) {
+    if (hashArr.includes(dbFile.hash)) {
+      continue
+    }
+    await deleteFilesRefByHashAndRefid(dbFile.hash, uuid)
+    const refCount = await getRefCount(dbFile.hash)
+    if (refCount === 0) {
+      await deleteFile(dbFile.hash)
+    }
+  }
 }
 
 async function init(uuid: string) {
@@ -100,8 +134,12 @@ async function init(uuid: string) {
 }
 
 onMounted(async () => {
-  if (noteUuid.value) {
+  if (noteUuid.value !== '0') {
     init(noteUuid.value)
+  }
+  else {
+    newNoteUuid = nanoid(12)
+    window.history.replaceState(null, '', `/n/${newNoteUuid}`)
   }
 })
 </script>
@@ -136,7 +174,7 @@ onMounted(async () => {
       </ion-item> -->
 
       <div class="ion-padding">
-        <editor ref="editorRef" @blur="onBlur" />
+        <editor ref="editorRef" :uuid="noteUuid === '0' ? newNoteUuid : noteUuid" @blur="onBlur" />
       </div>
     </IonContent>
     <NoteMore />

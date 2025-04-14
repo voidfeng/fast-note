@@ -32,11 +32,17 @@ export function useFileRefs() {
     return db.value?.file_refs.where('[hash+refid]').equals([hash, refid]).delete()
   }
 
+  // 根据hash获取引用数量
+  function getRefCount(hash: string) {
+    return db.value?.file_refs.where('hash').equals(hash).count()
+  }
+
   return {
     addFileRef,
     getFileRefsByRefid,
     getFilesRefByHash,
     deleteFilesRefByRefid,
     deleteFilesRefByHashAndRefid,
+    getRefCount,
   }
 }

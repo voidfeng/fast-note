@@ -14,12 +14,16 @@ import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
 import { onBeforeMount, onMounted, ref } from 'vue'
 import { FileUpload } from './extensions/FileUpload/FileUpload'
 
-// 定义编辑器类型
-type EditorInstance = Editor | null
+const props = defineProps<{
+  uuid: string
+}>()
 
 const emit = defineEmits<{
   (e: 'blur'): void
 }>()
+
+// 定义编辑器类型
+type EditorInstance = Editor | null
 
 const { addFile, getFileByHash, getFileByUrl } = useFiles()
 const { addFileRef } = useFileRefs()
@@ -202,10 +206,11 @@ async function onSelectFile() {
       editor.value!.commands.setFileUpload({
         url: exist?.url || hash,
       })
+      await addFileRef({ hash, refid: props.uuid })
       continue
     }
     await addFile({ hash, file })
-    await addFileRef({ hash, refid: hash })
+    await addFileRef({ hash, refid: props.uuid })
     editor.value!.commands.setFileUpload({
       url: hash,
     })
