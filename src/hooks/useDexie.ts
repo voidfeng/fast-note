@@ -26,11 +26,14 @@ export interface TypedFile {
   hash?: string
   id?: number
   ids?: number[]
+  isdeleted?: 0 | 1
 }
 
 export interface FileRef {
   hash: string
   refid: string
+  lastdotime: number
+  isdeleted: 0 | 1
 }
 
 interface NoteDatabase extends Dexie {

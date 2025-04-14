@@ -88,7 +88,7 @@ export function login(username: string, password: string) {
           res({ s: 1, m: '登录成功' })
         }
         else {
-          rej({ s: 0, m: text })
+          rej(new Error(text || '登录失败'))
           alertController
             .create({
               header: text || '登录失败',
@@ -161,4 +161,14 @@ export function updateCloudNote(note: Note) {
     method: 'post',
     data: formData,
   })
+}
+
+// 获取云端引用表
+export function getCloudFileRefsByLastdotime(lastdotime: number) {
+  return request({ url: `/e/eapi/DtUserpage.php?aid=2&lastdotime=${lastdotime}` })
+}
+
+// 获取附件列表
+export function getCloudFilesByLastdotime(lastdotime: number) {
+  return request({ url: `/e/eapi/DtUserpage.php?aid=3&lastdotime=${lastdotime}` })
 }

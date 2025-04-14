@@ -4,6 +4,7 @@ import editor from '@/components/YYEditor.vue'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
+import { getTime } from '@/utils/date'
 import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
 import { ellipsisHorizontalCircleOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
@@ -21,8 +22,8 @@ const props = withDefaults(
 
 const route = useRoute()
 const { getFirstNote, addNote, getNote, updateNote, deleteNote } = useNote()
-const { getFileByUrl, deleteFile } = useFiles()
-const { getFileRefsByRefid, deleteFilesRefByHashAndRefid, getRefCount } = useFileRefs()
+const { getFileByUrl } = useFiles()
+const { getFileRefsByRefid, updateFileRef } = useFileRefs()
 
 const editorRef = ref()
 const data = ref()
@@ -55,7 +56,7 @@ async function onBlur() {
    */
   const title = editorRef.value?.getTitle()
   const content = editorRef.value?.getContent()
-  const time = Math.floor(Date.now() / 1000)
+  const time = getTime()
   const uuid = noteUuid.value === '0' ? newNoteUuid : noteUuid.value
   const isExist = await getNote(uuid)
   // 新增
@@ -116,13 +117,10 @@ async function onBlur() {
 
   for (const dbFile of dbFiles) {
     if (hashArr.includes(dbFile.hash)) {
+      await updateFileRef({ ...dbFile, lastdotime: time })
       continue
     }
-    await deleteFilesRefByHashAndRefid(dbFile.hash, uuid)
-    const refCount = await getRefCount(dbFile.hash)
-    if (refCount === 0) {
-      await deleteFile(dbFile.hash)
-    }
+    await updateFileRef({ ...dbFile, isdeleted: 1, lastdotime: time })
   }
 }
 

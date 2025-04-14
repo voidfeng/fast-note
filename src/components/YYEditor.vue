@@ -2,6 +2,7 @@
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { getFileHash } from '@/utils'
+import { getTime } from '@/utils/date'
 import { Color } from '@tiptap/extension-color'
 import ListItem from '@tiptap/extension-list-item'
 import TaskItem from '@tiptap/extension-task-item'
@@ -206,11 +207,11 @@ async function onSelectFile() {
       editor.value!.commands.setFileUpload({
         url: exist?.url || hash,
       })
-      await addFileRef({ hash, refid: props.uuid })
+      await addFileRef({ hash, refid: props.uuid, lastdotime: getTime(), isdeleted: 0 })
       continue
     }
     await addFile({ hash, file })
-    await addFileRef({ hash, refid: props.uuid })
+    await addFileRef({ hash, refid: props.uuid, lastdotime: getTime(), isdeleted: 0 })
     editor.value!.commands.setFileUpload({
       url: hash,
     })

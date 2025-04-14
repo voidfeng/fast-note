@@ -12,6 +12,10 @@ export function useFileRefs() {
     return db.value?.file_refs.add(data)
   }
 
+  function updateFileRef(data: FileRef) {
+    return db.value?.file_refs.put(data)
+  }
+
   // 根据refid获取全部文件引用
   function getFileRefsByRefid(refid: string) {
     return db.value?.file_refs.where('refid').equals(refid).toArray()
@@ -37,12 +41,19 @@ export function useFileRefs() {
     return db.value?.file_refs.where('hash').equals(hash).count()
   }
 
+  // 根据lastdotime获取全部引用
+  function getFileRefsByLastdotime(lastdotime: number) {
+    return db.value?.file_refs.where('lastdotime').aboveOrEqual(lastdotime).toArray()
+  }
+
   return {
     addFileRef,
+    updateFileRef,
     getFileRefsByRefid,
     getFilesRefByHash,
     deleteFilesRefByRefid,
     deleteFilesRefByHashAndRefid,
     getRefCount,
+    getFileRefsByLastdotime,
   }
 }
