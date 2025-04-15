@@ -27,9 +27,11 @@ export interface TypedFile {
   id?: number
   ids?: number[]
   isdeleted?: 0 | 1
+  lastdotime?: number
 }
 
 export interface FileRef {
+  id?: number
   hash: string
   refid: string
   lastdotime: number
@@ -54,8 +56,8 @@ export function useDexie() {
     // 定义表结构和索引
     db.value.version(1).stores({
       note: '&uuid, title, newstime, type, puuid, newstext, lastdotime, version',
-      file: '&hash, url, ids',
-      file_refs: '[hash+refid], hash, refid',
+      file: '&hash, url, ids, lastdotime',
+      file_refs: '[hash+refid], hash, refid, lastdotime',
     })
   }
 

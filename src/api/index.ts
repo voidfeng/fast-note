@@ -1,4 +1,4 @@
-import type { Note } from '@/hooks/useDexie'
+import type { FileRef, Note } from '@/hooks/useDexie'
 import type {
   /* AxiosProgressEvent, */ AxiosRequestConfig,
   AxiosResponse /* CancelToken */,
@@ -166,6 +166,69 @@ export function updateCloudNote(note: Note) {
 // 获取云端引用表
 export function getCloudFileRefsByLastdotime(lastdotime: number) {
   return request({ url: `/e/eapi/DtUserpage.php?aid=2&lastdotime=${lastdotime}` })
+}
+
+// 添加云端引用
+export function addCloudFileRef(fileRef: FileRef) {
+  return new Promise((res, rej) => {
+    const formData = new FormData()
+    formData.append('enews', 'MAddInfo')
+    formData.append('classid', '4')
+    formData.append('mid', '11')
+    formData.append('id', '0')
+    formData.append('addnews', '提交')
+    Object.entries(fileRef).forEach(([key, value]) => {
+      if (value !== undefined) {
+        formData.append(key, value.toString())
+      }
+    })
+    request({
+      url: `/e/DoInfo/ecms.php`,
+      method: 'post',
+      data: formData,
+    }).then((d) => {
+      res(d)
+    }).catch((e) => {
+      rej(e)
+    })
+  })
+}
+
+// 更新云端引用
+export function updateCloudFileRef(fileRef: FileRef) {
+  return new Promise((res, rej) => {
+    const formData = new FormData()
+    formData.append('enews', 'MEditInfo')
+    formData.append('classid', '4')
+    formData.append('mid', '11')
+    Object.entries(fileRef).forEach(([key, value]) => {
+      if (value !== undefined) {
+        formData.append(key, value.toString())
+      }
+    })
+    request({
+      url: `/e/DoInfo/ecms.php`,
+      method: 'post',
+      data: formData,
+    }).then((d) => {
+      res(d)
+    }).catch((e) => {
+      rej(e)
+    })
+  })
+}
+
+// 删除云端引用
+export function deleteCloudFile(id: number) {
+  return new Promise((res, rej) => {
+    request({ url: `/e/DoInfo/ecms.php?enews=MDelInfo&classid=4&mid=11&id=${id}`, method: 'get' })
+      .then((d) => {
+        res(d)
+      })
+      .catch((e) => {
+        rej(e)
+      })
+  })
 }
 
 // 获取附件列表

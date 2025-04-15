@@ -64,6 +64,10 @@ export function useFiles() {
     return db.value?.file.delete(hash)
   }
 
+  function updateFile(file: TypedFile) {
+    return db.value?.file.put(file)
+  }
+
   return {
     addFile,
     getFile,
@@ -72,5 +76,6 @@ export function useFiles() {
     getFileByNoteId,
     deleteFile,
     deleteFileByNoteId,
+    updateFile,
   }
 }

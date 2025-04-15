@@ -1,14 +1,15 @@
-import type { Note } from './useDexie'
-import { addCloudNote, getCloudFileRefsByLastdotime, getCloudNodesByLastdotime, updateCloudNote } from '@/api'
+import type { FileRef, Note } from './useDexie'
+import { addCloudFileRef, addCloudNote, deleteCloudFile, getCloudFileRefsByLastdotime, getCloudNodesByLastdotime, updateCloudFileRef, updateCloudNote } from '@/api'
 import { getTime } from '@/utils/date'
 import { ref } from 'vue'
 import { useFileRefs } from './useFileRefs'
+import { useFiles } from './useFiles'
 import { useNote } from './useNote'
 
 const defaultLastdotime = getTime('2010/01/01 00:00:00')
 const lastdotime = ref(JSON.parse(localStorage.lastdotime || defaultLastdotime))
 const fileRefLastdotime = ref(JSON.parse(localStorage.fileRefLastdotime || defaultLastdotime))
-const fileLastdotime = ref(JSON.parse(localStorage.fileLastdotime || defaultLastdotime))
+// const fileLastdotime = ref(JSON.parse(localStorage.fileLastdotime || defaultLastdotime))
 
 const syncing = ref(false)
 export function useSync() {
@@ -236,15 +237,127 @@ export function useSync() {
    * 同步引用表
    * 1. 获取本地引用表 和 云端引用表
    * 2. 合并本地引用表 和 云端引用表
+   *   - 如果本地和云端都存在，则比较lastdotime，如果本地lastdotime大于云端，则上传到云端，否则更新本地
    * 3. 检查是否引用为 0 的文件，如果为 0 则标记删除 （延迟 14 天删除）
    * 4. 服务端为处理僵尸引用，每个引用需要在编辑文件后更新引用表的lastdotime
    */
   async function syncFileRefs() {
-    const { getFileRefsByLastdotime } = useFileRefs()
+    const { getFileRefsByLastdotime, updateFileRef, getRefCount } = useFileRefs()
+    const { getFileByHash, deleteFile, updateFile } = useFiles()
 
+    // 1. 获取本地引用表和云端引用表
     const localFileRefs = await getFileRefsByLastdotime(fileRefLastdotime.value)
     const cloudFileRefs = await getCloudFileRefsByLastdotime(fileRefLastdotime.value)
-    console.log(localFileRefs, cloudFileRefs)
+
+    if (!localFileRefs || !cloudFileRefs || !cloudFileRefs.d) {
+      console.warn('获取文件引用失败', localFileRefs, cloudFileRefs)
+      return
+    }
+
+    // 创建映射以便快速查找
+    const localFileRefsMap = new Map(localFileRefs.map(ref => [`${ref.hash}-${ref.refid}`, ref]))
+    const cloudFileRefsMap = new Map((cloudFileRefs.d as FileRef[]).map(ref => [`${ref.hash}-${ref.refid}`, ref]))
+
+    // 同步操作计数
+    let uploadCount = 0
+    let downloadCount = 0
+    let deleteCount = 0
+
+    // 2. 合并本地引用表和云端引用表
+    // 处理本地引用
+    for (const localRef of localFileRefs) {
+      const key = `${localRef.hash}-${localRef.refid}`
+      const cloudRef = cloudFileRefsMap.get(key) as FileRef | undefined
+
+      // 处理已删除的引用
+      if (localRef.isdeleted === 1) {
+        // 如果云端不存在此引用，需要上传
+        if (!cloudRef) {
+          await addCloudFileRef(localRef)
+          uploadCount++
+        }
+        // 如果云端存在此引用，比较lastdotime
+        else if (localRef.lastdotime > cloudRef.lastdotime) {
+          await updateCloudFileRef(localRef)
+          uploadCount++
+        }
+        continue
+      }
+
+      // 处理未删除的引用
+      if (!cloudRef) {
+        // 本地存在但云端不存在，上传到云端
+        await addCloudFileRef(localRef)
+        uploadCount++
+      }
+      else {
+        // 本地和云端都存在，比较lastdotime
+        if (localRef.lastdotime > cloudRef.lastdotime) {
+          // 本地版本更新，上传到云端
+          await updateCloudFileRef({ ...localRef, id: cloudRef.id })
+          uploadCount++
+        }
+        else if (localRef.lastdotime < cloudRef.lastdotime) {
+          // 云端版本更新，更新本地
+          await updateFileRef(cloudRef)
+          downloadCount++
+        }
+      }
+    }
+
+    // 处理云端引用
+    for (const cloudRef of cloudFileRefs.d as FileRef[]) {
+      const key = `${cloudRef.hash}-${cloudRef.refid}`
+      const localRef = localFileRefsMap.get(key)
+
+      // 如果本地不存在此引用，下载到本地
+      if (!localRef) {
+        await updateFileRef(cloudRef)
+        downloadCount++
+      }
+    }
+
+    // 3. 检查是否有引用为0的文件，如果为0则标记删除
+    // 获取所有本地文件引用的hash列表
+    const uniqueHashes = new Set([...localFileRefs.map(ref => ref.hash)])
+    const fourteenDaysAgo = getTime() - (14 * 24 * 60 * 60) // 14天前的时间戳
+
+    for (const hash of uniqueHashes) {
+      const refCount = await getRefCount(hash)
+
+      // 如果引用计数为0，检查文件是否存在，如果存在则标记为删除
+      if (refCount === 0) {
+        const file = await getFileByHash(hash)
+        if (file) {
+          // TypedFile可能没有lastdotime属性，所以要小心处理
+          const _now = getTime()
+          const fileLastdotime = (file as any).lastdotime || 0
+
+          if (!file.isdeleted || fileLastdotime > fourteenDaysAgo) {
+            // 标记为删除状态，但不实际删除
+            // 注意: 这里需要实现file表的更新方法
+            // await db.value?.file.update(hash, { ...file, isdeleted: 1, lastdotime: _now })
+            await updateFile({ ...file, isdeleted: 1, lastdotime: _now })
+          }
+          else if (file.isdeleted && fileLastdotime <= fourteenDaysAgo) {
+            // 如果已经是删除状态且超过14天，则真正删除文件
+            await deleteFile(hash)
+            await deleteCloudFile(file.id!)
+            deleteCount++
+          }
+        }
+      }
+    }
+
+    // 更新lastdotime
+    fileRefLastdotime.value = getTime()
+    localStorage.fileRefLastdotime = JSON.stringify(fileRefLastdotime.value)
+
+    console.warn('文件引用同步完成', {
+      uploaded: uploadCount,
+      downloaded: downloadCount,
+      deleted: deleteCount,
+    })
   }
 
   return {
