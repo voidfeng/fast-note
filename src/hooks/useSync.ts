@@ -387,7 +387,9 @@ export function useSync() {
               // 获取备忘录，更新newstext
               const note = await getNote(ref.refid)
               if (note) {
-                await updateNote(note.uuid, { ...note, newstext: note.newstext.replace(new RegExp(`${file.hash}`, 'g'), file.url!) })
+                const newNote = { ...note, newstext: note.newstext.replace(new RegExp(`${file.hash}`, 'g'), file.url!) }
+                await updateNote(note.uuid, newNote)
+                await updateCloudNote(newNote)
               }
             }
           }
