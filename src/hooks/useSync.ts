@@ -1,5 +1,5 @@
 import type { FileRef, Note } from './useDexie'
-import { addCloudFileRef, addCloudNote, deleteCloudFile, getCloudFileRefsByLastdotime, getCloudNodesByLastdotime, updateCloudFileRef, updateCloudNote } from '@/api'
+import { addCloudFile, addCloudFileRef, addCloudNote, deleteCloudFile, getCloudFileRefsByLastdotime, getCloudNodesByLastdotime, updateCloudFileRef, updateCloudNote } from '@/api'
 import { getTime } from '@/utils/date'
 import { ref } from 'vue'
 import { useFileRefs } from './useFileRefs'
@@ -17,10 +17,18 @@ export function useSync() {
 
   async function sync() {
     syncing.value = true
-    Promise.all([syncNote(), syncFileRefs()])
-      .finally(() => {
-        syncing.value = false
-      })
+    try {
+      await syncNote()
+      // 已做了删除云端附件处理，同步文件无需处理
+      await syncFileRefs()
+      await syncFile()
+    }
+    catch (error) {
+      console.error('同步失败', error)
+    }
+    finally {
+      syncing.value = false
+    }
   }
 
   // 同步备忘录
@@ -336,7 +344,6 @@ export function useSync() {
           if (!file.isdeleted || fileLastdotime > fourteenDaysAgo) {
             // 标记为删除状态，但不实际删除
             // 注意: 这里需要实现file表的更新方法
-            // await db.value?.file.update(hash, { ...file, isdeleted: 1, lastdotime: _now })
             await updateFile({ ...file, isdeleted: 1, lastdotime: _now })
           }
           else if (file.isdeleted && fileLastdotime <= fourteenDaysAgo) {
@@ -357,6 +364,28 @@ export function useSync() {
       uploaded: uploadCount,
       downloaded: downloadCount,
       deleted: deleteCount,
+    })
+  }
+
+  // 上传本地保存的附件
+  async function syncFile() {
+    const { updateFile, getLocalFiles } = useFiles()
+    return new Promise((resolve, reject) => {
+      getLocalFiles().then(async (localFiles) => {
+        try {
+          for (const file of localFiles || []) {
+            file.id = await addCloudFile(file)
+            await updateFile(file)
+          }
+        }
+        catch (error) {
+          console.error('上传本地保存的附件失败', error)
+          reject(error)
+        }
+        finally {
+          resolve(true)
+        }
+      })
     })
   }
 

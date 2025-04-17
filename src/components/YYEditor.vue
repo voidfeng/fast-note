@@ -210,7 +210,7 @@ async function onSelectFile() {
       await addFileRef({ hash, refid: props.uuid, lastdotime: getTime(), isdeleted: 0 })
       continue
     }
-    await addFile({ hash, file })
+    await addFile({ hash, file, id: 0 })
     await addFileRef({ hash, refid: props.uuid, lastdotime: getTime(), isdeleted: 0 })
     editor.value!.commands.setFileUpload({
       url: hash,

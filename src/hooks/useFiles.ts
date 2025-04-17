@@ -68,6 +68,10 @@ export function useFiles() {
     return db.value?.file.put(file)
   }
 
+  function getLocalFiles() {
+    return db.value?.file.where('id').equals(0).toArray()
+  }
+
   return {
     addFile,
     getFile,
@@ -77,5 +81,6 @@ export function useFiles() {
     deleteFile,
     deleteFileByNoteId,
     updateFile,
+    getLocalFiles,
   }
 }

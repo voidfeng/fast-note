@@ -1,4 +1,4 @@
-import type { FileRef, Note } from '@/hooks/useDexie'
+import type { FileRef, Note, TypedFile } from '@/hooks/useDexie'
 import type {
   /* AxiosProgressEvent, */ AxiosRequestConfig,
   AxiosResponse /* CancelToken */,
@@ -234,4 +234,34 @@ export function deleteCloudFile(id: number) {
 // 获取附件列表
 export function getCloudFilesByLastdotime(lastdotime: number) {
   return request({ url: `/e/eapi/DtUserpage.php?aid=3&lastdotime=${lastdotime}` })
+}
+
+export function addCloudFile(file: TypedFile): Promise<number> {
+  return new Promise((res, rej) => {
+    const formData = new FormData()
+    formData.append('enews', 'MAddInfo')
+    formData.append('classid', '3')
+    formData.append('mid', '10')
+    formData.append('id', '0')
+    formData.append('addnews', '提交')
+    formData.append('url', new Blob([file.file!], { type: file.file!.type }))
+    formData.append('filetype', file.file!.type)
+    formData.append('hash', file.hash || '')
+    formData.append('title', file.file!.name)
+    request({ url: `/e/DoInfo/ecms.php`, method: 'post', data: formData })
+      .then((d) => {
+        // 从响应中提取 ID
+        const response = d as unknown as string
+        const match = response.match(/AddInfo\.php\?classid=\d+&mid=\d+&id=(\d+)/)
+        if (match && match[1]) {
+          res(Number.parseInt(match[1]))
+        }
+        else {
+          rej(new Error('添加附件失败'))
+        }
+      })
+      .catch((e) => {
+        rej(e)
+      })
+  })
 }
