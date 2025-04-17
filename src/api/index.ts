@@ -244,7 +244,7 @@ export function addCloudFile(file: TypedFile): Promise<number> {
     formData.append('mid', '10')
     formData.append('id', '0')
     formData.append('addnews', '提交')
-    formData.append('url', new Blob([file.file!], { type: file.file!.type }))
+    formData.append('urlfile', new Blob([file.file!], { type: file.file!.type }), file.file!.name)
     formData.append('filetype', file.file!.type)
     formData.append('hash', file.hash || '')
     formData.append('title', file.file!.name)
