@@ -281,7 +281,9 @@ export function useSync() {
       if (localRef.isdeleted === 1) {
         // 如果云端不存在此引用，需要上传
         if (!cloudRef) {
-          await addCloudFileRef(localRef)
+          const id = await addCloudFileRef(localRef)
+          localRef.id = Number.parseInt(id as string)
+          await updateFileRef(localRef)
           uploadCount++
         }
         // 如果云端存在此引用，比较lastdotime

@@ -172,22 +172,28 @@ export function getCloudFileRefsByLastdotime(lastdotime: number) {
 export function addCloudFileRef(fileRef: FileRef) {
   return new Promise((res, rej) => {
     const formData = new FormData()
+    formData.append('title', fileRef.hash)
+    formData.append('titlepic', fileRef.refid)
+    formData.append('isdeleted', '0')
     formData.append('enews', 'MAddInfo')
     formData.append('classid', '4')
     formData.append('mid', '11')
     formData.append('id', '0')
     formData.append('addnews', '提交')
-    Object.entries(fileRef).forEach(([key, value]) => {
-      if (value !== undefined) {
-        formData.append(key, value.toString())
-      }
-    })
     request({
       url: `/e/DoInfo/ecms.php`,
       method: 'post',
       data: formData,
     }).then((d) => {
-      res(d)
+      // 从响应中提取 ID
+      const response = d as unknown as string
+      const match = response.match(/AddInfo\.php\?classid=\d+&mid=\d+&id=(\d+)/)
+      if (match && match[1]) {
+        res(Number.parseInt(match[1]))
+      }
+      else {
+        rej(new Error('添加附件引用失败'))
+      }
     }).catch((e) => {
       rej(e)
     })
