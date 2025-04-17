@@ -236,6 +236,7 @@ export function getCloudFilesByLastdotime(lastdotime: number) {
   return request({ url: `/e/eapi/DtUserpage.php?aid=3&lastdotime=${lastdotime}` })
 }
 
+// 添加附件
 export function addCloudFile(file: TypedFile): Promise<number> {
   return new Promise((res, rej) => {
     const formData = new FormData()
@@ -264,4 +265,9 @@ export function addCloudFile(file: TypedFile): Promise<number> {
         rej(e)
       })
   })
+}
+
+// 获取附件
+export function getCloudFile(id: number) {
+  return request({ url: `/e/eapi/DtUserpage.php?aid=4&id=${id}`, method: 'get' })
 }

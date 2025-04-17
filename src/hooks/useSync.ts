@@ -1,5 +1,5 @@
 import type { FileRef, Note } from './useDexie'
-import { addCloudFile, addCloudFileRef, addCloudNote, deleteCloudFile, getCloudFileRefsByLastdotime, getCloudNodesByLastdotime, updateCloudFileRef, updateCloudNote } from '@/api'
+import { addCloudFile, addCloudFileRef, addCloudNote, deleteCloudFile, getCloudFile, getCloudFileRefsByLastdotime, getCloudNodesByLastdotime, updateCloudFileRef, updateCloudNote } from '@/api'
 import { getTime } from '@/utils/date'
 import { ref } from 'vue'
 import { useFileRefs } from './useFileRefs'
@@ -370,12 +370,24 @@ export function useSync() {
   // 上传本地保存的附件
   async function syncFile() {
     const { updateFile, getLocalFiles } = useFiles()
+    const { getFilesRefByHash } = useFileRefs()
     return new Promise((resolve, reject) => {
       getLocalFiles().then(async (localFiles) => {
         try {
           for (const file of localFiles || []) {
             file.id = await addCloudFile(file)
+            const cloudFile = await getCloudFile(file.id!)
+            file.url = cloudFile.d.url
             await updateFile(file)
+            // 先获取引用表的相关引用，再更新备忘中的hash
+            const fileRefs = await getFilesRefByHash(file.hash!)
+            for (const ref of fileRefs || []) {
+              // 获取备忘录，更新newstext
+              const note = await getNote(ref.refid)
+              if (note) {
+                await updateNote(note.uuid, { ...note, newstext: note.newstext.replace(new RegExp(`${file.hash}`, 'g'), file.url!) })
+              }
+            }
           }
         }
         catch (error) {
