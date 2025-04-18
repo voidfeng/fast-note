@@ -1,10 +1,10 @@
 /// <reference types="vitest" />
 
+import path from 'node:path'
 // import legacy from '@vitejs/plugin-legacy'
 import vue from '@vitejs/plugin-vue'
-import path from 'path'
-import { defineConfig } from 'vite'
 import UnoCSS from 'unocss/vite'
+import { defineConfig } from 'vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -20,7 +20,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom'
+    environment: 'jsdom',
   },
   server: {
     port: 3000,
@@ -29,7 +29,11 @@ export default defineConfig({
       '/e': {
         target: 'https://next.0122.vip',
         changeOrigin: true,
-      }
-    }
+      },
+      '/d': {
+        target: 'https://next.0122.vip',
+        changeOrigin: true,
+      },
+    },
   },
 })

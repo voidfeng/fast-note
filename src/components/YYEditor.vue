@@ -27,7 +27,7 @@ const emit = defineEmits<{
 type EditorInstance = Editor | null
 
 const { addFile, getFileByHash, getFileByUrl } = useFiles()
-const { addFileRef } = useFileRefs()
+const { addFileRef, getFileRefByHashAndRefid } = useFileRefs()
 
 const editor = ref<EditorInstance>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -202,19 +202,17 @@ async function onSelectFile() {
 
   for (const file of Array.from(files)) {
     const hash = await getFileHash(file)
-    const exist = await getFileByHash(hash)
-    if (exist) {
-      editor.value!.commands.setFileUpload({
-        url: exist?.url || hash,
-      })
-      await addFileRef({ hash, refid: props.uuid, lastdotime: getTime(), isdeleted: 0 })
-      continue
+    const existFile = await getFileByHash(hash)
+    const existFileRef = await getFileRefByHashAndRefid(hash, props.uuid)
+    if (existFile) {
+      editor.value!.commands.setFileUpload({ url: existFile?.url || hash })
     }
-    await addFile({ hash, file, id: 0 })
-    await addFileRef({ hash, refid: props.uuid, lastdotime: getTime(), isdeleted: 0 })
-    editor.value!.commands.setFileUpload({
-      url: hash,
-    })
+    else {
+      await addFile({ hash, file, id: 0 })
+      editor.value!.commands.setFileUpload({ url: hash })
+    }
+    if (!existFileRef)
+      await addFileRef({ hash, refid: props.uuid, lastdotime: getTime(), isdeleted: 0 })
   }
 }
 
