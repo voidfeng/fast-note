@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Fast-Note Logo](./public/logo.png)
+![Fast-Note Logo](./public/icons/icon-128x128.png)
 
 **一个简洁高效的本地优先备忘录应用，让您随时随地记录灵感。**
 
@@ -84,8 +84,6 @@ pnpm build
 3. **组织备忘录** - 添加标签和分类整理您的备忘录
 4. **搜索内容** - 使用搜索栏快速找到需要的备忘录
 
-更详细的使用指南请查看[文档](https://github.com/username/fast-note/wiki)。
-
 ## 🤝 贡献
 
 我们欢迎各种形式的贡献，无论是新功能、bug修复还是文档改进。
@@ -96,8 +94,6 @@ pnpm build
 4. 推送到分支 (`git push origin feature/amazing-feature`)
 5. 打开一个 Pull Request
 
-更多信息请查看[贡献指南](CONTRIBUTING.md)。
-
 ## 📄 许可证
 
 本项目采用 MIT 许可证 - 详情请参阅 [LICENSE](LICENSE) 文件
@@ -105,7 +101,7 @@ pnpm build
 ## 👏 致谢
 
 - 感谢所有贡献者和支持者
-- 特别感谢[开源社区]()的支持和鼓励
+- 特别感谢开源社区的支持和鼓励
 
 ---
 
