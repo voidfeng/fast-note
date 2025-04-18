@@ -42,4 +42,5 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           source: dist/
-          target: /www/wwwroot/n.0122.vip
+          target: /www/wwwroot/n.0122.vip/
+          debug: true # 添加调试信息
