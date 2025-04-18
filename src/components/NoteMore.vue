@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
 import { IonIcon, IonItem, IonLabel, IonList, IonPopover, useIonRouter } from '@ionic/vue'
@@ -7,16 +8,22 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const router = useIonRouter()
-const { deleteNote } = useNote()
-const { deleteFileByNoteId } = useFiles()
+const { updateNote, getNote } = useNote()
+const { getFileRefsByRefid, updateFileRef } = useFileRefs()
 
-function onDelete() {
-  console.log('delete', route.params.id)
+async function onDelete() {
   const id = route.params.id
-  deleteNote(id as string).then(() => {
+  const note = await getNote(id as string)
+  if (note?.uuid) {
+    await updateNote(note.uuid, { isDeleted: 1 })
+    const fileRefs = await getFileRefsByRefid(id as string)
+    if (fileRefs.length > 0) {
+      for (const fileRef of fileRefs) {
+        await updateFileRef({ ...fileRef, isdeleted: 1 })
+      }
+    }
     router.back()
-  })
-  deleteFileByNoteId(Number.parseInt(id as string))
+  }
 }
 </script>
 
