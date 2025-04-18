@@ -41,6 +41,6 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          source: dist/
+          source: dist/*
           target: /www/wwwroot/n.0122.vip/
           debug: true # 添加调试信息
