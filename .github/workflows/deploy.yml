@@ -30,6 +30,9 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Verify dist folder
+        run: ls -la ./dist
+
       # Step 5: 部署到服务器
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@master
