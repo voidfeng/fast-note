@@ -9,7 +9,8 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 const router = useIonRouter()
 const { updateNote, getNote } = useNote()
-const { getFileRefsByRefid, updateFileRef } = useFileRefs()
+const { getFileRefsByRefid, updateFileRef, getFilesRefByHash } = useFileRefs()
+const { updateFile, getFile } = useFiles()
 
 async function onDelete() {
   const id = route.params.id
@@ -20,6 +21,14 @@ async function onDelete() {
     if (fileRefs.length > 0) {
       for (const fileRef of fileRefs) {
         await updateFileRef({ ...fileRef, isdeleted: 1 })
+        // 重新统计
+        const filesRef = await getFilesRefByHash(fileRef.hash)
+        if (filesRef.length === filesRef.filter(item => item.isdeleted === 0).length) {
+          const file = await getFile(fileRef.hash)
+          if (file) {
+            await updateFile({ ...file, isdeleted: 1 })
+          }
+        }
       }
     }
     router.back()
