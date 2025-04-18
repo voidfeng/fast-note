@@ -41,11 +41,5 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          script: |
-            # 切换到目标目录
-            cd /www/wwwroot/n.0122.vip
-            # 删除旧的文件
-            rm -rf *
-            # 上传新的文件
-            mkdir -p /www/wwwroot/n.0122.vip
-            scp -r ./dist/* /www/wwwroot/n.0122.vip
+          source: dist/
+          target: /www/wwwroot/n.0122.vip
