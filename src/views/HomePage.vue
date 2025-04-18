@@ -7,6 +7,7 @@ import MessageListItem from '@/components/MessageListItem.vue'
 
 import SyncState from '@/components/SyncState.vue'
 import { useNote } from '@/hooks/useNote'
+import { useSync } from '@/hooks/useSync'
 import {
   IonAlert,
   IonButton,
@@ -30,6 +31,13 @@ import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
 const { addNote, getNotesByPUuid, getNoteCountByUuid, onUpdateNote, getDeletedNotes } = useNote()
+const { onSynced } = useSync()
+const unSub = onSynced(() => {
+  init()
+  onUnmounted(() => {
+    unSub()
+  })
+})
 
 const dataList = ref<Note[]>([])
 const deletedNotes = ref<Note[]>([])
@@ -62,27 +70,31 @@ const noteDesktop = computed(() => {
 })
 
 function refresh(ev: CustomEvent) {
-  setTimeout(() => {
+  init().then(() => {
     ev.detail.complete()
-  }, 3000)
+  })
 }
 
 function init() {
-  getNotesByPUuid('').then(async (res) => {
-    dataList.value = res
-    for (let i = 0; i < dataList.value.length; i++) {
-      const item = dataList.value[i]
-      const count = await getNoteCountByUuid(item.uuid!)
-      item.noteCount = count
-    }
-  })
-  // 获取已删除的备忘录
-  getDeletedNotes().then((res) => {
-    deletedNotes.value = res
+  return new Promise((resolve) => {
+    const a = getNotesByPUuid('').then(async (res) => {
+      dataList.value = res
+      for (let i = 0; i < dataList.value.length; i++) {
+        const item = dataList.value[i]
+        const count = await getNoteCountByUuid(item.uuid!)
+        item.noteCount = count
+      }
+    })
+    // 获取已删除的备忘录
+    const b = getDeletedNotes().then((res) => {
+      deletedNotes.value = res
+    })
+    Promise.all([a, b]).then(() => {
+      resolve(true)
+    })
   })
 }
 
-init()
 onUpdateNote((item) => {
   if (item.puuid === '') {
     init()

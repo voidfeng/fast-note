@@ -12,16 +12,52 @@ const fileRefLastdotime = ref(JSON.parse(localStorage.fileRefLastdotime || defau
 // const fileLastdotime = ref(JSON.parse(localStorage.fileLastdotime || defaultLastdotime))
 
 const syncing = ref(false)
+// 存储同步成功的回调函数
+const syncSyncedCallbacks: Array<(result?: any) => void> = []
+
 export function useSync() {
   const { getNotesByLastdotime, getNote, getNotesByPUuid, addNote, deleteNote, updateNote } = useNote()
 
+  // 注册同步成功的回调函数
+  function onSynced(callback: (result?: any) => void) {
+    if (typeof callback === 'function') {
+      syncSyncedCallbacks.push(callback)
+    }
+
+    // 返回取消注册的函数
+    return () => offOnSynced(callback)
+  }
+
+  // 移除同步成功的回调函数
+  function offOnSynced(callback: (result?: any) => void) {
+    const index = syncSyncedCallbacks.indexOf(callback)
+    if (index !== -1) {
+      syncSyncedCallbacks.splice(index, 1)
+    }
+  }
+
+  // 触发同步成功的回调函数
+  function triggerSyncedCallbacks(result?: any) {
+    for (const callback of syncSyncedCallbacks) {
+      try {
+        callback(result)
+      }
+      catch (error) {
+        console.error('执行同步成功回调函数失败:', error)
+      }
+    }
+  }
+
   async function sync() {
     syncing.value = true
+
     try {
       await syncNote()
       // 已做了删除云端附件处理，同步文件无需处理
       await syncFileRefs()
       await syncFile()
+
+      triggerSyncedCallbacks()
     }
     catch (error) {
       console.error('同步失败', error)
@@ -408,5 +444,7 @@ export function useSync() {
   return {
     sync,
     syncing,
+    onSynced,
+    offOnSynced,
   }
 }
