@@ -55,7 +55,7 @@ export function useDexie() {
     (window as any).db = db.value
     // 定义表结构和索引
     db.value.version(1).stores({
-      note: '&uuid, title, newstime, type, puuid, newstext, lastdotime, version',
+      note: '&uuid, title, newstime, type, puuid, newstext, lastdotime, version, isdeleted',
       file: '&hash, id, url, ids, lastdotime',
       file_refs: '[hash+refid], hash, refid, lastdotime',
     })

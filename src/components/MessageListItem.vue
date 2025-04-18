@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Note } from '@/hooks/useDexie'
 import { IonIcon, IonItem, IonLabel, IonNote } from '@ionic/vue'
-import { chevronForward, folderOutline } from 'ionicons/icons'
+import { chevronForward, folderOutline, trashOutline } from 'ionicons/icons'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -10,9 +10,7 @@ const props = withDefaults(
     data: Note
     noteDesktop: boolean
   }>(),
-  {
-    data: () => ({} as Note),
-  },
+  {},
 )
 
 defineEmits(['selected'])
@@ -22,6 +20,10 @@ const route = useRoute()
 const routerLink = computed(() => {
   if (props.noteDesktop)
     return undefined
+
+  if (props.data.uuid === 'deleted') {
+    return `/deleted`
+  }
 
   if (props.data.type === 'folder') {
     /**
@@ -51,7 +53,7 @@ const routerLink = computed(() => {
     @click="$emit('selected', $props.data.uuid)"
   >
     <template v-if="data.type === 'folder'">
-      <IonIcon :icon="folderOutline" class="mr-3" />
+      <IonIcon :icon="$props.data.uuid === 'deleted' ? trashOutline : folderOutline" class="mr-3" />
       <IonLabel class="ion-text-wrap">
         <h2>
           {{ data.title }}

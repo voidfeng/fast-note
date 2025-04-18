@@ -128,6 +128,9 @@ async function init(uuid: string) {
   data.value = await getNote(uuid)
   if (data.value) {
     editorRef.value?.setContent(data.value.newstext)
+    if (data.value.isdeleted === 1) {
+      editorRef.value?.setEditable(false)
+    }
   }
 }
 

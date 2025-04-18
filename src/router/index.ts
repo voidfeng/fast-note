@@ -1,51 +1,55 @@
-import { createRouter, createWebHistory } from '@ionic/vue-router';
-import { RouteRecordRaw } from 'vue-router';
+import type { RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory } from '@ionic/vue-router'
 import HomePage from '../views/HomePage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/home'
+    redirect: '/home',
   },
   {
     path: '/home',
     name: 'Home',
-    component: HomePage
+    component: HomePage,
   },
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/LoginPage.vue')
+    component: () => import('../views/LoginPage.vue'),
   },
   {
     path: '/n/:uuid',
-    component: () => import('../views/NoteDetail.vue')
+    component: () => import('../views/NoteDetail.vue'),
   },
   {
     path: '/f/:uuid/',
-    component: () => import('../views/FolderPage.vue')
+    component: () => import('../views/FolderPage.vue'),
   },
   {
     path: '/f/:uuid/:uuid2',
-    component: () => import('../views/FolderPage.vue')
+    component: () => import('../views/FolderPage.vue'),
   },
   {
     path: '/f/:uuid/:uuid2/:uuid3',
-    component: () => import('../views/FolderPage.vue')
+    component: () => import('../views/FolderPage.vue'),
   },
   {
     path: '/f/:uuid/:uuid2/:uuid3/:uuid4',
-    component: () => import('../views/FolderPage.vue')
+    component: () => import('../views/FolderPage.vue'),
   },
   {
     path: '/f/:uuid/:uuid2/:uuid3/:uuid4/:uuid5',
-    component: () => import('../views/FolderPage.vue')
-  }
+    component: () => import('../views/FolderPage.vue'),
+  },
+  {
+    path: '/deleted',
+    component: () => import('../views/DeletedPage.vue'),
+  },
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  routes,
 })
 
 export default router

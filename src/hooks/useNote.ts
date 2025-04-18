@@ -89,13 +89,18 @@ export function useNote() {
   }
 
   async function getNotesByPUuid(puuid: string) {
-    const r = await db.value.note.where('puuid').equals(puuid).toArray()
+    const r = await db.value.note.where('puuid').equals(puuid).and(item => item.isdeleted !== 1).toArray()
+    return r
+  }
+
+  async function getDeletedNotes() {
+    const r = await db.value.note.where('isdeleted').equals(1).toArray()
     return r
   }
 
   async function getNoteCountByUuid(puuid: string) {
     // 获取当前 puuid 下的所有分类
-    const categories = await db.value.note.where('puuid').equals(puuid).toArray()
+    const categories = await db.value.note.where('puuid').equals(puuid).and(item => item.isdeleted !== 1).toArray()
 
     let count = 0
 
@@ -139,6 +144,7 @@ export function useNote() {
     deleteNote,
     updateNote,
     getNotesByPUuid,
+    getDeletedNotes,
     getNoteCountByUuid,
     getNotesByLastdotime,
     onUpdateNote,

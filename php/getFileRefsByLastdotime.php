@@ -54,7 +54,7 @@ $lastdotime = intval($lastdotime);
 
 // 查询大于等于指定lastdotime的信息列表
 // title = hash, titlepic = 引用id
-$sql = "SELECT id, title, titlepic, newstime, mid, lastdotime, isdeleted
+$sql = "SELECT id, title as hash, titlepic as refid, newstime, mid, lastdotime, isdeleted
         FROM phome_ecms_file_refs
         WHERE lastdotime > $lastdotime AND userid = {$user['userid']}
         ORDER BY lastdotime ASC";

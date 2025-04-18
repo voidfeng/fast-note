@@ -29,9 +29,10 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
-const { addNote, getNotesByPUuid, getNoteCountByUuid, onUpdateNote } = useNote()
+const { addNote, getNotesByPUuid, getNoteCountByUuid, onUpdateNote, getDeletedNotes } = useNote()
 
 const dataList = ref<Note[]>([])
+const deletedNotes = ref<Note[]>([])
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
   {
@@ -74,6 +75,10 @@ function init() {
       const count = await getNoteCountByUuid(item.uuid!)
       item.noteCount = count
     }
+  })
+  // 获取已删除的备忘录
+  getDeletedNotes().then((res) => {
+    deletedNotes.value = res
   })
 }
 
@@ -132,6 +137,19 @@ onUnmounted(() => {
           :data="d"
           :note-desktop
           :class="{ active: state.currentFolder === d.uuid }"
+          @selected="(id: string) => state.currentFolder = id"
+        />
+        <MessageListItem
+          v-if="deletedNotes.length > 0"
+          :data="{
+            uuid: 'deleted',
+            title: '最近删除',
+            type: 'folder',
+            puuid: '',
+            noteCount: deletedNotes.length,
+          } as Note"
+          :note-desktop
+          :class="{ active: state.currentFolder === 'deleted' }"
           @selected="(id: string) => state.currentFolder = id"
         />
       </IonList>

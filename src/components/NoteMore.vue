@@ -2,6 +2,7 @@
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
+import { getTime } from '@/utils/date'
 import { IonIcon, IonItem, IonLabel, IonList, IonPopover, useIonRouter } from '@ionic/vue'
 import { trashOutline } from 'ionicons/icons'
 import { useRoute } from 'vue-router'
@@ -13,20 +14,21 @@ const { getFileRefsByRefid, updateFileRef, getFilesRefByHash } = useFileRefs()
 const { updateFile, getFile } = useFiles()
 
 async function onDelete() {
-  const id = route.params.id
-  const note = await getNote(id as string)
+  const uuid = route.params.uuid
+  const note = await getNote(uuid as string)
+  const now = getTime()
   if (note?.uuid) {
-    await updateNote(note.uuid, { isDeleted: 1 })
-    const fileRefs = await getFileRefsByRefid(id as string)
+    await updateNote(note.uuid, { ...note, isdeleted: 1, lastdotime: now })
+    const fileRefs = await getFileRefsByRefid(note.uuid)
     if (fileRefs.length > 0) {
       for (const fileRef of fileRefs) {
-        await updateFileRef({ ...fileRef, isdeleted: 1 })
+        await updateFileRef({ ...fileRef, isdeleted: 1, lastdotime: now })
         // 重新统计
         const filesRef = await getFilesRefByHash(fileRef.hash)
         if (filesRef.length === filesRef.filter(item => item.isdeleted === 0).length) {
           const file = await getFile(fileRef.hash)
           if (file) {
-            await updateFile({ ...file, isdeleted: 1 })
+            await updateFile({ ...file, isdeleted: 1, lastdotime: now })
           }
         }
       }

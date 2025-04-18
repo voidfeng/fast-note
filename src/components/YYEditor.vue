@@ -218,6 +218,10 @@ async function onSelectFile() {
   }
 }
 
+function setEditable(editable: boolean) {
+  editor.value!.setEditable(editable)
+}
+
 onBeforeMount(() => {
   editor.value?.destroy()
 })
@@ -226,6 +230,7 @@ defineExpose({
   getContent: (): string | undefined => editor.value?.getHTML(),
   getTitle,
   setContent,
+  setEditable,
 })
 </script>
 
