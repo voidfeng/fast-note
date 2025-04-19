@@ -4,8 +4,9 @@ import { useUserInfo } from '@/hooks/useUserInfo'
 import { IonButton, IonSpinner } from '@ionic/vue'
 
 const { sync, syncing } = useSync()
-
 const { userInfo } = useUserInfo()
+
+const version = window.version
 
 function onSync() {
   sync()
@@ -27,4 +28,5 @@ function onSync() {
     <IonSpinner v-if="syncing" slot="start" class="w-4 h-4 mr-1" />
     {{ syncing ? '同步中...' : '同步' }}
   </IonButton>
+  <span class="text-xs ml-1 text-gray-500">v{{ version }}</span>
 </template>
