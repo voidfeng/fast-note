@@ -6,11 +6,16 @@ export function injectVersion(): Plugin {
   return {
     name: 'inject-version',
     closeBundle() {
-      const now = new Date()
-      const month = (now.getMonth() + 1).toString().padStart(2, '0')
-      const day = now.getDate().toString().padStart(2, '0')
-      const hours = now.getHours().toString().padStart(2, '0')
-      const minutes = now.getMinutes().toString().padStart(2, '0')
+      // Get current UTC time
+      const nowUtc = new Date()
+      // Calculate UTC+8 time
+      const now = new Date(nowUtc.getTime() + 8 * 60 * 60 * 1000)
+
+      // Extract components based on UTC+8 time
+      const month = (now.getUTCMonth() + 1).toString().padStart(2, '0')
+      const day = now.getUTCDate().toString().padStart(2, '0')
+      const hours = now.getUTCHours().toString().padStart(2, '0')
+      const minutes = now.getUTCMinutes().toString().padStart(2, '0')
       const version = `${month}${day}${hours}${minutes}`
 
       const indexPath = path.resolve(__dirname, 'dist/index.html')
