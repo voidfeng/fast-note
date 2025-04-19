@@ -33,17 +33,21 @@
     "nanoid": "^5.1.5",
     "sass": "^1.85.1",
     "tiptap-extension-global-drag-handle": "^0.1.18",
+    "vconsole": "^3.15.1",
     "vue": "^3.3.0",
     "vue-router": "^4.2.0"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^4.11.0",
     "@capacitor/cli": "7.0.1",
+    "@unocss/eslint-plugin": "^66.0.0",
     "@vitejs/plugin-legacy": "^6.0.2",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/eslint-config-typescript": "^14.5.0",
     "@vue/test-utils": "^2.3.0",
     "cypress": "^13.5.0",
     "eslint": "^9.23.0",
+    "eslint-plugin-format": "^1.0.1",
     "eslint-plugin-vue": "^9.9.0",
     "jsdom": "^22.1.0",
     "terser": "^5.4.0",
@@ -51,10 +55,7 @@
     "unocss": "^66.1.0-beta.3",
     "vite": "^6.2.4",
     "vitest": "^3.1.1",
-    "vue-tsc": "^2.1.10",
-    "@antfu/eslint-config": "^4.11.0",
-    "@unocss/eslint-plugin": "^66.0.0",
-    "eslint-plugin-format": "^1.0.1"
+    "vue-tsc": "^2.1.10"
   },
   "description": "An Ionic project"
 }
