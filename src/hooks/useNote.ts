@@ -74,8 +74,17 @@ export function useNote() {
   }
 
   async function getNote(uuid: string) {
-    const r = await db.value.note.where('uuid').equals(uuid).first()
-    return r
+    if (uuid === 'allnotes') {
+      return Promise.resolve({
+        title: '全部备忘录',
+        type: 'folder',
+        puuid: '',
+        uuid: 'allnotes',
+      } as Note)
+    }
+    else {
+      return db.value.note.where('uuid').equals(uuid).first()
+    }
   }
 
   async function deleteNote(uuid: string) {
@@ -89,8 +98,12 @@ export function useNote() {
   }
 
   async function getNotesByPUuid(puuid: string) {
-    const r = await db.value.note.where('puuid').equals(puuid).and(item => item.isdeleted !== 1).toArray()
-    return r
+    if (puuid === 'allnotes') {
+      return db.value.note.where('type').equals('note').and(item => item.isdeleted !== 1).toArray()
+    }
+    else {
+      return db.value.note.where('puuid').equals(puuid).and(item => item.isdeleted !== 1).toArray()
+    }
   }
 
   async function getDeletedNotes() {

@@ -31,7 +31,7 @@ const props = withDefaults(
     currentFolder?: string
   }>(),
   {
-    currentFolder: '0',
+    currentFolder: undefined,
   },
 )
 
@@ -111,7 +111,8 @@ const noteDesktop = computed(() => {
 watch(
   () => props.currentFolder,
   () => {
-    init(props.currentFolder)
+    if (props.currentFolder)
+      init(props.currentFolder)
   },
   { immediate: true },
 )
@@ -190,7 +191,7 @@ onUnmounted(() => {
     </IonContent>
     <IonFooter v-if="!noteDesktop">
       <IonToolbar>
-        <IonButtons slot="start">
+        <IonButtons v-if="data.uuid !== 'allnotes'" slot="start">
           <IonButton id="add-folder2">
             <IonIcon :icon="addOutline" />
           </IonButton>
@@ -199,7 +200,7 @@ onUnmounted(() => {
           {{ folders.length > 0 ? `${folders.length}个文件夹 ·` : '' }}
           {{ notes.length > 0 ? `${notes.length}个备忘录` : '无备忘录' }}
         </IonTitle>
-        <IonButtons slot="end">
+        <IonButtons v-if="data.uuid !== 'allnotes'" slot="end">
           <IonButton :router-link="`/n/0?puuid=${folderId}`" router-direction="forward">
             <IonIcon :icon="createOutline" />
           </IonButton>

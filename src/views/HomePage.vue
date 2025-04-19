@@ -41,6 +41,7 @@ const unSub = onSynced(() => {
 
 const dataList = ref<Note[]>([])
 const deletedNotes = ref<Note[]>([])
+const allNotesCount = ref(0)
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
   {
@@ -79,11 +80,14 @@ function init() {
   return new Promise((resolve) => {
     const a = getNotesByPUuid('').then(async (res) => {
       dataList.value = res
+      let notesCount = 0
       for (let i = 0; i < dataList.value.length; i++) {
         const item = dataList.value[i]
         const count = await getNoteCountByUuid(item.uuid!)
         item.noteCount = count
+        notesCount += item.noteCount!
       }
+      allNotesCount.value = notesCount
     })
     // 获取已删除的备忘录
     const b = getDeletedNotes().then((res) => {
@@ -144,12 +148,24 @@ onUnmounted(() => {
 
       <IonList>
         <MessageListItem
+          :data="{
+            uuid: 'allnotes',
+            title: '全部备忘录',
+            type: 'folder',
+            puuid: '',
+            noteCount: allNotesCount,
+          } as Note"
+          :note-desktop
+          :class="{ active: state.currentFolder === 'allnotes' }"
+          @selected="(uuid: string) => state.currentFolder = uuid"
+        />
+        <MessageListItem
           v-for="d in dataList"
           :key="d.uuid"
           :data="d"
           :note-desktop
           :class="{ active: state.currentFolder === d.uuid }"
-          @selected="(id: string) => state.currentFolder = id"
+          @selected="(uuid: string) => state.currentFolder = uuid"
         />
         <MessageListItem
           v-if="deletedNotes.length > 0"
@@ -162,7 +178,7 @@ onUnmounted(() => {
           } as Note"
           :note-desktop
           :class="{ active: state.currentFolder === 'deleted' }"
-          @selected="(id: string) => state.currentFolder = id"
+          @selected="(uuid: string) => state.currentFolder = uuid"
         />
       </IonList>
     </IonContent>
