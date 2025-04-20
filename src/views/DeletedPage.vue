@@ -2,6 +2,7 @@
 import type { Note } from '@/hooks/useDexie'
 import MessageListItem from '@/components/MessageListItem.vue'
 
+import { useDeviceType } from '@/hooks/useDeviceType'
 import { useNote } from '@/hooks/useNote'
 import {
   IonBackButton,
@@ -15,21 +16,18 @@ import {
   IonToolbar,
   onIonViewWillEnter,
 } from '@ionic/vue'
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
 
 defineEmits(['selected'])
 
 const { getDeletedNotes } = useNote()
+const { isDesktop } = useDeviceType()
 
 const dataList = ref<Note[]>([])
 
 const state = reactive({
   windowWidth: 0,
   currentDetail: '',
-})
-
-const noteDesktop = computed(() => {
-  return state.windowWidth >= 640
 })
 
 function init() {
@@ -39,7 +37,7 @@ function init() {
 }
 
 onIonViewWillEnter(() => {
-  if (!noteDesktop.value)
+  if (!isDesktop.value)
     init()
 })
 
@@ -62,7 +60,7 @@ onUnmounted(() => {
 
 <template>
   <IonPage>
-    <IonHeader v-if="!noteDesktop" :translucent="true">
+    <IonHeader v-if="!isDesktop" :translucent="true">
       <IonToolbar>
         <IonButtons slot="start">
           <IonBackButton text="备忘录" default-href="/home" />
@@ -84,7 +82,6 @@ onUnmounted(() => {
           v-for="d in dataList"
           :key="d.uuid"
           :data="d"
-          :note-desktop
           :class="{ active: state.currentDetail === d.uuid }"
           @selected="(uuid: string) => {
             state.currentDetail = uuid
@@ -93,7 +90,7 @@ onUnmounted(() => {
         />
       </IonList>
     </IonContent>
-    <IonFooter v-if="!noteDesktop">
+    <IonFooter v-if="!isDesktop">
       <IonToolbar>
         <IonTitle>
           {{ dataList.length > 0 ? `${dataList.length}个备忘录` : '无备忘录' }}

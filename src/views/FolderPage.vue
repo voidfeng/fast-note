@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import type { Note } from '@/hooks/useDexie'
-import type {
-  AlertButton,
-} from '@ionic/vue'
+import type { Note, NoteDetail } from '@/hooks/useDexie'
+import type { AlertButton } from '@ionic/vue'
 import MessageListItem from '@/components/MessageListItem.vue'
 
+import { useDeviceType } from '@/hooks/useDeviceType'
 import { useNote } from '@/hooks/useNote'
 import {
   IonAlert,
@@ -23,7 +22,7 @@ import {
 } from '@ionic/vue'
 import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const props = withDefaults(
@@ -38,10 +37,11 @@ const props = withDefaults(
 defineEmits(['selected'])
 
 const route = useRoute()
-const { addNote, getNote, getNotesByPUuid, getNoteCountByUuid } = useNote()
+const { addNote, getNote, getAllFolders, getNotesByPUuid, getNoteCountByUuid } = useNote()
+const { isDesktop } = useDeviceType()
 
 const data = ref<Note>({} as Note)
-const dataList = ref<Note[]>([])
+const dataList = ref<NoteDetail[]>([])
 
 const state = reactive({
   windowWidth: 0,
@@ -104,10 +104,6 @@ const defaultHref = computed(() => {
   return newPath
 })
 
-const noteDesktop = computed(() => {
-  return state.windowWidth >= 640
-})
-
 watch(
   () => props.currentFolder,
   () => {
@@ -125,40 +121,54 @@ function init(uuid: string) {
 
   getNotesByPUuid(uuid).then(async (res) => {
     dataList.value = res
+    if (data.value.uuid === 'allnotes') {
+      /**
+       * 获取备忘录所属的分类名称
+       * 1. 获取所有分类
+       * 2. 找到当前备忘录所属的分类
+       * 3. 将分类名称赋值给当前备忘录
+       */
+      getAllFolders().then((folders) => {
+        // 将文件夹数组转换为 Map，以 uuid 为键
+        const folderMap = new Map(folders.map(folder => [folder.uuid, folder]))
 
-    for (let i = 0; i < dataList.value.length; i++) {
-      const item = dataList.value[i]
-      const count = await getNoteCountByUuid(item.uuid!)
-      item.noteCount = count
+        // 遍历 dataList，为每个备忘录查找并设置其所属文件夹的名称
+        dataList.value.forEach((note) => {
+          if (note.puuid) {
+            const parentFolder = folderMap.get(note.puuid)
+            if (parentFolder) {
+              note.folderName = parentFolder.title
+            }
+            else {
+              note.folderName = '文件夹已删除'
+            }
+          }
+          else {
+            note.folderName = '无文件夹'
+          }
+        })
+      })
+    }
+    else {
+      for (let i = 0; i < dataList.value.length; i++) {
+        // 计算文件夹下的备忘录数量
+        const item = dataList.value[i]
+        const count = await getNoteCountByUuid(item.uuid!)
+        item.noteCount = count
+      }
     }
   })
 }
 
 onIonViewWillEnter(() => {
-  if (!noteDesktop.value)
+  if (!isDesktop.value)
     init(folderId.value)
-})
-
-// 更新窗口宽度的函数
-function updateWindowWidth() {
-  state.windowWidth = window.innerWidth
-}
-
-// 组件挂载时添加监听
-onMounted(() => {
-  state.windowWidth = window.innerWidth
-  window.addEventListener('resize', updateWindowWidth)
-})
-
-// 组件卸载时移除监听
-onUnmounted(() => {
-  window.removeEventListener('resize', updateWindowWidth)
 })
 </script>
 
 <template>
   <IonPage>
-    <IonHeader v-if="!noteDesktop" :translucent="true">
+    <IonHeader v-if="!isDesktop" :translucent="true">
       <IonToolbar>
         <IonButtons slot="start">
           <IonBackButton :text="isTopFolder ? '备忘录' : '返回'" :default-href="defaultHref" />
@@ -180,8 +190,8 @@ onUnmounted(() => {
           v-for="d in dataList"
           :key="d.uuid"
           :data="d"
-          :note-desktop
           :class="{ active: state.currentDetail === d.uuid }"
+          :show-parent-folder="data.uuid === 'allnotes'"
           @selected="(uuid: string) => {
             state.currentDetail = uuid
             $emit('selected', uuid)
@@ -189,7 +199,7 @@ onUnmounted(() => {
         />
       </IonList>
     </IonContent>
-    <IonFooter v-if="!noteDesktop">
+    <IonFooter v-if="!isDesktop">
       <IonToolbar>
         <IonButtons v-if="data.uuid !== 'allnotes'" slot="start">
           <IonButton id="add-folder2">

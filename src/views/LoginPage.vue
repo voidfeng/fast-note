@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { login } from '@/api'
+import { useDeviceType } from '@/hooks/useDeviceType'
 import { useSync } from '@/hooks/useSync'
 import { useUserInfo } from '@/hooks/useUserInfo'
 import {
@@ -16,13 +17,11 @@ import {
   loadingController,
   useIonRouter,
 } from '@ionic/vue'
-import { inject, ref } from 'vue'
-
-const noteDesktop = inject('noteDesktop')
+import { ref } from 'vue'
 
 const router = useIonRouter()
 const { sync } = useSync()
-
+const { isDesktop } = useDeviceType()
 const { refreshUserInfoFromCookie } = useUserInfo()
 
 const username = ref('')
@@ -66,7 +65,7 @@ async function onLogin() {
     </IonHeader>
     <IonContent :fullscreen="true">
       <div class="px4 flex items-center justify-center h-full">
-        <IonList :class="{ 'w-full': !noteDesktop, 'w-90': noteDesktop }">
+        <IonList :class="{ 'w-full': !isDesktop, 'w-90': isDesktop }">
           <h1 class="text-center">
             用户登录
           </h1>

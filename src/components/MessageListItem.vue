@@ -1,24 +1,29 @@
 <script setup lang="ts">
-import type { Note } from '@/hooks/useDexie'
+import type { NoteDetail } from '@/hooks/useDexie'
+import { useDeviceType } from '@/hooks/useDeviceType'
 import { IonIcon, IonItem, IonLabel, IonNote } from '@ionic/vue'
+import dayjs from 'dayjs'
 import { chevronForward, folderOutline, trashOutline } from 'ionicons/icons'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 const props = withDefaults(
   defineProps<{
-    data: Note
-    noteDesktop: boolean
+    data: NoteDetail
+    showParentFolder?: boolean
   }>(),
-  {},
+  {
+    showParentFolder: false,
+  },
 )
 
 defineEmits(['selected'])
 
 const route = useRoute()
+const { isDesktop } = useDeviceType()
 
 const routerLink = computed(() => {
-  if (props.noteDesktop)
+  if (isDesktop.value)
     return undefined
 
   if (props.data.uuid === 'deleted') {
@@ -28,7 +33,7 @@ const routerLink = computed(() => {
   if (props.data.type === 'folder') {
     /**
      * 文件夹跳转逻辑
-     * 1. noteDesktop 不跳转
+     * 1. isDesktop 不跳转
      * 1. 首页到文件夹: /f/ + id
      * 2. 文件夹到文件夹: 当前路径 + id
      */
@@ -55,14 +60,14 @@ const routerLink = computed(() => {
     <template v-if="data.type === 'folder'">
       <IonIcon :icon="$props.data.uuid === 'deleted' ? trashOutline : folderOutline" class="mr-3" />
       <IonLabel class="ion-text-wrap">
-        <h2>
+        <h2 class="mb-0">
           {{ data.title }}
           <span class="date">
             <IonNote>{{ data.noteCount }}</IonNote>
           </span>
         </h2>
       </IonLabel>
-      <IonIcon aria-hidden="true" :icon="chevronForward" size="small" />
+      <IonIcon aria-hidden="true" :icon="chevronForward" size="small" class="text-gray-500" />
     </template>
     <template v-else>
       <IonLabel class="ion-text-wrap">
@@ -73,6 +78,13 @@ const routerLink = computed(() => {
             <!-- <ion-icon aria-hidden="true" :icon="chevronForward" size="small" /> -->
           </span>
         </h2>
+        <p class="text-gray-400!">
+          {{ dayjs(data.newstime * 1000).format('YYYY/M/D') }}
+        </p>
+        <p v-if="showParentFolder" class="text-gray-400!">
+          <IonIcon :icon="folderOutline" class="v-text-bottom" />
+          {{ data.folderName }}
+        </p>
       </IonLabel>
     </template>
   </IonItem>
@@ -91,7 +103,6 @@ const routerLink = computed(() => {
 
 .list-item h2 {
   font-weight: 600;
-  margin: 0;
 
   /**
    * With larger font scales
@@ -108,10 +119,6 @@ const routerLink = computed(() => {
 .list-item .date {
   align-items: center;
   display: flex;
-}
-
-.list-item ion-icon {
-  color: #c9c9ca;
 }
 
 .list-item ion-note {

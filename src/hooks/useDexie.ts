@@ -19,6 +19,10 @@ export interface Note {
   noteCount?: number
 }
 
+export interface NoteDetail extends Note {
+  folderName?: string
+}
+
 export interface TypedFile {
   localId?: string
   url?: string

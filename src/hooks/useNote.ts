@@ -97,6 +97,10 @@ export function useNote() {
     fetchNotes()
   }
 
+  async function getAllFolders() {
+    return db.value.note.where('type').equals('folder').and(item => item.isdeleted !== 1).toArray()
+  }
+
   async function getNotesByPUuid(puuid: string) {
     if (puuid === 'allnotes') {
       return db.value.note.where('type').equals('note').and(item => item.isdeleted !== 1).toArray()
@@ -156,6 +160,7 @@ export function useNote() {
     getNote,
     deleteNote,
     updateNote,
+    getAllFolders,
     getNotesByPUuid,
     getDeletedNotes,
     getNoteCountByUuid,

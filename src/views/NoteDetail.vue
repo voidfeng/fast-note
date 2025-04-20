@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import NoteMore from '@/components/NoteMore.vue'
 import editor from '@/components/YYEditor.vue'
+import { useDeviceType } from '@/hooks/useDeviceType'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
@@ -24,6 +25,7 @@ const route = useRoute()
 const { getFirstNote, addNote, getNote, updateNote, deleteNote } = useNote()
 const { getFileByUrl } = useFiles()
 const { getFileRefsByRefid, updateFileRef } = useFileRefs()
+const { isDesktop } = useDeviceType()
 
 const editorRef = ref()
 const data = ref()
@@ -40,7 +42,9 @@ function getBackButtonText() {
 watch(
   () => props.currentDetail,
   () => {
-    init(props.currentDetail)
+    if (props.currentDetail) {
+      init(props.currentDetail)
+    }
   },
   { immediate: true },
 )
@@ -135,10 +139,10 @@ async function init(uuid: string) {
 }
 
 onMounted(async () => {
-  if (noteUuid.value !== '0') {
+  if (noteUuid.value && noteUuid.value !== '0') {
     init(noteUuid.value)
   }
-  else {
+  else if (!isDesktop.value) {
     newNoteUuid = nanoid(12)
     window.history.replaceState(null, '', `/n/${newNoteUuid}`)
   }
@@ -175,7 +179,7 @@ onMounted(async () => {
       </ion-item> -->
 
       <div class="ion-padding">
-        <editor ref="editorRef" :uuid="noteUuid === '0' ? newNoteUuid : noteUuid" @blur="onBlur" />
+        <editor v-if="noteUuid === '0' ? newNoteUuid : noteUuid" ref="editorRef" :uuid="noteUuid === '0' ? newNoteUuid : noteUuid" @blur="onBlur" />
       </div>
     </IonContent>
     <NoteMore />

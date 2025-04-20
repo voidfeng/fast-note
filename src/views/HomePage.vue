@@ -6,6 +6,7 @@ import type {
 import MessageListItem from '@/components/MessageListItem.vue'
 
 import SyncState from '@/components/SyncState.vue'
+import { useDeviceType } from '@/hooks/useDeviceType'
 import { useNote } from '@/hooks/useNote'
 import { useSync } from '@/hooks/useSync'
 import {
@@ -26,12 +27,13 @@ import {
 } from '@ionic/vue'
 import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { onUnmounted, reactive, ref } from 'vue'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
 const { addNote, getNotesByPUuid, getNoteCountByUuid, onUpdateNote, getDeletedNotes } = useNote()
 const { onSynced } = useSync()
+const { isDesktop } = useDeviceType()
 const unSub = onSynced(() => {
   init()
   onUnmounted(() => {
@@ -64,10 +66,6 @@ const state = reactive({
   windowWidth: 0,
   currentFolder: '',
   currentDetail: '',
-})
-
-const noteDesktop = computed(() => {
-  return state.windowWidth >= 640
 })
 
 function refresh(ev: CustomEvent) {
@@ -108,26 +106,10 @@ onUpdateNote((item) => {
 onIonViewWillEnter(() => {
   init()
 })
-
-// 更新窗口宽度的函数
-function updateWindowWidth() {
-  state.windowWidth = window.innerWidth
-}
-
-// 组件挂载时添加监听
-onMounted(() => {
-  state.windowWidth = window.innerWidth
-  window.addEventListener('resize', updateWindowWidth)
-})
-
-// 组件卸载时移除监听
-onUnmounted(() => {
-  window.removeEventListener('resize', updateWindowWidth)
-})
 </script>
 
 <template>
-  <IonPage :class="{ 'note-desktop': noteDesktop }">
+  <IonPage :class="{ 'note-desktop': isDesktop }">
     <IonHeader :translucent="true">
       <IonToolbar />
     </IonHeader>
@@ -155,7 +137,7 @@ onUnmounted(() => {
             puuid: '',
             noteCount: allNotesCount,
           } as Note"
-          :note-desktop
+          :note-desktop="isDesktop"
           :class="{ active: state.currentFolder === 'allnotes' }"
           @selected="(uuid: string) => state.currentFolder = uuid"
         />
@@ -163,7 +145,7 @@ onUnmounted(() => {
           v-for="d in dataList"
           :key="d.uuid"
           :data="d"
-          :note-desktop
+          :note-desktop="isDesktop"
           :class="{ active: state.currentFolder === d.uuid }"
           @selected="(uuid: string) => state.currentFolder = uuid"
         />
@@ -176,7 +158,7 @@ onUnmounted(() => {
             puuid: '',
             noteCount: deletedNotes.length,
           } as Note"
-          :note-desktop
+          :note-desktop="isDesktop"
           :class="{ active: state.currentFolder === 'deleted' }"
           @selected="(uuid: string) => state.currentFolder = uuid"
         />
@@ -203,13 +185,13 @@ onUnmounted(() => {
       :buttons="addButtons"
       :inputs="[{ name: 'newFolderName', placeholder: '请输入文件夹名称' }]"
     />
-    <div v-if="noteDesktop" class="home-list">
+    <div v-if="isDesktop" class="home-list">
       <FolderPage
         :current-folder="state.currentFolder"
         @selected="(id: string) => state.currentDetail = id"
       />
     </div>
-    <div v-if="noteDesktop" class="home-detail">
+    <div v-if="isDesktop" class="home-detail">
       <NoteDetail :current-detail="state.currentDetail" />
     </div>
   </IonPage>
