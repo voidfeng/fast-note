@@ -87,8 +87,9 @@ const routerLink = computed(() => {
             <!-- <ion-icon aria-hidden="true" :icon="chevronForward" size="small" /> -->
           </span>
         </h2>
-        <p class="text-gray-400!">
-          {{ dayjs(data.newstime * 1000).calendar(null, calendarConfig) }}
+        <p class="text-gray-400! text-elipsis!">
+          {{ dayjs(data.newstime * 1000).calendar(null, calendarConfig) }}&nbsp;&nbsp;
+          {{ data.smalltext }}
         </p>
         <p v-if="showParentFolder" class="text-gray-400!">
           <IonIcon :icon="folderOutline" class="v-text-bottom" />

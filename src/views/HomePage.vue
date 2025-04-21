@@ -27,7 +27,7 @@ import {
 } from '@ionic/vue'
 import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import { onUnmounted, reactive, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref } from 'vue'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
@@ -66,6 +66,18 @@ const state = reactive({
   windowWidth: 0,
   currentFolder: '',
   currentDetail: '',
+})
+
+const sortDataList = computed(() => {
+  return dataList.value.toSorted((a, b) => {
+    if (a.ftitle === 'default-folder' && b.ftitle !== 'default-folder') {
+      return -1
+    }
+    if (a.ftitle !== 'default-folder' && b.ftitle === 'default-folder') {
+      return 1
+    }
+    return b.lastdotime! - a.lastdotime!
+  })
 })
 
 function refresh(ev: CustomEvent) {
@@ -142,7 +154,7 @@ onIonViewWillEnter(() => {
           @selected="(uuid: string) => state.currentFolder = uuid"
         />
         <MessageListItem
-          v-for="d in dataList"
+          v-for="d in sortDataList"
           :key="d.uuid"
           :data="d"
           :note-desktop="isDesktop"

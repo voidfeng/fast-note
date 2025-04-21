@@ -58,7 +58,7 @@ async function onBlur() {
    * 2. 编辑时(id不为0)
    *   - 全部保存
    */
-  const { title } = editorRef.value.getTitle()
+  const { title, smalltext } = editorRef.value.getTitle()
   const content = editorRef.value?.getContent()
   const time = getTime()
   const uuid = noteUuid.value === '0' ? newNoteUuid : noteUuid.value
@@ -68,6 +68,7 @@ async function onBlur() {
     const firstNote = await getFirstNote()
     const newNote = {
       title,
+      smalltext,
       newstext: content,
       newstime: time,
       lastdotime: time,
@@ -84,6 +85,7 @@ async function onBlur() {
       uuid,
       Object.assign(toRaw(data.value), {
         title,
+        smalltext,
         newstext: content,
         newstime: time,
         lastdotime: time,

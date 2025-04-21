@@ -69,8 +69,9 @@ function getTitle() {
   }
 
   // 获取简介
+  const smalltext = editor.value?.getText().replace(title, '').replace(/\n+/g, ' ').trim().slice(0, 255)
 
-  return { title }
+  return { title, smalltext }
 }
 
 onMounted(() => {

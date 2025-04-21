@@ -11,6 +11,7 @@ export interface Note {
   id?: number
   uuid: string
   title: string
+  smalltext: string
   ftitle: string
   newstime: number
   newstext: string
