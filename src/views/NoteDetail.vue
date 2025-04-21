@@ -58,7 +58,7 @@ async function onBlur() {
    * 2. 编辑时(id不为0)
    *   - 全部保存
    */
-  const title = editorRef.value?.getTitle()
+  const { title } = editorRef.value.getTitle()
   const content = editorRef.value?.getContent()
   const time = getTime()
   const uuid = noteUuid.value === '0' ? newNoteUuid : noteUuid.value

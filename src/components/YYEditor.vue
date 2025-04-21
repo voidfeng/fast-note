@@ -32,12 +32,7 @@ const { addFileRef, getFileRefByHashAndRefid } = useFileRefs()
 const editor = ref<EditorInstance>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
-function getTitle(): string {
-  const json = editor.value?.getJSON()
-  if (!json || !json.content || json.content.length === 0) {
-    return ''
-  }
-
+function getTitle() {
   // 递归遍历节点提取文本
   function extractTextFromNode(node: any): string {
     if (!node)
@@ -65,12 +60,17 @@ function getTitle(): string {
     return `[${node.type}]`
   }
 
-  // 从第一个节点提取文本作为标题
-  if (json.content.length > 0) {
-    return extractTextFromNode(json.content[0]).trim()
+  const json = editor.value?.getJSON()
+
+  // 获取标题
+  let title = ''
+  if (json?.content && json.content.length > 0 && json.content[0]) {
+    title = extractTextFromNode(json.content[0]).trim()
   }
 
-  return ''
+  // 获取简介
+
+  return { title }
 }
 
 onMounted(() => {
@@ -137,6 +137,10 @@ onMounted(() => {
         onImageLoaded(url: string, width: number, height: number) {
           console.warn('图片加载完成', url, width, height)
           // 这里可以添加图片加载完成后的处理逻辑
+          /**
+           * 1. 先检查 file 是否存在
+           * 2. 如果不存在，请求图片路径，把图片下载下来，然后转为blob再转为File对象
+           */
         },
       }),
       GlobalDragHandle.configure({

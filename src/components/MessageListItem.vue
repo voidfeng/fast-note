@@ -3,6 +3,7 @@ import type { NoteDetail } from '@/hooks/useDexie'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { IonIcon, IonItem, IonLabel, IonNote } from '@ionic/vue'
 import dayjs from 'dayjs'
+import calendar from 'dayjs/plugin/calendar'
 import { chevronForward, folderOutline, trashOutline } from 'ionicons/icons'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
@@ -19,8 +20,16 @@ const props = withDefaults(
 
 defineEmits(['selected'])
 
+dayjs.extend(calendar)
+
 const route = useRoute()
 const { isDesktop } = useDeviceType()
+const calendarConfig = {
+  sameDay: 'HH:mm', // 今天显示时间
+  lastDay: '[昨天] HH:mm', // 昨天显示"昨天 HH:mm:ss"
+  lastWeek: 'YYYY/M/D', // 上周
+  sameElse: 'YYYY/M/D', // 其他情况
+}
 
 const routerLink = computed(() => {
   if (isDesktop.value)
@@ -79,7 +88,7 @@ const routerLink = computed(() => {
           </span>
         </h2>
         <p class="text-gray-400!">
-          {{ dayjs(data.newstime * 1000).format('YYYY/M/D') }}
+          {{ dayjs(data.newstime * 1000).calendar(null, calendarConfig) }}
         </p>
         <p v-if="showParentFolder" class="text-gray-400!">
           <IonIcon :icon="folderOutline" class="v-text-bottom" />

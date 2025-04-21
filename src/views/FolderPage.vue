@@ -86,7 +86,7 @@ const folders = computed(() => {
 })
 
 const notes = computed(() => {
-  return dataList.value.filter(d => d.type === 'note')
+  return dataList.value.filter(d => d.type === 'note').sort((a, b) => b.lastdotime - a.lastdotime)
 })
 
 const defaultHref = computed(() => {
@@ -187,7 +187,18 @@ onIonViewWillEnter(() => {
 
       <IonList>
         <MessageListItem
-          v-for="d in dataList"
+          v-for="d in folders"
+          :key="d.uuid"
+          :data="d"
+          :class="{ active: state.currentDetail === d.uuid }"
+          :show-parent-folder="data.uuid === 'allnotes'"
+          @selected="(uuid: string) => {
+            state.currentDetail = uuid
+            $emit('selected', uuid)
+          }"
+        />
+        <MessageListItem
+          v-for="d in notes"
           :key="d.uuid"
           :data="d"
           :class="{ active: state.currentDetail === d.uuid }"
