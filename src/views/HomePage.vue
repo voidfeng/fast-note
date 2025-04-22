@@ -7,6 +7,7 @@ import MessageListItem from '@/components/MessageListItem.vue'
 
 import SyncState from '@/components/SyncState.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
+import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
 import { useSync } from '@/hooks/useSync'
 import {
@@ -34,6 +35,19 @@ import NoteDetail from './NoteDetail.vue'
 const { addNote, getNotesByPUuid, getNoteCountByUuid, onUpdateNote, getDeletedNotes } = useNote()
 const { onSynced } = useSync()
 const { isDesktop } = useDeviceType()
+const listRef = ref()
+useIonicLongPressList(listRef, {
+  itemSelector: 'ion-item', // 匹配 ion-item 元素
+  duration: 500,
+  pressedClass: 'item-long-press',
+  onItemLongPress: (element) => {
+    const uuid = element.getAttribute('uuid')
+    if (uuid) {
+      console.log('弹出菜单')
+    }
+  },
+})
+
 const unSub = onSynced(() => {
   init()
   onUnmounted(() => {
@@ -140,7 +154,7 @@ onIonViewWillEnter(() => {
         <SyncState />
       </IonHeader>
 
-      <IonList>
+      <IonList ref="listRef">
         <MessageListItem
           :data="{
             uuid: 'allnotes',
@@ -159,6 +173,7 @@ onIonViewWillEnter(() => {
           :data="d"
           :note-desktop="isDesktop"
           :class="{ active: state.currentFolder === d.uuid }"
+          :uuid="d.uuid"
           @selected="(uuid: string) => state.currentFolder = uuid"
         />
         <MessageListItem
