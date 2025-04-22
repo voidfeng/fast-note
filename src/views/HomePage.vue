@@ -3,13 +3,15 @@ import type { Note } from '@/hooks/useDexie'
 import type {
   AlertButton,
 } from '@ionic/vue'
-import MessageListItem from '@/components/MessageListItem.vue'
+import LongPressMenu from '@/components/LongPressMenu.vue'
 
+import MessageListItem from '@/components/MessageListItem.vue'
 import SyncState from '@/components/SyncState.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
 import { useSync } from '@/hooks/useSync'
+import { getTime } from '@/utils/date'
 import {
   IonAlert,
   IonButton,
@@ -32,18 +34,23 @@ import { computed, onUnmounted, reactive, ref } from 'vue'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
-const { addNote, getNotesByPUuid, getNoteCountByUuid, onUpdateNote, getDeletedNotes } = useNote()
+const { addNote, getNotesByPUuid, getNoteCountByUuid, onUpdateNote, getDeletedNotes, getNote, updateNote } = useNote()
 const { onSynced } = useSync()
 const { isDesktop } = useDeviceType()
+
+const longPressMenuOpen = ref(false)
+let longPressUUID = ''
 const listRef = ref()
 useIonicLongPressList(listRef, {
   itemSelector: 'ion-item', // 匹配 ion-item 元素
   duration: 500,
   pressedClass: 'item-long-press',
-  onItemLongPress: (element) => {
+  onItemLongPress: async (element) => {
+    console.warn('长按了')
     const uuid = element.getAttribute('uuid')
     if (uuid) {
-      console.log('弹出菜单')
+      longPressUUID = uuid
+      longPressMenuOpen.value = true
     }
   },
 })
@@ -98,6 +105,17 @@ function refresh(ev: CustomEvent) {
   init().then(() => {
     ev.detail.complete()
   })
+}
+
+async function onRename(newName: string) {
+  console.warn('rename', newName, longPressUUID)
+  const note = await getNote(longPressUUID)
+  if (note) {
+    note.title = newName
+    note.lastdotime = getTime()
+    await updateNote(longPressUUID, note)
+    init()
+  }
 }
 
 function init() {
@@ -221,6 +239,11 @@ onIonViewWillEnter(() => {
     <div v-if="isDesktop" class="home-detail">
       <NoteDetail :current-detail="state.currentDetail" />
     </div>
+    <LongPressMenu
+      :is-open="longPressMenuOpen"
+      @did-dismiss="() => longPressMenuOpen = false"
+      @rename="onRename"
+    />
   </IonPage>
 </template>
 
