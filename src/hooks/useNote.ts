@@ -1,4 +1,5 @@
 import type { Note } from './useDexie'
+import { getTime } from '@/utils/date'
 import { nanoid } from 'nanoid'
 import { onUnmounted, ref } from 'vue'
 import { useDexie } from './useDexie'
@@ -111,8 +112,8 @@ export function useNote() {
   }
 
   async function getDeletedNotes() {
-    const r = await db.value.note.where('isdeleted').equals(1).toArray()
-    return r
+    const thirtyDaysAgo = getTime() - (30 * 24 * 60 * 60) // 30天前的时间戳
+    return db.value.note.where('isdeleted').equals(1).and(item => item.lastdotime >= thirtyDaysAgo).toArray()
   }
 
   async function getNoteCountByUuid(puuid: string) {

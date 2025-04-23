@@ -158,7 +158,7 @@ onIonViewWillEnter(() => {
         <SyncState />
       </IonHeader>
 
-      <IonList ref="listRef">
+      <IonList ref="listRef" inset>
         <MessageListItem
           :data="{
             uuid: 'allnotes',
@@ -228,6 +228,7 @@ onIonViewWillEnter(() => {
     <LongPressMenu
       :is-open="longPressMenuOpen"
       :uuid="longPressUUID"
+      :items="[{ type: 'rename' }, { type: 'delete' }]"
       @did-dismiss="() => longPressMenuOpen = false"
       @refresh="init"
     />
