@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { Note } from '@/hooks/useDexie'
+import LongPressMenu from '@/components/LongPressMenu.vue'
 import MessageListItem from '@/components/MessageListItem.vue'
-
 import { useDeviceType } from '@/hooks/useDeviceType'
+import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
 import {
   IonBackButton,
@@ -24,7 +25,21 @@ const { getDeletedNotes } = useNote()
 const { isDesktop } = useDeviceType()
 
 const dataList = ref<Note[]>([])
-
+const longPressMenuOpen = ref(false)
+const longPressUUID = ref('')
+const listRef = ref()
+useIonicLongPressList(listRef, {
+  itemSelector: 'ion-item', // 匹配 ion-item 元素
+  duration: 500,
+  pressedClass: 'item-long-press',
+  onItemLongPress: async (element) => {
+    const uuid = element.getAttribute('uuid')
+    if (uuid) {
+      longPressUUID.value = uuid
+      longPressMenuOpen.value = true
+    }
+  },
+})
 const state = reactive({
   windowWidth: 0,
   currentDetail: '',
@@ -77,12 +92,13 @@ onUnmounted(() => {
         </IonToolbar>
       </IonHeader>
 
-      <IonList>
+      <IonList ref="listRef">
         <MessageListItem
           v-for="d in dataList"
           :key="d.uuid"
           :data="d"
           :class="{ active: state.currentDetail === d.uuid }"
+          :uuid="d.uuid"
           @selected="(uuid: string) => {
             state.currentDetail = uuid
             $emit('selected', uuid)
@@ -97,5 +113,11 @@ onUnmounted(() => {
         </IonTitle>
       </IonToolbar>
     </IonFooter>
+    <LongPressMenu
+      :is-open="longPressMenuOpen"
+      :uuid="longPressUUID"
+      @did-dismiss="() => longPressMenuOpen = false"
+      @refresh="() => init()"
+    />
   </IonPage>
 </template>
