@@ -37,7 +37,7 @@ const config = ref([
             },
           },
         ],
-        inputs: [{ name: 'newFolderName', placeholder: '请输入文件夹名称' }],
+        inputs: [{ name: 'newFolderName', placeholder: '请输入文件夹名称', value: note.value?.title }],
       })
 
       await alert.present()
