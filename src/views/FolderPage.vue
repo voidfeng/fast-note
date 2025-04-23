@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { Note, NoteDetail } from '@/hooks/useDexie'
 import type { AlertButton } from '@ionic/vue'
+import LongPressMenu from '@/components/LongPressMenu.vue'
 import MessageListItem from '@/components/MessageListItem.vue'
-
 import { useDeviceType } from '@/hooks/useDeviceType'
+import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
 import {
   IonAlert,
@@ -40,6 +41,21 @@ const route = useRoute()
 const { addNote, getNote, getAllFolders, getNotesByPUuid, getNoteCountByUuid } = useNote()
 const { isDesktop } = useDeviceType()
 
+const longPressMenuOpen = ref(false)
+const longPressUUID = ref('')
+const listRef = ref()
+useIonicLongPressList(listRef, {
+  itemSelector: 'ion-item', // 匹配 ion-item 元素
+  duration: 500,
+  pressedClass: 'item-long-press',
+  onItemLongPress: async (element) => {
+    const uuid = element.getAttribute('uuid')
+    if (uuid) {
+      longPressUUID.value = uuid
+      longPressMenuOpen.value = true
+    }
+  },
+})
 const data = ref<Note>({} as Note)
 const dataList = ref<NoteDetail[]>([])
 
@@ -69,7 +85,7 @@ const addButtons: AlertButton[] = [
         uuid: nanoid(12),
         version: 1,
       })
-      init(folderId.value)
+      init()
     },
   },
 ]
@@ -108,12 +124,19 @@ watch(
   () => props.currentFolder,
   () => {
     if (props.currentFolder)
-      init(props.currentFolder)
+      init()
   },
   { immediate: true },
 )
 
-function init(uuid: string) {
+function init() {
+  let uuid
+  if (isDesktop.value)
+    uuid = props.currentFolder
+  else
+    uuid = folderId.value
+  if (!uuid)
+    return
   getNote(uuid).then((res) => {
     if (res)
       data.value = res
@@ -162,7 +185,7 @@ function init(uuid: string) {
 
 onIonViewWillEnter(() => {
   if (!isDesktop.value)
-    init(folderId.value)
+    init()
 })
 </script>
 
@@ -185,13 +208,14 @@ onIonViewWillEnter(() => {
         </IonToolbar>
       </IonHeader>
 
-      <IonList>
+      <IonList ref="listRef">
         <MessageListItem
           v-for="d in folders"
           :key="d.uuid"
           :data="d"
           :class="{ active: state.currentDetail === d.uuid }"
           :show-parent-folder="data.uuid === 'allnotes'"
+          :uuid="d.uuid"
           @selected="(uuid: string) => {
             state.currentDetail = uuid
             $emit('selected', uuid)
@@ -203,6 +227,7 @@ onIonViewWillEnter(() => {
           :data="d"
           :class="{ active: state.currentDetail === d.uuid }"
           :show-parent-folder="data.uuid === 'allnotes'"
+          :uuid="d.uuid"
           @selected="(uuid: string) => {
             state.currentDetail = uuid
             $emit('selected', uuid)
@@ -233,6 +258,12 @@ onIonViewWillEnter(() => {
       header="请输入文件夹名称"
       :buttons="addButtons"
       :inputs="[{ name: 'newFolderName', placeholder: '请输入文件夹名称' }]"
+    />
+    <LongPressMenu
+      :is-open="longPressMenuOpen"
+      :uuid="longPressUUID"
+      @did-dismiss="() => longPressMenuOpen = false"
+      @refresh="() => init()"
     />
   </IonPage>
 </template>
