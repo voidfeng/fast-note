@@ -146,6 +146,54 @@ export function useNote() {
     return db.value.note.where('lastdotime').aboveOrEqual(lastdotime).toArray()
   }
 
+  async function getFolderTreeByPUuid(puuid: string = '') {
+    /**
+     * 先获取全部文件夹，再根据puuid获取对应的文件夹，再递归寻找每个文件夹的子文件夹
+     */
+    const allFolders = await db.value.note.where('type').equals('folder').and(item => item.isdeleted !== 1).toArray()
+    const folders = allFolders.filter(item => item.puuid === puuid)
+
+    if (folders && folders.length > 0) {
+      // 递归寻找每个文件夹的子文件夹
+      const buildFolderTree = async (currentFolder: Note, allFolders: Note[]): Promise<Note> => {
+        // 使用复合索引直接查询，避免加载数据到内存
+        const directNoteCount = await db.value.note
+          .where('[type+puuid+isdeleted]')
+          .equals(['note', currentFolder.uuid, 0])
+          .count()
+
+        const children = allFolders.filter(item => item.puuid === currentFolder.uuid)
+
+        // 计算子文件夹中的笔记数量
+        let childrenNoteCount = 0
+        if (children.length > 0) {
+          currentFolder.children = []
+          // 递归处理每个子文件夹
+          for (const child of children) {
+            const processedChild = await buildFolderTree(child, allFolders)
+            currentFolder.children.push(processedChild)
+            // 累加子文件夹中的笔记数量
+            childrenNoteCount += processedChild.noteCount || 0
+          }
+        }
+
+        // 当前文件夹总笔记数 = 直接包含的笔记 + 子文件夹中的所有笔记
+        currentFolder.noteCount = directNoteCount + childrenNoteCount
+
+        return currentFolder
+      }
+
+      // 为每个顶层文件夹构建树结构
+      const result = []
+      for (const folder of folders) {
+        const processedFolder = await buildFolderTree(folder, allFolders)
+        result.push(processedFolder)
+      }
+      return result
+    }
+    return []
+  }
+
   onUnmounted(() => {
     privateNoteUpdateArr.forEach((fn) => {
       onNoteUpdateArr.splice(onNoteUpdateArr.indexOf(fn), 1)
@@ -161,11 +209,13 @@ export function useNote() {
     getNote,
     deleteNote,
     updateNote,
-    getAllFolders,
     getNotesByPUuid,
     getDeletedNotes,
     getNoteCountByUuid,
     getNotesByLastdotime,
     onUpdateNote,
+    // 文件夹
+    getAllFolders,
+    getFolderTreeByPUuid,
   }
 }

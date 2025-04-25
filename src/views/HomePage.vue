@@ -32,7 +32,7 @@ import { computed, onUnmounted, reactive, ref } from 'vue'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
-const { addNote, getNotesByPUuid, getNoteCountByUuid, onUpdateNote, getDeletedNotes } = useNote()
+const { addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid } = useNote()
 const { onSynced } = useSync()
 const { isDesktop } = useDeviceType()
 
@@ -106,22 +106,25 @@ function refresh(ev: CustomEvent) {
 
 function init() {
   return new Promise((resolve) => {
-    const a = getNotesByPUuid('').then(async (res) => {
-      dataList.value = res
-      let notesCount = 0
-      for (let i = 0; i < dataList.value.length; i++) {
-        const item = dataList.value[i]
-        const count = await getNoteCountByUuid(item.uuid!)
-        item.noteCount = count
-        notesCount += item.noteCount!
+    const treePromise = getFolderTreeByPUuid().then((res) => {
+      if (res && res.length > 0) {
+        dataList.value = res
+        // 计算所有笔记总数
+        let notesCount = 0
+        for (const folder of res) {
+          notesCount += folder.noteCount || 0
+        }
+        allNotesCount.value = notesCount
       }
-      allNotesCount.value = notesCount
     })
+
     // 获取已删除的备忘录
-    const b = getDeletedNotes().then((res) => {
+    const deletedPromise = getDeletedNotes().then((res) => {
       deletedNotes.value = res
     })
-    Promise.all([a, b]).then(() => {
+
+    // 等待所有Promise完成
+    Promise.all([treePromise, deletedPromise]).then(() => {
       resolve(true)
     })
   })
