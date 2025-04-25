@@ -5,8 +5,17 @@ import { getTime } from '@/utils/date'
 import { alertController, IonItem, IonLabel, IonList, IonModal } from '@ionic/vue'
 import { ref, toRaw, watch } from 'vue'
 
+type ItemType = 'rename' | 'delete' | 'restore' | 'deleteNow'
+interface IConfig {
+  [key: string]: {
+    label: string
+    handler: () => void
+  }
+}
+
 const props = withDefaults(defineProps <{
   uuid: string
+  items: { type: ItemType }[]
 }>(), {})
 
 const emit = defineEmits(['refresh'])
@@ -18,8 +27,8 @@ const note = ref<Note>()
 
 const dismiss = () => modal.value.$el.dismiss()
 
-const config = ref([
-  {
+const config = ref<IConfig>({
+  rename: {
     label: '重命名',
     handler: async () => {
       const alert = await alertController.create({
@@ -43,7 +52,7 @@ const config = ref([
       await alert.present()
     },
   },
-  {
+  delete: {
     label: '删除',
     handler: async () => {
       const alert = await alertController.create({
@@ -71,7 +80,25 @@ const config = ref([
       await alert.present()
     },
   },
-])
+  restore: {
+    label: '恢复',
+    handler: async () => {
+      note.value!.isdeleted = 0
+      await updateNote(note.value!.uuid, toRaw(note.value))
+      emit('refresh')
+      dismiss()
+    },
+  },
+  deleteNow: {
+    label: '永久删除',
+    handler: async () => {
+      note.value!.lastdotime = 0
+      await updateNote(note.value!.uuid, toRaw(note.value))
+      emit('refresh')
+      dismiss()
+    },
+  },
+})
 
 watch(() => props.uuid, () => {
   if (props.uuid) {
@@ -86,8 +113,8 @@ watch(() => props.uuid, () => {
   <IonModal v-bind="$attrs" id="long-press-menu" ref="modal">
     <div class="long-press-menu">
       <IonList lines="none">
-        <IonItem v-for="d in config" :key="d.label" :button="true" :detail="false" @click="d.handler">
-          <IonLabel>{{ d.label }}</IonLabel>
+        <IonItem v-for="d in $props.items" :key="d.type" :button="true" :detail="false" @click="config[d.type].handler">
+          <IonLabel>{{ config[d.type].label }}</IonLabel>
         </IonItem>
       </IonList>
     </div>

@@ -92,7 +92,7 @@ onUnmounted(() => {
         </IonToolbar>
       </IonHeader>
 
-      <IonList ref="listRef">
+      <IonList ref="listRef" inset>
         <MessageListItem
           v-for="d in dataList"
           :key="d.uuid"
@@ -116,6 +116,7 @@ onUnmounted(() => {
     <LongPressMenu
       :is-open="longPressMenuOpen"
       :uuid="longPressUUID"
+      :items="[{ type: 'restore' }, { type: 'deleteNow' }]"
       @did-dismiss="() => longPressMenuOpen = false"
       @refresh="() => init()"
     />

@@ -366,7 +366,7 @@ export function useSync() {
     // 3. 检查是否有引用为0的文件，如果为0则标记删除
     // 获取所有本地文件引用的hash列表
     const uniqueHashes = new Set([...localFileRefs.map(ref => ref.hash)])
-    const fourteenDaysAgo = getTime() - (14 * 24 * 60 * 60) // 14天前的时间戳
+    const thirtyDaysAgo = getTime() - (30 * 24 * 60 * 60) // 30天前的时间戳
 
     for (const hash of uniqueHashes) {
       const refCount = await getRefCount(hash)
@@ -379,13 +379,13 @@ export function useSync() {
           const _now = getTime()
           const fileLastdotime = (file as any).lastdotime || 0
 
-          if (!file.isdeleted || fileLastdotime > fourteenDaysAgo) {
+          if (!file.isdeleted || fileLastdotime > thirtyDaysAgo) {
             // 标记为删除状态，但不实际删除
             // 注意: 这里需要实现file表的更新方法
             await updateFile({ ...file, isdeleted: 1, lastdotime: _now })
           }
-          else if (file.isdeleted && fileLastdotime <= fourteenDaysAgo) {
-            // 如果已经是删除状态且超过14天，则真正删除文件
+          else if (file.isdeleted && fileLastdotime <= thirtyDaysAgo) {
+            // 如果已经是删除状态且超过30天，则真正删除文件
             await deleteFile(hash)
             await deleteCloudFile(file.id!)
             deleteCount++

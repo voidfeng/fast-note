@@ -208,7 +208,7 @@ onIonViewWillEnter(() => {
         </IonToolbar>
       </IonHeader>
 
-      <IonList ref="listRef">
+      <IonList ref="listRef" inset>
         <MessageListItem
           v-for="d in folders"
           :key="d.uuid"
@@ -262,6 +262,7 @@ onIonViewWillEnter(() => {
     <LongPressMenu
       :is-open="longPressMenuOpen"
       :uuid="longPressUUID"
+      :items="[{ type: 'rename' }, { type: 'delete' }]"
       @did-dismiss="() => longPressMenuOpen = false"
       @refresh="() => init()"
     />
