@@ -83,7 +83,7 @@ function onClick() {
         class="ion-text-wrap my-0! py-[10px]!"
         @click.stop="onClick"
       >
-        <h2 class="mb-0">
+        <h2 class="mb-0 line-height-[24px]">
           {{ data.title }}
           <span class="date">
             <IonNote class="text-gray-400 text-base font-semibold">{{ data.noteCount }}</IonNote>
