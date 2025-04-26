@@ -1,8 +1,9 @@
-// uno.config.ts
-import { defineConfig } from 'unocss'
+import { defineConfig, transformerDirectives } from 'unocss'
 
 export default defineConfig({
-  // ...UnoCSS options
+  transformers: [
+    transformerDirectives(),
+  ],
   shortcuts: [
     ['text-elipsis', 'overflow-hidden text-ellipsis whitespace-nowrap'],
   ],

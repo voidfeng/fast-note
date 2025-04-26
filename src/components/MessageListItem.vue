@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import type { NoteDetail } from '@/hooks/useDexie'
 import { useDeviceType } from '@/hooks/useDeviceType'
-import { IonIcon, IonItem, IonLabel, IonNote } from '@ionic/vue'
+import { IonAccordion, IonIcon, IonItem, IonLabel, IonNote, useIonRouter } from '@ionic/vue'
 import dayjs from 'dayjs'
 import calendar from 'dayjs/plugin/calendar'
-import { chevronForward, folderOutline, trashOutline } from 'ionicons/icons'
+import { folderOutline, trashOutline } from 'ionicons/icons'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+
+defineOptions({
+  name: 'MessageListItem',
+})
 
 const props = withDefaults(
   defineProps<{
@@ -18,11 +22,12 @@ const props = withDefaults(
   },
 )
 
-defineEmits(['selected'])
+const emit = defineEmits(['selected'])
 
 dayjs.extend(calendar)
 
 const route = useRoute()
+const router = useIonRouter()
 const { isDesktop } = useDeviceType()
 const calendarConfig = {
   sameDay: 'HH:mm', // 今天显示时间
@@ -56,49 +61,112 @@ const routerLink = computed(() => {
   }
   return `/n/${props.data.uuid}`
 })
+
+function onClick() {
+  emit('selected', props.data.uuid)
+  router.push(routerLink.value)
+}
 </script>
 
 <template>
-  <IonItem
-    v-if="data"
-    :router-link="routerLink"
-    :detail="false"
-    class="list-item"
-    @click="$emit('selected', $props.data.uuid)"
-  >
-    <template v-if="data.type === 'folder'">
-      <IonIcon :icon="$props.data.uuid === 'deleted' ? trashOutline : folderOutline" class="mr-3" />
-      <IonLabel class="ion-text-wrap">
+  <IonAccordion v-if="data.type === 'folder'" :value="data.uuid" :class="{ 'no-children': !data.children }" class="message-list-item">
+    <IonItem
+      v-if="data"
+      slot="header"
+      :detail="false"
+      class="list-item"
+      lines="inset"
+      style="--inner-border-width: 0 0 0.55px 0;"
+    >
+      <IonIcon :icon="$props.data.uuid === 'deleted' ? trashOutline : folderOutline" class="folder-icon mr-3 primary" />
+      <IonLabel
+        class="ion-text-wrap my-0! py-[10px]!"
+        @click.stop="onClick"
+      >
         <h2 class="mb-0">
           {{ data.title }}
           <span class="date">
-            <IonNote>{{ data.noteCount }}</IonNote>
+            <IonNote class="text-gray-400 text-base font-semibold">{{ data.noteCount }}</IonNote>
           </span>
         </h2>
       </IonLabel>
-      <IonIcon aria-hidden="true" :icon="chevronForward" size="small" class="text-gray-500" />
-    </template>
-    <template v-else>
-      <IonLabel class="ion-text-wrap">
-        <h2>
-          {{ data.title }}
-          <span class="date">
-            <!-- <ion-note>{{ data.newstime }}</ion-note> -->
-            <!-- <ion-icon aria-hidden="true" :icon="chevronForward" size="small" /> -->
-          </span>
-        </h2>
-        <p class="text-gray-400! text-elipsis!">
-          {{ dayjs(data.newstime * 1000).calendar(null, calendarConfig) }}&nbsp;&nbsp;
-          {{ data.smalltext }}
-        </p>
-        <p v-if="showParentFolder" class="text-gray-400!">
-          <IonIcon :icon="folderOutline" class="v-text-bottom" />
-          {{ data.folderName }}
-        </p>
-      </IonLabel>
-    </template>
+    </IonItem>
+    <div v-if="data.children" slot="content">
+      <MessageListItem v-for="d in data.children" :key="d.uuid" :data="d" class="child-list-item" />
+    </div>
+  </IonAccordion>
+  <IonItem
+    v-else
+    :detail="false"
+    class="list-item"
+    lines="inset"
+  >
+    <IonLabel
+      class="ion-text-wrap my-0! py-[10px]!"
+      @click.stop="onClick"
+    >
+      <h2>
+        {{ data.title }}
+        <span class="date">
+          <!-- <ion-note>{{ data.newstime }}</ion-note> -->
+          <!-- <ion-icon aria-hidden="true" :icon="chevronForward" size="small" /> -->
+        </span>
+      </h2>
+      <p class="text-gray-400! text-elipsis!">
+        {{ dayjs(data.newstime * 1000).calendar(null, calendarConfig) }}&nbsp;&nbsp;
+        {{ data.smalltext }}
+      </p>
+      <p v-if="showParentFolder" class="text-gray-400!">
+        <IonIcon :icon="folderOutline" class="v-text-bottom" />
+        {{ data.folderName }}
+      </p>
+    </IonLabel>
   </IonItem>
 </template>
+
+<style lang="scss">
+.message-list-item {
+  &.no-children {
+    .ion-accordion-toggle-icon {
+      transform: rotate(270deg) !important;
+      color: var(--text-gray-600);
+    }
+  }
+  .child-list-item {
+    .folder-icon {
+      --uno: pl-8;
+    }
+    .child-list-item {
+      .folder-icon {
+        --uno: pl-16;
+      }
+      .child-list-item {
+        .folder-icon {
+          --uno: pl-24;
+        }
+        .child-list-item {
+          .folder-icon {
+            --uno: pl-32;
+          }
+        }
+      }
+    }
+  }
+  .ion-accordion-toggle-icon {
+    transform: rotate(270deg);
+    color: var(--primary);
+  }
+  &.accordion-expanding > [slot='header'] .ion-accordion-toggle-icon,
+  &.accordion-expanded > [slot='header'] .ion-accordion-toggle-icon {
+    transform: rotate(360deg);
+  }
+}
+.list-item {
+  .ion-accordion-toggle-icon {
+    font-size: 1.125rem;
+  }
+}
+</style>
 
 <style lang="scss" scoped>
 .list-item {
@@ -132,9 +200,7 @@ const routerLink = computed(() => {
 }
 
 .list-item ion-note {
-  font-size: 0.9375rem;
   margin-right: 8px;
-  font-weight: normal;
 }
 
 .list-item ion-note.md {

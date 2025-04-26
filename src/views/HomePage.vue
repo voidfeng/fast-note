@@ -11,6 +11,7 @@ import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
 import { useSync } from '@/hooks/useSync'
 import {
+  IonAccordionGroup,
   IonAlert,
   IonButton,
   IonButtons,
@@ -162,40 +163,42 @@ onIonViewWillEnter(() => {
       </IonHeader>
 
       <IonList ref="listRef" inset>
-        <MessageListItem
-          :data="{
-            uuid: 'allnotes',
-            title: '全部备忘录',
-            type: 'folder',
-            puuid: '',
-            noteCount: allNotesCount,
-          } as Note"
-          :note-desktop="isDesktop"
-          :class="{ active: state.currentFolder === 'allnotes' }"
-          @selected="(uuid: string) => state.currentFolder = uuid"
-        />
-        <MessageListItem
-          v-for="d in sortDataList"
-          :key="d.uuid"
-          :data="d"
-          :note-desktop="isDesktop"
-          :class="{ active: state.currentFolder === d.uuid }"
-          :uuid="d.uuid"
-          @selected="(uuid: string) => state.currentFolder = uuid"
-        />
-        <MessageListItem
-          v-if="deletedNotes.length > 0"
-          :data="{
-            uuid: 'deleted',
-            title: '最近删除',
-            type: 'folder',
-            puuid: '',
-            noteCount: deletedNotes.length,
-          } as Note"
-          :note-desktop="isDesktop"
-          :class="{ active: state.currentFolder === 'deleted' }"
-          @selected="(uuid: string) => state.currentFolder = uuid"
-        />
+        <IonAccordionGroup multiple>
+          <MessageListItem
+            :data="{
+              uuid: 'allnotes',
+              title: '全部备忘录',
+              type: 'folder',
+              puuid: '',
+              noteCount: allNotesCount,
+            } as Note"
+            :note-desktop="isDesktop"
+            :class="{ active: state.currentFolder === 'allnotes' }"
+            @selected="(uuid: string) => state.currentFolder = uuid"
+          />
+          <MessageListItem
+            v-for="d in sortDataList"
+            :key="d.uuid"
+            :data="d"
+            :note-desktop="isDesktop"
+            :class="{ active: state.currentFolder === d.uuid }"
+            :uuid="d.uuid"
+            @selected="(uuid: string) => state.currentFolder = uuid"
+          />
+          <MessageListItem
+            v-if="deletedNotes.length > 0"
+            :data="{
+              uuid: 'deleted',
+              title: '最近删除',
+              type: 'folder',
+              puuid: '',
+              noteCount: deletedNotes.length,
+            } as Note"
+            :note-desktop="isDesktop"
+            :class="{ active: state.currentFolder === 'deleted' }"
+            @selected="(uuid: string) => state.currentFolder = uuid"
+          />
+        </IonAccordionGroup>
       </IonList>
     </IonContent>
     <IonFooter>
