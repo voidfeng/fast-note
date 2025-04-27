@@ -162,6 +162,11 @@ function onClick() {
   &.accordion-expanded > [slot='header'] .ion-accordion-toggle-icon {
     transform: rotate(360deg);
   }
+  &.active {
+    ion-item {
+      --background: var(--primary);
+    }
+  }
 }
 .list-item {
   .ion-accordion-toggle-icon {
@@ -173,7 +178,7 @@ function onClick() {
 <style lang="scss" scoped>
 .list-item {
   &.active {
-    --background: #4d8dff;
+    --background: var(--primary);
   }
   ion-label {
     margin-top: 12px;

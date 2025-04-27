@@ -5,7 +5,7 @@ import { getTime } from '@/utils/date'
 import { alertController, IonItem, IonLabel, IonList, IonModal } from '@ionic/vue'
 import { ref, toRaw, watch } from 'vue'
 
-type ItemType = 'rename' | 'delete' | 'restore' | 'deleteNow'
+export type ItemType = 'rename' | 'delete' | 'restore' | 'deleteNow'
 interface IConfig {
   [key: string]: {
     label: string

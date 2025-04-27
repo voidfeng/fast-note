@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Note } from '@/hooks/useDexie'
-import LongPressMenu from '@/components/LongPressMenu.vue'
-import MessageListItem from '@/components/NoteListItem.vue'
+import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
@@ -11,7 +10,6 @@ import {
   IonContent,
   IonFooter,
   IonHeader,
-  IonList,
   IonPage,
   IonTitle,
   IonToolbar,
@@ -92,19 +90,13 @@ onUnmounted(() => {
         </IonToolbar>
       </IonHeader>
 
-      <IonList ref="listRef" inset>
-        <MessageListItem
-          v-for="d in dataList"
-          :key="d.uuid"
-          :data="d"
-          :class="{ active: state.currentDetail === d.uuid }"
-          :uuid="d.uuid"
-          @selected="(uuid: string) => {
-            state.currentDetail = uuid
-            $emit('selected', uuid)
-          }"
-        />
-      </IonList>
+      <NoteList
+        ref="listRef"
+        v-model:current-note="state.currentDetail"
+        :data-list="dataList"
+        :press-items="[{ type: 'restore' }, { type: 'deleteNow' }]"
+        @selected="$emit('selected', $event)"
+      />
     </IonContent>
     <IonFooter v-if="!isDesktop">
       <IonToolbar>
@@ -113,12 +105,5 @@ onUnmounted(() => {
         </IonTitle>
       </IonToolbar>
     </IonFooter>
-    <LongPressMenu
-      :is-open="longPressMenuOpen"
-      :uuid="longPressUUID"
-      :items="[{ type: 'restore' }, { type: 'deleteNow' }]"
-      @did-dismiss="() => longPressMenuOpen = false"
-      @refresh="() => init()"
-    />
   </IonPage>
 </template>

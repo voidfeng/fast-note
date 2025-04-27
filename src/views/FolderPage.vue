@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { Note, NoteDetail } from '@/hooks/useDexie'
 import type { AlertButton } from '@ionic/vue'
-import LongPressMenu from '@/components/LongPressMenu.vue'
-import MessageListItem from '@/components/NoteListItem.vue'
+import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
@@ -15,7 +14,6 @@ import {
   IonFooter,
   IonHeader,
   IonIcon,
-  IonList,
   IonPage,
   IonTitle,
   IonToolbar,
@@ -208,32 +206,12 @@ onIonViewWillEnter(() => {
         </IonToolbar>
       </IonHeader>
 
-      <IonList ref="listRef" inset>
-        <MessageListItem
-          v-for="d in folders"
-          :key="d.uuid"
-          :data="d"
-          :class="{ active: state.currentDetail === d.uuid }"
-          :show-parent-folder="data.uuid === 'allnotes'"
-          :uuid="d.uuid"
-          @selected="(uuid: string) => {
-            state.currentDetail = uuid
-            $emit('selected', uuid)
-          }"
-        />
-        <MessageListItem
-          v-for="d in notes"
-          :key="d.uuid"
-          :data="d"
-          :class="{ active: state.currentDetail === d.uuid }"
-          :show-parent-folder="data.uuid === 'allnotes'"
-          :uuid="d.uuid"
-          @selected="(uuid: string) => {
-            state.currentDetail = uuid
-            $emit('selected', uuid)
-          }"
-        />
-      </IonList>
+      <NoteList
+        v-model:current-note="state.currentDetail"
+        :data-list="[...folders, ...notes]"
+        :show-parent-folder="data.uuid === 'allnotes'"
+        @selected="$emit('selected', $event)"
+      />
     </IonContent>
     <IonFooter v-if="!isDesktop">
       <IonToolbar>
@@ -258,13 +236,6 @@ onIonViewWillEnter(() => {
       header="请输入文件夹名称"
       :buttons="addButtons"
       :inputs="[{ name: 'newFolderName', placeholder: '请输入文件夹名称' }]"
-    />
-    <LongPressMenu
-      :is-open="longPressMenuOpen"
-      :uuid="longPressUUID"
-      :items="[{ type: 'rename' }, { type: 'delete' }]"
-      @did-dismiss="() => longPressMenuOpen = false"
-      @refresh="() => init()"
     />
   </IonPage>
 </template>

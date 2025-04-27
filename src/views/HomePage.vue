@@ -64,7 +64,7 @@ const addButtons: AlertButton[] = [
 const state = reactive({
   windowWidth: 0,
   currentFolder: '',
-  currentDetail: '',
+  currentNote: '',
 })
 
 const sortDataList = computed(() => {
@@ -143,9 +143,12 @@ onIonViewWillEnter(() => {
       </IonHeader>
 
       <NoteList
+        v-model:current-note="state.currentNote"
         :data-list="sortDataList"
         :all-notes-count="allNotesCount"
         :deleted-note-count="deletedNotes.length"
+        show-delete
+        show-all-notes
         @refresh="init"
       />
     </IonContent>
@@ -173,11 +176,11 @@ onIonViewWillEnter(() => {
     <div v-if="isDesktop" class="home-list">
       <FolderPage
         :current-folder="state.currentFolder"
-        @selected="(id: string) => state.currentDetail = id"
+        @selected="(id: string) => state.currentNote = id"
       />
     </div>
     <div v-if="isDesktop" class="home-detail">
-      <NoteDetail :current-detail="state.currentDetail" />
+      <NoteDetail :current-detail="state.currentNote" />
     </div>
   </IonPage>
 </template>
