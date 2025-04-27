@@ -3,15 +3,12 @@ import type { Note } from '@/hooks/useDexie'
 import type {
   AlertButton,
 } from '@ionic/vue'
-import LongPressMenu from '@/components/LongPressMenu.vue'
-import MessageListItem from '@/components/MessageListItem.vue'
+import NoteList from '@/components/NoteList.vue'
 import SyncState from '@/components/SyncState.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
-import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
 import { useSync } from '@/hooks/useSync'
 import {
-  IonAccordionGroup,
   IonAlert,
   IonButton,
   IonButtons,
@@ -19,7 +16,6 @@ import {
   IonFooter,
   IonHeader,
   IonIcon,
-  IonList,
   IonPage,
   IonRefresher,
   IonRefresherContent,
@@ -36,22 +32,6 @@ import NoteDetail from './NoteDetail.vue'
 const { addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid } = useNote()
 const { onSynced } = useSync()
 const { isDesktop } = useDeviceType()
-
-const longPressMenuOpen = ref(false)
-const longPressUUID = ref('')
-const listRef = ref()
-useIonicLongPressList(listRef, {
-  itemSelector: 'ion-item', // 匹配 ion-item 元素
-  duration: 500,
-  pressedClass: 'item-long-press',
-  onItemLongPress: async (element) => {
-    const uuid = element.getAttribute('uuid')
-    if (uuid) {
-      longPressUUID.value = uuid
-      longPressMenuOpen.value = true
-    }
-  },
-})
 
 const unSub = onSynced(() => {
   init()
@@ -162,44 +142,12 @@ onIonViewWillEnter(() => {
         <SyncState />
       </IonHeader>
 
-      <IonList ref="listRef" inset>
-        <IonAccordionGroup multiple>
-          <MessageListItem
-            :data="{
-              uuid: 'allnotes',
-              title: '全部备忘录',
-              type: 'folder',
-              puuid: '',
-              noteCount: allNotesCount,
-            } as Note"
-            :note-desktop="isDesktop"
-            :class="{ active: state.currentFolder === 'allnotes' }"
-            @selected="(uuid: string) => state.currentFolder = uuid"
-          />
-          <MessageListItem
-            v-for="d in sortDataList"
-            :key="d.uuid"
-            :data="d"
-            :note-desktop="isDesktop"
-            :class="{ active: state.currentFolder === d.uuid }"
-            :uuid="d.uuid"
-            @selected="(uuid: string) => state.currentFolder = uuid"
-          />
-          <MessageListItem
-            v-if="deletedNotes.length > 0"
-            :data="{
-              uuid: 'deleted',
-              title: '最近删除',
-              type: 'folder',
-              puuid: '',
-              noteCount: deletedNotes.length,
-            } as Note"
-            :note-desktop="isDesktop"
-            :class="{ active: state.currentFolder === 'deleted' }"
-            @selected="(uuid: string) => state.currentFolder = uuid"
-          />
-        </IonAccordionGroup>
-      </IonList>
+      <NoteList
+        :data-list="sortDataList"
+        :all-notes-count="allNotesCount"
+        :deleted-note-count="deletedNotes.length"
+        @refresh="init"
+      />
     </IonContent>
     <IonFooter>
       <IonToolbar>
@@ -231,13 +179,6 @@ onIonViewWillEnter(() => {
     <div v-if="isDesktop" class="home-detail">
       <NoteDetail :current-detail="state.currentDetail" />
     </div>
-    <LongPressMenu
-      :is-open="longPressMenuOpen"
-      :uuid="longPressUUID"
-      :items="[{ type: 'rename' }, { type: 'delete' }]"
-      @did-dismiss="() => longPressMenuOpen = false"
-      @refresh="init"
-    />
   </IonPage>
 </template>
 

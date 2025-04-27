@@ -74,6 +74,7 @@ function onClick() {
       v-if="data"
       slot="header"
       :detail="false"
+      :uuid="data.uuid"
       class="list-item"
       lines="inset"
       style="--inner-border-width: 0 0 0.55px 0;"
@@ -98,6 +99,7 @@ function onClick() {
   <IonItem
     v-else
     :detail="false"
+    :uuid="data.uuid"
     class="list-item"
     lines="inset"
   >

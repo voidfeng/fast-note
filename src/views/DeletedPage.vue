@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Note } from '@/hooks/useDexie'
 import LongPressMenu from '@/components/LongPressMenu.vue'
-import MessageListItem from '@/components/MessageListItem.vue'
+import MessageListItem from '@/components/NoteListItem.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'

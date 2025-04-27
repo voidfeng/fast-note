@@ -2,7 +2,7 @@
 import type { Note, NoteDetail } from '@/hooks/useDexie'
 import type { AlertButton } from '@ionic/vue'
 import LongPressMenu from '@/components/LongPressMenu.vue'
-import MessageListItem from '@/components/MessageListItem.vue'
+import MessageListItem from '@/components/NoteListItem.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
