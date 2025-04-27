@@ -164,7 +164,7 @@ function onClick() {
   }
   &.active {
     ion-item {
-      --background: var(--primary);
+      --background: var(--bg-active);
     }
   }
 }
@@ -177,12 +177,11 @@ function onClick() {
 
 <style lang="scss" scoped>
 .list-item {
+  --background: var(--text-gray-900);
+  --border-color: var(--text-gray-750);
+  // --background-hover: var(--text-gray-750);
   &.active {
-    --background: var(--primary);
-  }
-  ion-label {
-    margin-top: 12px;
-    margin-bottom: 12px;
+    --background: var(--bg-active);
   }
 }
 

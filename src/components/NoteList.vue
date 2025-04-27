@@ -26,7 +26,7 @@ withDefaults(
     showAllNotes: false,
     currentNote: '',
     showParentFolder: false,
-    pressItems: () => [{ type: 'rename' }, { type: 'delete' }],
+    pressItems: () => [{ type: 'rename' }, { type: 'move' }, { type: 'delete' }],
   },
 )
 
