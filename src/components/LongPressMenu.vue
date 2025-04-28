@@ -3,7 +3,8 @@ import type { Note } from '@/hooks/useDexie'
 import { useNote } from '@/hooks/useNote'
 import { getTime } from '@/utils/date'
 import { alertController, IonItem, IonLabel, IonList, IonModal } from '@ionic/vue'
-import { reactive, ref, toRaw, watch } from 'vue'
+import { ref, toRaw, watch } from 'vue'
+import NoteMove from './NoteMove.vue'
 
 export type ItemType = 'rename' | 'delete' | 'restore' | 'deleteNow' | 'move'
 interface IConfig {
@@ -16,6 +17,7 @@ interface IConfig {
 const props = withDefaults(defineProps <{
   uuid: string
   items: { type: ItemType }[]
+  presentingElement?: HTMLElement
 }>(), {})
 
 const emit = defineEmits(['refresh'])
@@ -24,6 +26,7 @@ const { getNote, updateNote, getNotesByPUuid } = useNote()
 
 const modal = ref()
 const note = ref<Note>()
+const showMove = ref(false)
 
 const dismiss = () => modal.value.$el.dismiss()
 
@@ -101,7 +104,7 @@ const config = ref<IConfig>({
   move: {
     label: '移动',
     handler: async () => {
-      console.log('move')
+      showMove.value = true
     },
   },
 })
@@ -125,60 +128,7 @@ watch(() => props.uuid, () => {
       </IonList>
     </div>
   </IonModal>
-
-  <!-- Card Modal -->
-  <!-- <IonModal ref="modal" trigger="open-modal" :presenting-element="presentingElement">
-    <ion-header>
-      <ion-toolbar>
-        <ion-title>Modal</ion-title>
-        <ion-buttons slot="end">
-          <ion-button @click="dismiss()">
-            Close
-          </ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
-    <ion-content class="ion-padding">
-      <IonList>
-        <IonItem>
-          <ion-avatar slot="start">
-            <ion-img src="https://i.pravatar.cc/300?u=b" />
-          </ion-avatar>
-          <IonLabel>
-            <h2>Connor Smith</h2>
-            <p>Sales Rep</p>
-          </IonLabel>
-        </IonItem>
-        <IonItem>
-          <ion-avatar slot="start">
-            <ion-img src="https://i.pravatar.cc/300?u=a" />
-          </ion-avatar>
-          <IonLabel>
-            <h2>Daniel Smith</h2>
-            <p>Product Designer</p>
-          </IonLabel>
-        </IonItem>
-        <IonItem>
-          <ion-avatar slot="start">
-            <ion-img src="https://i.pravatar.cc/300?u=d" />
-          </ion-avatar>
-          <IonLabel>
-            <h2>Greg Smith</h2>
-            <p>Director of Operations</p>
-          </IonLabel>
-        </IonItem>
-        <IonItem>
-          <ion-avatar slot="start">
-            <ion-img src="https://i.pravatar.cc/300?u=e" />
-          </ion-avatar>
-          <IonLabel>
-            <h2>Zoey Smith</h2>
-            <p>CEO</p>
-          </IonLabel>
-        </IonItem>
-      </IonList>
-    </ion-content>
-  </IonModal> -->
+  <NoteMove :is-open="showMove" :uuid="uuid" :presenting-element @did-dismiss="() => showMove = false" />
 </template>
 
 <style lang="scss">

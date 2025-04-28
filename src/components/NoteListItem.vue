@@ -16,9 +16,11 @@ const props = withDefaults(
   defineProps<{
     data: NoteDetail
     showParentFolder?: boolean
+    disabledRoute?: boolean
   }>(),
   {
     showParentFolder: false,
+    disabledRoute: false,
   },
 )
 
@@ -64,7 +66,8 @@ const routerLink = computed(() => {
 
 function onClick() {
   emit('selected', props.data.uuid)
-  router.push(routerLink.value)
+  if (!props.disabledRoute)
+    router.push(routerLink.value)
 }
 </script>
 

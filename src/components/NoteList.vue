@@ -8,7 +8,7 @@ import { IonAccordionGroup, IonList } from '@ionic/vue'
 import { ref } from 'vue'
 import NoteListItem from './NoteListItem.vue'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     dataList: Note[]
     allNotesCount?: number
@@ -18,6 +18,9 @@ withDefaults(
     currentNote?: string
     showParentFolder?: boolean
     pressItems?: { type: ItemType }[]
+    presentingElement?: HTMLElement
+    disabledRoute?: boolean
+    disabledLongPress?: boolean
   }>(),
   {
     allNotesCount: 0,
@@ -27,6 +30,8 @@ withDefaults(
     currentNote: '',
     showParentFolder: false,
     pressItems: () => [{ type: 'rename' }, { type: 'move' }, { type: 'delete' }],
+    disabledRoute: false,
+    disabledLongPress: false,
   },
 )
 
@@ -36,18 +41,20 @@ const listRef = ref<DefineComponent>()
 const longPressUUID = ref('')
 const longPressMenuOpen = ref(false)
 
-useIonicLongPressList(listRef as Ref<DefineComponent>, {
-  itemSelector: 'ion-item', // 匹配 ion-item 元素
-  duration: 500,
-  pressedClass: 'item-long-press',
-  onItemLongPress: async (element) => {
-    const uuid = element.getAttribute('uuid')
-    if (uuid) {
-      longPressUUID.value = uuid
-      longPressMenuOpen.value = true
-    }
-  },
-})
+if (!props.disabledLongPress) {
+  useIonicLongPressList(listRef as Ref<DefineComponent>, {
+    itemSelector: 'ion-item', // 匹配 ion-item 元素
+    duration: 500,
+    pressedClass: 'item-long-press',
+    onItemLongPress: async (element) => {
+      const uuid = element.getAttribute('uuid')
+      if (uuid) {
+        longPressUUID.value = uuid
+        longPressMenuOpen.value = true
+      }
+    },
+  })
+}
 
 function onSelected(uuid: string) {
   emit('update:currentNote', uuid)
@@ -68,6 +75,7 @@ function onSelected(uuid: string) {
           noteCount: allNotesCount,
         } as Note"
         :class="{ active: currentNote === 'allnotes' }"
+        :disabled-route
         @selected="onSelected('allnotes')"
       />
       <NoteListItem
@@ -77,6 +85,7 @@ function onSelected(uuid: string) {
         :class="{ active: currentNote === d.uuid }"
         :uuid="d.uuid"
         :show-parent-folder
+        :disabled-route
         @selected="onSelected(d.uuid)"
       />
       <NoteListItem
@@ -89,6 +98,7 @@ function onSelected(uuid: string) {
           noteCount: deletedNoteCount,
         } as Note"
         :class="{ active: currentNote === 'deleted' }"
+        :disabled-route
         @selected="onSelected('deleted')"
       />
     </IonAccordionGroup>
@@ -98,6 +108,7 @@ function onSelected(uuid: string) {
     :is-open="longPressMenuOpen"
     :uuid="longPressUUID"
     :items="pressItems"
+    :presenting-element
     @did-dismiss="() => longPressMenuOpen = false"
     @refresh="$emit('refresh')"
   />

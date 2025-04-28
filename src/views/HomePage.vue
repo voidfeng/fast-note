@@ -25,7 +25,7 @@ import {
 } from '@ionic/vue'
 import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import { computed, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
@@ -40,9 +40,12 @@ const unSub = onSynced(() => {
   })
 })
 
+const page = ref()
+
 const dataList = ref<Note[]>([])
 const deletedNotes = ref<Note[]>([])
 const allNotesCount = ref(0)
+const presentingElement = ref()
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
   {
@@ -120,10 +123,14 @@ onUpdateNote((item) => {
 onIonViewWillEnter(() => {
   init()
 })
+
+onMounted(() => {
+  presentingElement.value = page.value.$el
+})
 </script>
 
 <template>
-  <IonPage :class="{ 'note-desktop': isDesktop }">
+  <IonPage ref="page" :class="{ 'note-desktop': isDesktop }">
     <IonHeader :translucent="true">
       <IonToolbar />
     </IonHeader>
@@ -147,6 +154,7 @@ onIonViewWillEnter(() => {
         :data-list="sortDataList"
         :all-notes-count="allNotesCount"
         :deleted-note-count="deletedNotes.length"
+        :presenting-element="presentingElement"
         show-delete
         show-all-notes
         @refresh="init"
