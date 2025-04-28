@@ -96,7 +96,7 @@ function onClick() {
       </IonLabel>
     </IonItem>
     <div v-if="data.children" slot="content">
-      <MessageListItem v-for="d in data.children" :key="d.uuid" :data="d" class="child-list-item" />
+      <MessageListItem v-for="d in data.children" :key="d.uuid" :data="d" :disabled-route class="child-list-item" @selected="$emit('selected', $event)" />
     </div>
   </IonAccordion>
   <IonItem

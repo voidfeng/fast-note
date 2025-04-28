@@ -4,6 +4,7 @@ import type { Note } from '@/hooks/useDexie'
 import type { DefineComponent, Ref } from 'vue'
 import LongPressMenu from '@/components/LongPressMenu.vue'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
+import { useNote } from '@/hooks/useNote'
 import { IonAccordionGroup, IonList } from '@ionic/vue'
 import { ref } from 'vue'
 import NoteListItem from './NoteListItem.vue'
@@ -37,9 +38,12 @@ const props = withDefaults(
 
 const emit = defineEmits(['refresh', 'update:currentNote', 'selected'])
 
+const { getNote } = useNote()
+
 const listRef = ref<DefineComponent>()
 const longPressUUID = ref('')
 const longPressMenuOpen = ref(false)
+const expandedItems = ref<string[]>([])
 
 if (!props.disabledLongPress) {
   useIonicLongPressList(listRef as Ref<DefineComponent>, {
@@ -48,7 +52,8 @@ if (!props.disabledLongPress) {
     pressedClass: 'item-long-press',
     onItemLongPress: async (element) => {
       const uuid = element.getAttribute('uuid')
-      if (uuid) {
+      const note = await getNote(`${uuid}`)
+      if (uuid && !['allnotes', 'deleted'].includes(uuid) && note?.ftitle !== 'default-folder') {
         longPressUUID.value = uuid
         longPressMenuOpen.value = true
       }
@@ -60,11 +65,19 @@ function onSelected(uuid: string) {
   emit('update:currentNote', uuid)
   emit('selected', uuid)
 }
+
+function setExpandedItems(items: string[]) {
+  expandedItems.value = items
+}
+
+defineExpose({
+  setExpandedItems,
+})
 </script>
 
 <template>
   <IonList ref="listRef" inset>
-    <IonAccordionGroup multiple>
+    <IonAccordionGroup :value="expandedItems" multiple>
       <NoteListItem
         v-if="showAllNotes"
         :data="{
@@ -86,7 +99,7 @@ function onSelected(uuid: string) {
         :uuid="d.uuid"
         :show-parent-folder
         :disabled-route
-        @selected="onSelected(d.uuid)"
+        @selected="onSelected($event)"
       />
       <NoteListItem
         v-if="showDelete && deletedNoteCount > 0"

@@ -128,7 +128,16 @@ watch(() => props.uuid, () => {
       </IonList>
     </div>
   </IonModal>
-  <NoteMove :is-open="showMove" :uuid="uuid" :presenting-element @did-dismiss="() => showMove = false" />
+  <NoteMove
+    :is-open="showMove"
+    :uuid="uuid"
+    :presenting-element
+    @did-dismiss="() => showMove = false"
+    @refresh="() => {
+      $emit('refresh')
+      dismiss()
+    }"
+  />
 </template>
 
 <style lang="scss">
