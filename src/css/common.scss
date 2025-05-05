@@ -1,6 +1,10 @@
 @use './ionic-var.scss';
 @use './var.scss';
 @use './var-class.scss';
+ion-content::part(scroll),
+* {
+  overscroll-behavior: none;
+}
 
 ion-footer {
   .title-default {

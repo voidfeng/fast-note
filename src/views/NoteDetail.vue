@@ -5,9 +5,10 @@ import { useDeviceType } from '@/hooks/useDeviceType'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
+import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { getTime } from '@/utils/date'
 import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
-import { ellipsisHorizontalCircleOutline } from 'ionicons/icons'
+import { attachOutline, cameraOutline, ellipsisHorizontalCircleOutline, listOutline, textOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -26,6 +27,7 @@ const { getFirstNote, addNote, getNote, updateNote, deleteNote } = useNote()
 const { getFileByUrl } = useFiles()
 const { getFileRefsByRefid, updateFileRef } = useFileRefs()
 const { isDesktop } = useDeviceType()
+const { keyboardHeight, restoreHeight } = useVisualViewport()
 
 const editorRef = ref()
 const data = ref()
@@ -50,6 +52,7 @@ watch(
 )
 
 async function onBlur() {
+  restoreHeight()
   /**
    * 保存逻辑
    * 1. 新建时(id为0)
@@ -166,7 +169,7 @@ onMounted(async () => {
       </IonToolbar>
     </IonHeader>
 
-    <IonContent :fullscreen="true">
+    <IonContent :fullscreen="true" force-overscroll>
       <!-- <ion-item>
         <ion-icon aria-hidden="true" :icon="personCircle" color="primary"></ion-icon>
         <ion-label class="ion-text-wrap">
@@ -183,7 +186,29 @@ onMounted(async () => {
       <div class="ion-padding">
         <editor v-if="noteUuid === '0' ? newNoteUuid : noteUuid" ref="editorRef" :uuid="noteUuid === '0' ? newNoteUuid : noteUuid" @blur="onBlur" />
       </div>
+      <!-- <div v-if="keyboardHeight > 0" slot="fixed" :style="{ top: `${visualHeight - 66}px` }" class="h-[66px]">
+        Fixed Button
+      </div> -->
     </IonContent>
+    <ion-footer v-if="keyboardHeight > 0" style="overscroll-behavior: none;">
+      <!-- <ion-footer> -->
+      <IonToolbar>
+        <div class="flex justify-evenly items-center">
+          <IonButton fill="clear" size="large">
+            <IonIcon :icon="textOutline" />
+          </IonButton>
+          <IonButton fill="clear" size="large">
+            <IonIcon :icon="listOutline" />
+          </IonButton>
+          <IonButton fill="clear" size="large">
+            <IonIcon :icon="cameraOutline" />
+          </IonButton>
+          <IonButton fill="clear" size="large">
+            <IonIcon :icon="attachOutline" />
+          </IonButton>
+        </div>
+      </IonToolbar>
+    </ion-footer>
     <NoteMore />
   </IonPage>
 </template>
@@ -232,5 +257,15 @@ ion-item ion-note {
 
 p {
   line-height: 1.4;
+}
+ion-footer {
+  ion-toolbar {
+    --background: #1c1c1e;
+  }
+  ion-button {
+    --padding-top: 0;
+    --padding-bottom: 0;
+    min-height: 0;
+  }
 }
 </style>
