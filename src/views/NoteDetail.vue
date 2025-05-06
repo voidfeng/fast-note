@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import NoteMore from '@/components/NoteMore.vue'
+import TextFormatModal from '@/components/TextFormatModal.vue'
 import editor from '@/components/YYEditor.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useFileRefs } from '@/hooks/useFileRefs'
@@ -7,10 +8,10 @@ import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { getTime } from '@/utils/date'
-import { IonBackButton, IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
+import { IonBackButton, IonButton, IonButtons, IonContent, IonFooter, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
 import { attachOutline, cameraOutline, ellipsisHorizontalCircleOutline, listOutline, textOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import { computed, onMounted, ref, toRaw, watch } from 'vue'
+import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const props = withDefaults(
@@ -29,9 +30,13 @@ const { getFileRefsByRefid, updateFileRef } = useFileRefs()
 const { isDesktop } = useDeviceType()
 const { keyboardHeight, restoreHeight } = useVisualViewport()
 
+const pageRef = ref()
 const editorRef = ref()
 const data = ref()
 let newNoteUuid = '0'
+const state = reactive({
+  showFormat: false,
+})
 
 const noteUuid = computed(() => route.params.uuid as string)
 
@@ -155,7 +160,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <IonPage>
+  <IonPage ref="pageRef">
     <IonHeader :translucent="true">
       <IonToolbar>
         <IonButtons slot="start">
@@ -190,12 +195,12 @@ onMounted(async () => {
         Fixed Button
       </div> -->
     </IonContent>
-    <ion-footer v-if="keyboardHeight > 0" style="overscroll-behavior: none;">
-      <!-- <ion-footer> -->
-      <IonToolbar>
-        <div class="flex justify-evenly items-center">
-          <IonButton fill="clear" size="large">
-            <IonIcon :icon="textOutline" />
+    <!-- <IonFooter v-if="keyboardHeight > 0" style="overscroll-behavior: none;"> -->
+    <IonFooter>
+      <IonToolbar @touchstart.stop.prevent>
+        <div class="flex justify-evenly items-center select-none">
+          <IonButton fill="clear" size="large" @touchstart="state.showFormat = true" @click="state.showFormat = true">
+            <IonIcon :icon="textOutline" />{{ state.showFormat ? '取消' : '格式' }}
           </IonButton>
           <IonButton fill="clear" size="large">
             <IonIcon :icon="listOutline" />
@@ -208,8 +213,9 @@ onMounted(async () => {
           </IonButton>
         </div>
       </IonToolbar>
-    </ion-footer>
+    </IonFooter>
     <NoteMore />
+    <TextFormatModal v-model:is-open="state.showFormat" />
   </IonPage>
 </template>
 
@@ -261,11 +267,25 @@ p {
 ion-footer {
   ion-toolbar {
     --background: #1c1c1e;
+    --padding-top: 0;
+    --padding-bottom: 0;
+    --padding-start: 0;
+    --padding-end: 0;
   }
   ion-button {
     --padding-top: 0;
     --padding-bottom: 0;
     min-height: 0;
+    height: 44px;
+    width: 24%;
+    &:first-child {
+      width: 26%;
+      padding-left: 2%;
+    }
+    &:last-child {
+      width: 26%;
+      padding-right: 2%;
+    }
   }
 }
 </style>
