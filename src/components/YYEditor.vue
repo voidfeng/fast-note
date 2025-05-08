@@ -12,8 +12,9 @@ import TextStyle from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
-import { onBeforeMount, onMounted, ref } from 'vue'
+import { computed, onBeforeMount, onMounted, ref } from 'vue'
 import { FileUpload } from './extensions/FileUpload/FileUpload'
+// import { Indent } from './extensions/Indent'
 
 const props = defineProps<{
   uuid: string
@@ -85,6 +86,7 @@ onMounted(() => {
       }),
       TaskList,
       TaskItem,
+      // Indent,
       FileUpload.configure({
         /**
          * 通过url从indexeddb获取文件并转为url地址
@@ -175,6 +177,7 @@ onMounted(() => {
       emit('blur')
     },
   })
+  window.editor = editor.value
 })
 
 function setContent(content: string): void {
@@ -234,6 +237,7 @@ defineExpose({
   getTitle,
   setContent,
   setEditable,
+  editor: computed(() => editor.value),
 })
 </script>
 

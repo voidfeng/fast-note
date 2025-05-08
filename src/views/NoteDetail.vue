@@ -148,6 +148,10 @@ async function init(uuid: string) {
   }
 }
 
+function onFormat(command: string) {
+  editorRef.value.format(command)
+}
+
 onMounted(async () => {
   if (noteUuid.value && noteUuid.value !== '0') {
     init(noteUuid.value)
@@ -197,10 +201,10 @@ onMounted(async () => {
     </IonContent>
     <!-- <IonFooter v-if="keyboardHeight > 0" style="overscroll-behavior: none;"> -->
     <IonFooter>
-      <IonToolbar @touchstart.stop.prevent>
+      <IonToolbar>
         <div class="flex justify-evenly items-center select-none">
-          <IonButton fill="clear" size="large" @touchstart="state.showFormat = true" @click="state.showFormat = true">
-            <IonIcon :icon="textOutline" />{{ state.showFormat ? '取消' : '格式' }}
+          <IonButton fill="clear" size="large" @click="state.showFormat = true">
+            <IonIcon :icon="textOutline" />
           </IonButton>
           <IonButton fill="clear" size="large">
             <IonIcon :icon="listOutline" />
@@ -215,7 +219,7 @@ onMounted(async () => {
       </IonToolbar>
     </IonFooter>
     <NoteMore />
-    <TextFormatModal v-model:is-open="state.showFormat" />
+    <TextFormatModal v-model:is-open="state.showFormat" :editor="editorRef?.editor" />
   </IonPage>
 </template>
 
