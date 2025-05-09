@@ -9,6 +9,7 @@ import TaskItem from '@tiptap/extension-task-item'
 import TaskList from '@tiptap/extension-task-list'
 import TextAlign from '@tiptap/extension-text-align'
 import TextStyle from '@tiptap/extension-text-style'
+import Underline from '@tiptap/extension-underline'
 import StarterKit from '@tiptap/starter-kit'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
@@ -31,7 +32,7 @@ const { addFile, getFileByHash, getFileByUrl } = useFiles()
 const { addFileRef, getFileRefByHashAndRefid } = useFileRefs()
 
 const editor = ref<EditorInstance>(null)
-const fileInput = ref<HTMLInputElement | null>(null)
+// const fileInput = ref<HTMLInputElement | null>(null)
 
 function getTitle() {
   // 递归遍历节点提取文本
@@ -81,6 +82,7 @@ onMounted(() => {
       Color.configure({ types: [TextStyle.name, ListItem.name] }),
       TextStyle,
       StarterKit,
+      Underline,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
@@ -177,19 +179,18 @@ onMounted(() => {
       emit('blur')
     },
   })
-  window.editor = editor.value
 })
 
 function setContent(content: string): void {
   editor.value?.commands.setContent(content)
 }
 
-function insertFile() {
-  editor.value!.commands.setFileUpload({
-    url: 'https://example.com/path/to/file.pdf',
-    // localId: 'file-123',
-  })
-}
+// function insertFile() {
+//   editor.value!.commands.setFileUpload({
+//     url: 'https://example.com/path/to/file.pdf',
+//     // localId: 'file-123',
+//   })
+// }
 
 function insertImage() {
   editor.value!.commands.setFileUpload({
@@ -203,8 +204,8 @@ function insertImage() {
  * 2. 将文件转换为blob地址，并且正确匹配blob的文件类型
  * 3. 将blob地址使用setFileUpload插入到编辑器中
  */
-async function onSelectFile() {
-  const files = fileInput.value?.files
+async function insertFile(e: Event) {
+  const files = (e.target as HTMLInputElement).files
   if (!files)
     return
 
@@ -238,6 +239,7 @@ defineExpose({
   setContent,
   setEditable,
   editor: computed(() => editor.value),
+  insertFile,
 })
 </script>
 
@@ -245,33 +247,24 @@ defineExpose({
   <div v-if="editor" class="yy-editor">
     <EditorContent :editor="editor as any" />
     <div class="button-group">
-      <input ref="fileInput" type="file" @change="onSelectFile">
+      <!-- <input ref="fileInput" type="file" @change="onSelectFile">
       <button @click="insertFile">
         插入文件
-      </button>
+      </button> -->
       <button @click="insertImage">
         插入图片
       </button>
       <button
-        :disabled="!editor.can().chain().focus().toggleBold().run()"
-        :class="{ 'is-active': editor.isActive('bold') }"
-        @click="editor.chain().focus().toggleBold().run()"
+        :disabled="!editor.can().chain().focus().undo().run()"
+        @click="editor.chain().focus().undo().run()"
       >
-        加粗
+        撤销
       </button>
       <button
-        :disabled="!editor.can().chain().focus().toggleItalic().run()"
-        :class="{ 'is-active': editor.isActive('italic') }"
-        @click="editor.chain().focus().toggleItalic().run()"
+        :disabled="!editor.can().chain().focus().redo().run()"
+        @click="editor.chain().focus().redo().run()"
       >
-        斜体
-      </button>
-      <button
-        :disabled="!editor.can().chain().focus().toggleStrike().run()"
-        :class="{ 'is-active': editor.isActive('strike') }"
-        @click="editor.chain().focus().toggleStrike().run()"
-      >
-        删除线
+        重做
       </button>
       <button
         :disabled="!editor.can().chain().focus().toggleCode().run()"
@@ -285,75 +278,6 @@ defineExpose({
       </button>
       <button @click="editor.chain().focus().clearNodes().run()">
         清除节点
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('paragraph') }"
-        @click="editor.chain().focus().setParagraph().run()"
-      >
-        段落
-      </button>
-      <button @click="editor.chain().focus().unsetTextAlign().run()">
-        左对齐
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive({ textAlign: 'center' }) }"
-        @click="editor.chain().focus().setTextAlign('center').run()"
-      >
-        居中
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive({ textAlign: 'right' }) }"
-        @click="editor.chain().focus().setTextAlign('right').run()"
-      >
-        右对齐
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }"
-        @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
-      >
-        H1
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }"
-        @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-      >
-        H2
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }"
-        @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-      >
-        H3
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('heading', { level: 4 }) }"
-        @click="editor.chain().focus().toggleHeading({ level: 4 }).run()"
-      >
-        H4
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('heading', { level: 5 }) }"
-        @click="editor.chain().focus().toggleHeading({ level: 5 }).run()"
-      >
-        H5
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('heading', { level: 6 }) }"
-        @click="editor.chain().focus().toggleHeading({ level: 6 }).run()"
-      >
-        H6
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('bulletList') }"
-        @click="editor.chain().focus().toggleBulletList().run()"
-      >
-        无序列表
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('orderedList') }"
-        @click="editor.chain().focus().toggleOrderedList().run()"
-      >
-        有序列表
       </button>
       <button
         :class="{ 'is-active': editor.isActive('codeBlock') }"
@@ -372,18 +296,6 @@ defineExpose({
       </button>
       <button @click="editor.chain().focus().setHardBreak().run()">
         硬换行
-      </button>
-      <button
-        :disabled="!editor.can().chain().focus().undo().run()"
-        @click="editor.chain().focus().undo().run()"
-      >
-        撤销
-      </button>
-      <button
-        :disabled="!editor.can().chain().focus().redo().run()"
-        @click="editor.chain().focus().redo().run()"
-      >
-        重做
       </button>
       <button
         :class="{ 'is-active': editor.isActive('textStyle', { color: '#958DF1' }) }"

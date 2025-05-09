@@ -32,6 +32,7 @@ const { keyboardHeight, restoreHeight } = useVisualViewport()
 
 const pageRef = ref()
 const editorRef = ref()
+const fileInput = ref()
 const data = ref()
 let newNoteUuid = '0'
 const state = reactive({
@@ -148,8 +149,12 @@ async function init(uuid: string) {
   }
 }
 
-function onFormat(command: string) {
-  editorRef.value.format(command)
+// function onFormat(command: string) {
+//   editorRef.value.format(command)
+// }
+
+function onSelectFile(e: Event) {
+  editorRef.value.insertFile(e)
 }
 
 onMounted(async () => {
@@ -206,8 +211,9 @@ onMounted(async () => {
           <IonButton fill="clear" size="large" @click="state.showFormat = true">
             <IonIcon :icon="textOutline" />
           </IonButton>
-          <IonButton fill="clear" size="large">
+          <IonButton fill="clear" size="large" @click="fileInput.click()">
             <IonIcon :icon="listOutline" />
+            <input ref="fileInput" type="file" class="pointer-events-none absolute text-0 opacity-0" @change="onSelectFile">
           </IonButton>
           <IonButton fill="clear" size="large">
             <IonIcon :icon="cameraOutline" />

@@ -25,59 +25,119 @@ const modalRef = ref()
   >
     <div>
       <div>
-        <IonButton size="small" @click="editor.chain().focus().toggleHeading({ level: 1 }).run()">
+        <IonButton
+          size="small"
+          :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }"
+          @click="editor.chain().toggleHeading({ level: 1 }).run()"
+        >
           标题
         </IonButton>
-        <IonButton size="small" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()">
+        <IonButton
+          size="small"
+          :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }"
+          @click="editor.chain().toggleHeading({ level: 2 }).run()"
+        >
           副标题
         </IonButton>
-        <IonButton size="small" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()">
+        <IonButton
+          size="small"
+          :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }"
+          @click="editor.chain().toggleHeading({ level: 3 }).run()"
+        >
           小标题
         </IonButton>
-        <IonButton size="small" @click="editor.chain().focus().setParagraph().run()">
+        <IonButton
+          size="small"
+          :class="{ 'is-active': editor.isActive('paragraph') }"
+          @click="editor.chain().setParagraph().run()"
+        >
           正文
         </IonButton>
       </div>
       <div>
-        <IonButton size="small" @click="editor.chain().focus().toggleBold().run()">
+        <IonButton
+          size="small"
+          :class="{ 'is-active': editor.isActive('bold') }"
+          @click="editor.chain().toggleBold().run()"
+        >
           加粗
         </IonButton>
-        <IonButton size="small" @click="editor.chain().focus().toggleItalic().run()">
+        <IonButton
+          size="small"
+          :class="{ 'is-active': editor.isActive('italic') }"
+          @click="editor.chain().toggleItalic().run()"
+        >
           斜体
         </IonButton>
-        <IonButton size="small" @click="editor.chain().focus().toggleUnderline().run()">
+        <IonButton
+          size="small"
+          :class="{ 'is-active': editor.isActive('underline') }"
+          @click="editor.chain().toggleUnderline().run()"
+        >
           下划线
         </IonButton>
-        <IonButton size="small" @click="editor.chain().focus().toggleStrikethrough().run()">
+        <IonButton
+          size="small"
+          :class="{ 'is-active': editor.isActive('strike') }"
+          @click="editor.chain().toggleStrike().run()"
+        >
           删除线
         </IonButton>
       </div>
       <div class="flex">
         <div>
-          <IonButton size="small" @click="editor.chain().focus().toggleBulletList().run()">
+          <IonButton
+            size="small"
+            :class="{ 'is-active': editor.isActive('bulletList') }"
+            @click="editor.chain().toggleBulletList().run()"
+          >
             无序列表
           </IonButton>
-          <IonButton size="small" @click="editor.chain().focus().toggleOrderedList().run()">
+          <IonButton
+            size="small"
+            :class="{ 'is-active': editor.isActive('orderedList') }"
+            @click="editor.chain().toggleOrderedList().run()"
+          >
             有序列表
           </IonButton>
         </div>
         <div>
-          <IonButton size="small" @click="editor.chain().focus().sinkListItem('listItem').run()">
+          <IonButton
+            size="small"
+            :class="{ 'is-active': editor.isActive('listItem') }"
+            @click="editor.chain().sinkListItem('listItem').run()"
+          >
             右缩进
           </IonButton>
-          <IonButton size="small" @click="editor.chain().focus().liftListItem('listItem').run()">
+          <IonButton
+            size="small"
+            :class="{ 'is-active': editor.isActive('listItem') }"
+            @click="editor.chain().liftListItem('listItem').run()"
+          >
             左缩进
           </IonButton>
         </div>
       </div>
       <div>
-        <IonButton size="small" @click="editor.chain().focus().setTextAlign('left').run()">
+        <IonButton
+          size="small"
+          :class="{ 'is-active': editor.isActive({ textAlign: 'left' }) }"
+          @click="editor.chain().setTextAlign('left').run()"
+        >
           左对齐
         </IonButton>
-        <IonButton size="small" @click="editor.chain().focus().setTextAlign('center').run()">
+        <IonButton
+          size="small"
+          :class="{ 'is-active': editor.isActive({ textAlign: 'center' }) }"
+          @click="editor.chain().setTextAlign('center').run()"
+        >
           居中对齐
         </IonButton>
-        <IonButton size="small" @click="editor.chain().focus().setTextAlign('right').run()">
+        <IonButton
+          size="small"
+          :class="{ 'is-active': editor.isActive({ textAlign: 'right' }) }"
+          @click="editor.chain().setTextAlign('right').run()"
+        >
           右对齐
         </IonButton>
       </div>
