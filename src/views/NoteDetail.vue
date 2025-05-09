@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import type { Editor } from '@tiptap/vue-3'
 import NoteMore from '@/components/NoteMore.vue'
 import TextFormatModal from '@/components/TextFormatModal.vue'
-import editor from '@/components/YYEditor.vue'
+import YYEditor from '@/components/YYEditor.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
@@ -9,7 +10,7 @@ import { useNote } from '@/hooks/useNote'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { getTime } from '@/utils/date'
 import { IonBackButton, IonButton, IonButtons, IonContent, IonFooter, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
-import { attachOutline, cameraOutline, ellipsisHorizontalCircleOutline, listOutline, textOutline } from 'ionicons/icons'
+import { attachOutline, cameraOutline, checkmarkCircleOutline, ellipsisHorizontalCircleOutline, textOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
 import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -40,6 +41,12 @@ const state = reactive({
 })
 
 const noteUuid = computed(() => route.params.uuid as string)
+
+watch(() => state.showFormat, (n) => {
+  if (!n) {
+    editorRef.value?.editor.chain().focus()
+  }
+})
 
 function getBackButtonText() {
   const win = window as any
@@ -198,7 +205,7 @@ onMounted(async () => {
       </ion-item> -->
 
       <div class="ion-padding">
-        <editor v-if="noteUuid === '0' ? newNoteUuid : noteUuid" ref="editorRef" :uuid="noteUuid === '0' ? newNoteUuid : noteUuid" @blur="onBlur" />
+        <YYEditor v-if="noteUuid === '0' ? newNoteUuid : noteUuid" ref="editorRef" :uuid="noteUuid === '0' ? newNoteUuid : noteUuid" @blur="onBlur" />
       </div>
       <!-- <div v-if="keyboardHeight > 0" slot="fixed" :style="{ top: `${visualHeight - 66}px` }" class="h-[66px]">
         Fixed Button
@@ -206,17 +213,21 @@ onMounted(async () => {
     </IonContent>
     <!-- <IonFooter v-if="keyboardHeight > 0" style="overscroll-behavior: none;"> -->
     <IonFooter>
-      <IonToolbar>
+      <IonToolbar class="note-detail__toolbar">
         <div class="flex justify-evenly items-center select-none">
-          <IonButton fill="clear" size="large" @click="state.showFormat = true">
+          <IonButton
+            fill="clear" size="large"
+            @touchstart="() => keyboardHeight > 0 ? (state.showFormat = true) : null"
+            @click="state.showFormat = true"
+          >
             <IonIcon :icon="textOutline" />
           </IonButton>
-          <IonButton fill="clear" size="large" @click="fileInput.click()">
-            <IonIcon :icon="listOutline" />
-            <input ref="fileInput" type="file" class="pointer-events-none absolute text-0 opacity-0" @change="onSelectFile">
-          </IonButton>
           <IonButton fill="clear" size="large">
+            <IonIcon :icon="checkmarkCircleOutline" />
+          </IonButton>
+          <IonButton fill="clear" size="large" @click="fileInput.click()">
             <IonIcon :icon="cameraOutline" />
+            <input ref="fileInput" type="file" class="pointer-events-none absolute text-0 opacity-0" @change="onSelectFile">
           </IonButton>
           <IonButton fill="clear" size="large">
             <IonIcon :icon="attachOutline" />
@@ -225,9 +236,35 @@ onMounted(async () => {
       </IonToolbar>
     </IonFooter>
     <NoteMore />
-    <TextFormatModal v-model:is-open="state.showFormat" :editor="editorRef?.editor" />
+    <TextFormatModal v-model:is-open="state.showFormat" :editor="editorRef?.editor as Editor" />
   </IonPage>
 </template>
+
+<style lang="scss">
+.note-detail__toolbar {
+  --background: #1c1c1e;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  ion-button {
+    --padding-top: 0;
+    --padding-bottom: 0;
+    min-height: 0;
+    height: 44px;
+    width: 24%;
+    margin: 0;
+    &:first-child {
+      width: 26%;
+      padding-left: 2%;
+    }
+    &:last-child {
+      width: 26%;
+      padding-right: 2%;
+    }
+  }
+}
+</style>
 
 <style scoped>
 ion-item {
@@ -273,29 +310,5 @@ ion-item ion-note {
 
 p {
   line-height: 1.4;
-}
-ion-footer {
-  ion-toolbar {
-    --background: #1c1c1e;
-    --padding-top: 0;
-    --padding-bottom: 0;
-    --padding-start: 0;
-    --padding-end: 0;
-  }
-  ion-button {
-    --padding-top: 0;
-    --padding-bottom: 0;
-    min-height: 0;
-    height: 44px;
-    width: 24%;
-    &:first-child {
-      width: 26%;
-      padding-left: 2%;
-    }
-    &:last-child {
-      width: 26%;
-      padding-right: 2%;
-    }
-  }
 }
 </style>

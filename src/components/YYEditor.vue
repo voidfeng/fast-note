@@ -205,6 +205,7 @@ function insertImage() {
  * 3. 将blob地址使用setFileUpload插入到编辑器中
  */
 async function insertFile(e: Event) {
+  console.log(e)
   const files = (e.target as HTMLInputElement).files
   if (!files)
     return

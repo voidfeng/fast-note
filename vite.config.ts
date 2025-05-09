@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 
 import path from 'node:path'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 // import legacy from '@vitejs/plugin-legacy'
 import vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
@@ -14,6 +15,7 @@ export default defineConfig({
     // legacy()
     UnoCSS(),
     injectVersion(),
+    basicSsl(),
   ],
   resolve: {
     alias: {
@@ -27,6 +29,7 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
+    // https: true,
     proxy: {
       '/e': {
         target: 'https://next.0122.vip',
