@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Editor } from '@tiptap/vue-3'
-import { IonButton, IonModal } from '@ionic/vue'
+import { IonButton, IonIcon, IonModal, IonText } from '@ionic/vue'
+import { closeCircle } from 'ionicons/icons'
 import { ref } from 'vue'
 
 withDefaults(defineProps<{
@@ -23,62 +24,71 @@ const modalRef = ref()
     :backdrop-breakpoint="0.75"
     @did-dismiss="$emit('update:isOpen', false)"
   >
-    <div>
-      <div>
+    <div class="text-format-modal-content px-5">
+      <div class="flex justify-between items-center">
+        <IonText>
+          <h3>格式</h3>
+        </IonText>
+        <IonButton fill="clear" class="close-btn mr-[-8px]" @click="$emit('update:isOpen', false)">
+          <IonIcon slot="icon-only" :icon="closeCircle" />
+        </IonButton>
+      </div>
+      <div class="font-size flex items-center justify-between">
         <IonButton
+          :fill="editor.isActive('heading', { level: 1 }) ? undefined : 'clear'"
           size="small"
-          :class="{ 'is-active': editor.isActive('heading', { level: 1 }) }"
           @click="editor.chain().toggleHeading({ level: 1 }).run()"
         >
-          标题
+          <h1>标题</h1>
         </IonButton>
         <IonButton
+          :fill="editor.isActive('heading', { level: 2 }) ? undefined : 'clear'"
           size="small"
-          :class="{ 'is-active': editor.isActive('heading', { level: 2 }) }"
           @click="editor.chain().toggleHeading({ level: 2 }).run()"
         >
-          副标题
+          <h2>副标题</h2>
         </IonButton>
         <IonButton
+          :fill="editor.isActive('heading', { level: 3 }) ? undefined : 'clear'"
           size="small"
-          :class="{ 'is-active': editor.isActive('heading', { level: 3 }) }"
           @click="editor.chain().toggleHeading({ level: 3 }).run()"
         >
-          小标题
+          <h3>小标题</h3>
         </IonButton>
         <IonButton
+          :fill="editor.isActive('paragraph') ? undefined : 'clear'"
+          class="text-4"
           size="small"
-          :class="{ 'is-active': editor.isActive('paragraph') }"
           @click="editor.chain().setParagraph().run()"
         >
           正文
         </IonButton>
       </div>
-      <div>
+      <div class="font-style flex">
         <IonButton
-          size="small"
           :class="{ 'is-active': editor.isActive('bold') }"
+          expand="full"
           @click="editor.chain().toggleBold().run()"
         >
           加粗
         </IonButton>
         <IonButton
-          size="small"
           :class="{ 'is-active': editor.isActive('italic') }"
+          expand="full"
           @click="editor.chain().toggleItalic().run()"
         >
           斜体
         </IonButton>
         <IonButton
-          size="small"
           :class="{ 'is-active': editor.isActive('underline') }"
+          expand="full"
           @click="editor.chain().toggleUnderline().run()"
         >
           下划线
         </IonButton>
         <IonButton
-          size="small"
           :class="{ 'is-active': editor.isActive('strike') }"
+          expand="full"
           @click="editor.chain().toggleStrike().run()"
         >
           删除线
@@ -145,8 +155,31 @@ const modalRef = ref()
   </IonModal>
 </template>
 
-<style scoped>
-/* ion-modal {
-  --height: auto;
-} */
+<style lang="scss">
+.text-format-modal-content {
+  .close-btn {
+    --color: #a1a1aa;
+    ion-icon {
+      font-size: 28px;
+    }
+  }
+  .font-size {
+    ion-button {
+      --color: #fff;
+    }
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+    }
+  }
+  .font-style {
+    ion-button {
+      flex: 1;
+      --background: #2c2c2e;
+      --color: #fff;
+      --background-activated: #3d3c41;
+    }
+  }
+}
 </style>

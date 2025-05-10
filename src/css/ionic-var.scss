@@ -2,4 +2,7 @@
   :root.ios {
     --ion-item-background: #1c1c1e;
   }
+  ion-button {
+    --background-activated: var(--primary);
+  }
 }
