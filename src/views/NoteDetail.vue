@@ -12,7 +12,7 @@ import { getTime } from '@/utils/date'
 import { IonBackButton, IonButton, IonButtons, IonContent, IonFooter, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
 import { attachOutline, cameraOutline, checkmarkCircleOutline, ellipsisHorizontalCircleOutline, textOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import { computed, nextTick, onMounted, reactive, ref, toRaw, watch } from 'vue'
+import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const props = withDefaults(
@@ -232,7 +232,7 @@ onMounted(async () => {
     <!-- <IonFooter v-if="keyboardHeight > 0" style="overscroll-behavior: none;"> -->
     <IonFooter>
       <IonToolbar class="note-detail__toolbar">
-        <div class="flex justify-evenly items-center select-none" @touchstart.prevent>
+        <div class="flex justify-evenly items-center select-none">
           <IonButton
             fill="clear" size="large"
             @touchstart.prevent="() => {
