@@ -43,7 +43,11 @@ const state = reactive({
 const noteUuid = computed(() => route.params.uuid as string)
 
 watch(() => state.showFormat, (n) => {
-  if (!n) {
+  if (n) {
+    editorRef.value?.setInputMode('none')
+  }
+  else {
+    editorRef.value?.setInputMode('text')
     editorRef.value?.editor.chain().focus()
   }
 })
@@ -91,6 +95,7 @@ async function onBlur() {
       type: 'note',
       puuid: (route.query.puuid as string) || firstNote?.uuid,
       uuid,
+      isdeleted: 0,
     }
     await addNote(newNote)
     data.value = newNote
@@ -205,7 +210,12 @@ onMounted(async () => {
       </ion-item> -->
 
       <div class="ion-padding">
-        <YYEditor v-if="noteUuid === '0' ? newNoteUuid : noteUuid" ref="editorRef" :uuid="noteUuid === '0' ? newNoteUuid : noteUuid" @blur="onBlur" />
+        <YYEditor
+          v-if="noteUuid === '0' ? newNoteUuid : noteUuid"
+          ref="editorRef"
+          :uuid="noteUuid === '0' ? newNoteUuid : noteUuid"
+          @blur="onBlur"
+        />
       </div>
       <!-- <div v-if="keyboardHeight > 0" slot="fixed" :style="{ top: `${visualHeight - 66}px` }" class="h-[66px]">
         Fixed Button

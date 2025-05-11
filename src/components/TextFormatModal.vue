@@ -166,6 +166,8 @@ const modalRef = ref()
   .font-size {
     ion-button {
       --color: #fff;
+      --padding-start: 10px;
+      --padding-end: 10px;
     }
     h1,
     h2,

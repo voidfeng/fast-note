@@ -21,9 +21,7 @@ const props = defineProps<{
   uuid: string
 }>()
 
-const emit = defineEmits<{
-  (e: 'blur'): void
-}>()
+const emit = defineEmits(['focus', 'blur'])
 
 // 定义编辑器类型
 type EditorInstance = Editor | null
@@ -178,25 +176,14 @@ onMounted(() => {
     onBlur: () => {
       emit('blur')
     },
+    onFocus: () => {
+      emit('focus')
+    },
   })
 })
 
 function setContent(content: string): void {
   editor.value?.commands.setContent(content)
-}
-
-// function insertFile() {
-//   editor.value!.commands.setFileUpload({
-//     url: 'https://example.com/path/to/file.pdf',
-//     // localId: 'file-123',
-//   })
-// }
-
-function insertImage() {
-  editor.value!.commands.setFileUpload({
-    url: 'https://placehold.co/400x200.png',
-    // localId: `image-${Date.now()}`,
-  })
 }
 
 /**
@@ -205,7 +192,6 @@ function insertImage() {
  * 3. 将blob地址使用setFileUpload插入到编辑器中
  */
 async function insertFile(e: Event) {
-  console.log(e)
   const files = (e.target as HTMLInputElement).files
   if (!files)
     return
@@ -230,6 +216,16 @@ function setEditable(editable: boolean) {
   editor.value!.setEditable(editable)
 }
 
+function setInputMode(inputMode: 'text' | 'none') {
+  editor.value!.setOptions({
+    editorProps: {
+      attributes: {
+        inputmode: inputMode,
+      },
+    },
+  })
+}
+
 onBeforeMount(() => {
   editor.value?.destroy()
 })
@@ -239,6 +235,7 @@ defineExpose({
   getTitle,
   setContent,
   setEditable,
+  setInputMode,
   editor: computed(() => editor.value),
   insertFile,
 })
@@ -248,13 +245,6 @@ defineExpose({
   <div v-if="editor" class="yy-editor">
     <EditorContent :editor="editor as any" />
     <div class="button-group">
-      <!-- <input ref="fileInput" type="file" @change="onSelectFile">
-      <button @click="insertFile">
-        插入文件
-      </button> -->
-      <button @click="insertImage">
-        插入图片
-      </button>
       <button
         :disabled="!editor.can().chain().focus().undo().run()"
         @click="editor.chain().focus().undo().run()"
