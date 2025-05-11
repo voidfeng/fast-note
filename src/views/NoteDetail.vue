@@ -12,7 +12,7 @@ import { getTime } from '@/utils/date'
 import { IonBackButton, IonButton, IonButtons, IonContent, IonFooter, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
 import { attachOutline, cameraOutline, checkmarkCircleOutline, ellipsisHorizontalCircleOutline, textOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const props = withDefaults(
@@ -45,10 +45,18 @@ const noteUuid = computed(() => route.params.uuid as string)
 watch(() => state.showFormat, (n) => {
   if (n) {
     editorRef.value?.setInputMode('none')
+    setTimeout(() => {
+      editorRef.value?.editor.chain().focus()
+    }, 500)
   }
   else {
     editorRef.value?.setInputMode('text')
-    editorRef.value?.editor.chain().focus()
+    setTimeout(() => {
+      editorRef.value?.editor.chain().blur()
+      setTimeout(() => {
+        editorRef.value?.editor.chain().focus()
+      }, 300)
+    }, 10)
   }
 })
 
@@ -224,10 +232,15 @@ onMounted(async () => {
     <!-- <IonFooter v-if="keyboardHeight > 0" style="overscroll-behavior: none;"> -->
     <IonFooter>
       <IonToolbar class="note-detail__toolbar">
-        <div class="flex justify-evenly items-center select-none">
+        <div class="flex justify-evenly items-center select-none" @touchstart.prevent>
           <IonButton
             fill="clear" size="large"
-            @touchstart="() => keyboardHeight > 0 ? (state.showFormat = true) : null"
+            @touchstart.prevent="() => {
+              if (keyboardHeight > 0) {
+                state.showFormat = true
+                editorRef?.setInputMode('none')
+              }
+            }"
             @click="state.showFormat = true"
           >
             <IonIcon :icon="textOutline" />
