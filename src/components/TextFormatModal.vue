@@ -2,7 +2,7 @@
 import type { Editor } from '@tiptap/vue-3'
 import { IonButton, IonIcon, IonModal, IonText } from '@ionic/vue'
 import { closeCircle } from 'ionicons/icons'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import Icon from './Icon.vue'
 
 withDefaults(defineProps<{
@@ -12,7 +12,13 @@ withDefaults(defineProps<{
 
 defineEmits(['update:isOpen'])
 
+const modalHeight = 261
+const modalHeightPecent = ref(0.35)
 const modalRef = ref()
+
+onMounted(() => {
+  modalHeightPecent.value = modalHeight / window.innerHeight
+})
 </script>
 
 <template>
@@ -20,8 +26,8 @@ const modalRef = ref()
     ref="modalRef"
     v-bind="$attrs"
     :is-open
-    :initial-breakpoint="0.4"
-    :breakpoints="[0, 0.4]"
+    :initial-breakpoint="modalHeightPecent"
+    :breakpoints="[0, modalHeightPecent]"
     :backdrop-breakpoint="0.75"
     @did-dismiss="$emit('update:isOpen', false)"
   >
@@ -67,28 +73,28 @@ const modalRef = ref()
       </div>
       <div class="font-style flex">
         <IonButton
-          :class="{ 'is-active': editor.isActive('bold') }"
+          :fill="editor.isActive('bold') ? undefined : 'clear'"
           expand="full"
           @click="editor.chain().focus().toggleBold().run()"
         >
           <Icon name="bold" class="text-6" />
         </IonButton>
         <IonButton
-          :class="{ 'is-active': editor.isActive('italic') }"
+          :fill="editor.isActive('italic') ? undefined : 'clear'"
           expand="full"
           @click="editor.chain().focus().toggleItalic().run()"
         >
           <Icon name="italic" class="text-6" />
         </IonButton>
         <IonButton
-          :class="{ 'is-active': editor.isActive('underline') }"
+          :fill="editor.isActive('underline') ? undefined : 'clear'"
           expand="full"
           @click="editor.chain().focus().toggleUnderline().run()"
         >
           <Icon name="underline" class="text-6" />
         </IonButton>
         <IonButton
-          :class="{ 'is-active': editor.isActive('strike') }"
+          :fill="editor.isActive('strike') ? undefined : 'clear'"
           expand="full"
           @click="editor.chain().focus().toggleStrike().run()"
         >
@@ -96,61 +102,38 @@ const modalRef = ref()
         </IonButton>
       </div>
       <div class="flex">
-        <div>
+        <div class="list-format flex flex-1">
           <IonButton
-            size="small"
-            :class="{ 'is-active': editor.isActive('bulletList') }"
+            :fill="editor.isActive('bulletList') ? undefined : 'clear'"
+            expand="full"
             @click="editor.chain().focus().toggleBulletList().run()"
           >
-            无序列表
+            <Icon name="unorderedlist" class="text-6" />
           </IonButton>
           <IonButton
-            size="small"
-            :class="{ 'is-active': editor.isActive('orderedList') }"
+            :fill="editor.isActive('orderedList') ? undefined : 'clear'"
+            expand="full"
             @click="editor.chain().focus().toggleOrderedList().run()"
           >
-            有序列表
+            <Icon name="orderedlist" class="text-6" />
           </IonButton>
         </div>
-        <div>
+        <div class="list-indent flex flex-1">
           <IonButton
-            size="small"
-            :class="{ 'is-active': editor.isActive('listItem') }"
-            @click="editor.chain().focus().sinkListItem('listItem').run()"
-          >
-            右缩进
-          </IonButton>
-          <IonButton
-            size="small"
-            :class="{ 'is-active': editor.isActive('listItem') }"
+            fill="clear"
+            expand="full"
             @click="editor.chain().focus().liftListItem('listItem').run()"
           >
-            左缩进
+            <Icon name="outdent" class="text-6" />
+          </IonButton>
+          <IonButton
+            fill="clear"
+            expand="full"
+            @click="editor.chain().focus().sinkListItem('listItem').run()"
+          >
+            <Icon name="indent" class="text-6" />
           </IonButton>
         </div>
-      </div>
-      <div>
-        <IonButton
-          size="small"
-          :class="{ 'is-active': editor.isActive({ textAlign: 'left' }) }"
-          @click="editor.chain().focus().setTextAlign('left').run()"
-        >
-          左对齐
-        </IonButton>
-        <IonButton
-          size="small"
-          :class="{ 'is-active': editor.isActive({ textAlign: 'center' }) }"
-          @click="editor.chain().focus().setTextAlign('center').run()"
-        >
-          居中对齐
-        </IonButton>
-        <IonButton
-          size="small"
-          :class="{ 'is-active': editor.isActive({ textAlign: 'right' }) }"
-          @click="editor.chain().focus().setTextAlign('right').run()"
-        >
-          右对齐
-        </IonButton>
       </div>
     </div>
   </IonModal>
@@ -176,12 +159,29 @@ const modalRef = ref()
       margin: 0;
     }
   }
-  .font-style {
+  .font-style,
+  .list-format,
+  .list-indent {
     ion-button {
-      flex: 1;
-      --background: #2c2c2e;
+      --background: var(--primary);
       --color: #fff;
-      --background-activated: #3d3c41;
+      --background-activated: var(--primary);
+      --padding-top: 6px;
+      --padding-bottom: 6px;
+      flex: 1;
+      overflow: hidden;
+      &[fill='clear'] {
+        --background: #2c2c2e;
+        --background-activated: #3d3c41;
+      }
+      &:first-child {
+        border-top-left-radius: 6px;
+        border-bottom-left-radius: 6px;
+      }
+      &:last-child {
+        border-top-right-radius: 6px;
+        border-bottom-right-radius: 6px;
+      }
     }
   }
 }

@@ -328,6 +328,7 @@ defineExpose({
 .tiptap {
   outline: none;
   padding: 16px;
+  padding-bottom: 200px;
   :first-child {
     margin-top: 0;
   }
