@@ -3,6 +3,7 @@ import type { Editor } from '@tiptap/vue-3'
 import { IonButton, IonIcon, IonModal, IonText } from '@ionic/vue'
 import { closeCircle } from 'ionicons/icons'
 import { ref } from 'vue'
+import Icon from './Icon.vue'
 
 withDefaults(defineProps<{
   isOpen: boolean
@@ -70,28 +71,28 @@ const modalRef = ref()
           expand="full"
           @click="editor.chain().focus().toggleBold().run()"
         >
-          加粗
+          <Icon name="bold" class="text-6" />
         </IonButton>
         <IonButton
           :class="{ 'is-active': editor.isActive('italic') }"
           expand="full"
           @click="editor.chain().focus().toggleItalic().run()"
         >
-          斜体
+          <Icon name="italic" class="text-6" />
         </IonButton>
         <IonButton
           :class="{ 'is-active': editor.isActive('underline') }"
           expand="full"
           @click="editor.chain().focus().toggleUnderline().run()"
         >
-          下划线
+          <Icon name="underline" class="text-6" />
         </IonButton>
         <IonButton
           :class="{ 'is-active': editor.isActive('strike') }"
           expand="full"
           @click="editor.chain().focus().toggleStrike().run()"
         >
-          删除线
+          <Icon name="strikethrough" class="text-6" />
         </IonButton>
       </div>
       <div class="flex">
