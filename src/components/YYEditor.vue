@@ -333,18 +333,6 @@ defineExpose({
     margin-top: 0;
   }
 
-  /* List styles */
-  ul,
-  ol {
-    padding: 0 1rem;
-    margin: 1.25rem 1rem 1.25rem 0.4rem;
-
-    li p {
-      margin-top: 0.25em;
-      margin-bottom: 0.25em;
-    }
-  }
-
   /* Heading styles */
   h1,
   h2,
@@ -382,25 +370,21 @@ defineExpose({
 
   /* Code and preformatted text styles */
   code {
-    background-color: var(--purple-light);
+    background-color: #202329;
     border-radius: 0.4rem;
-    color: var(--black);
-    font-size: 0.85rem;
     padding: 0.25em 0.3em;
   }
 
   pre {
-    background: var(--black);
+    background: #161b22;
     border-radius: 0.5rem;
-    color: var(--white);
     font-family: 'JetBrainsMono', monospace;
-    margin: 1.5rem 0;
+    margin: 8px 0;
     padding: 0.75rem 1rem;
-
+    line-height: 1.45;
+    font-size: 14px;
     code {
       background: none;
-      color: inherit;
-      font-size: 0.8rem;
       padding: 0;
     }
   }
@@ -410,13 +394,7 @@ defineExpose({
     margin: 1.5rem 0;
     padding-left: 1rem;
   }
-
-  hr {
-    border: none;
-    border-top: 1px solid var(--gray-2);
-    margin: 2rem 0;
-  }
-  /* Task list specific styles */
+  // 任务列表
   ul[data-type='taskList'] {
     list-style: none;
     margin-left: 0;
@@ -425,11 +403,29 @@ defineExpose({
     li {
       align-items: center;
       display: flex;
+      &[data-checked='true'] {
+        label {
+          background: url('/public/icons/check-circle-fill.svg') no-repeat center center;
+          background-size: 100%;
+        }
+      }
+      &[data-checked='false'] {
+        label {
+          background: url('/public/icons/circle.svg') no-repeat center center;
+          background-size: 100%;
+        }
+      }
 
       > label {
-        flex: 0 0 auto;
+        display: inline-flex;
+        width: 22px;
+        height: 22px;
         margin-right: 0.5rem;
-        user-select: none;
+        transform: translateY(-0.1em);
+        cursor: pointer;
+        //   flex: 0 0 auto;
+        //   margin-right: 0.5rem;
+        //   user-select: none;
       }
 
       > div {
@@ -438,7 +434,43 @@ defineExpose({
     }
 
     input[type='checkbox'] {
-      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+  // 列表
+  ul,
+  ol {
+    padding: 0;
+
+    li p {
+      margin-top: 0.25em;
+      margin-bottom: 0.25em;
+    }
+  }
+  // 有序列表
+  ol {
+    padding-left: 28px;
+    li {
+      ol {
+        li {
+          list-style-type: lower-alpha;
+          ol {
+            li {
+              list-style-type: decimal-leading-zero;
+            }
+          }
+        }
+      }
+    }
+  }
+  // 无序列表
+  ul {
+    padding-left: 28px;
+    li {
+      &::marker {
+        font-size: 20px;
+      }
     }
   }
 }
