@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Editor } from '@tiptap/vue-3'
+import Icon from '@/components/Icon.vue'
 import NoteMore from '@/components/NoteMore.vue'
 import TextFormatModal from '@/components/TextFormatModal.vue'
 import YYEditor from '@/components/YYEditor.vue'
@@ -10,7 +11,7 @@ import { useNote } from '@/hooks/useNote'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { getTime } from '@/utils/date'
 import { IonBackButton, IonButton, IonButtons, IonContent, IonFooter, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
-import { attachOutline, cameraOutline, checkmarkCircleOutline, ellipsisHorizontalCircleOutline, textOutline } from 'ionicons/icons'
+import { attachOutline, checkmarkCircleOutline, ellipsisHorizontalCircleOutline, textOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
 import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -33,7 +34,8 @@ const { keyboardHeight, restoreHeight } = useVisualViewport()
 
 const pageRef = ref()
 const editorRef = ref()
-const fileInput = ref()
+const fileInputRef = ref()
+const imageInputRef = ref()
 const data = ref()
 let newNoteUuid = '0'
 const state = reactive({
@@ -177,6 +179,10 @@ function onSelectFile(e: Event) {
   editorRef.value.insertFile(e)
 }
 
+function onInsertTodo() {
+  editorRef.value?.editor.chain().focus().toggleTaskList().run()
+}
+
 onMounted(async () => {
   if (noteUuid.value && noteUuid.value !== '0') {
     init(noteUuid.value)
@@ -245,15 +251,16 @@ onMounted(async () => {
           >
             <IonIcon :icon="textOutline" />
           </IonButton>
-          <IonButton fill="clear" size="large">
+          <IonButton fill="clear" size="large" @click="onInsertTodo">
             <IonIcon :icon="checkmarkCircleOutline" />
           </IonButton>
-          <IonButton fill="clear" size="large" @click="fileInput.click()">
-            <IonIcon :icon="cameraOutline" />
-            <input ref="fileInput" type="file" class="pointer-events-none absolute text-0 opacity-0" @change="onSelectFile">
+          <IonButton fill="clear" size="large" @click="imageInputRef.click()">
+            <Icon name="image" class="text-6.5" />
+            <input ref="imageInputRef" type="file" accept="image/*" class="pointer-events-none absolute text-0 opacity-0" @change="onSelectFile">
           </IonButton>
-          <IonButton fill="clear" size="large">
+          <IonButton fill="clear" size="large" @click="fileInputRef.click()">
             <IonIcon :icon="attachOutline" />
+            <input ref="fileInputRef" type="file" class="pointer-events-none absolute text-0 opacity-0" @change="onSelectFile">
           </IonButton>
         </div>
       </IonToolbar>

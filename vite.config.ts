@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
     injectVersion(),
   ]
 
-  if (env.VITE_HTTPS) {
+  if (env.VITE_HTTPS === 'true') {
     plugins.push(basicSsl())
   }
 
