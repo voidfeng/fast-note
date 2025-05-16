@@ -4,12 +4,9 @@ import { useFiles } from '@/hooks/useFiles'
 import { getFileHash } from '@/utils'
 import { getTime } from '@/utils/date'
 import { Color } from '@tiptap/extension-color'
-import ListItem from '@tiptap/extension-list-item'
-import TaskItem from '@tiptap/extension-task-item'
-import TaskList from '@tiptap/extension-task-list'
+import { ListItem, TaskItem, TaskList } from '@tiptap/extension-list'
 import TextAlign from '@tiptap/extension-text-align'
-import TextStyle from '@tiptap/extension-text-style'
-import Underline from '@tiptap/extension-underline'
+import { TextStyleKit } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
@@ -77,10 +74,9 @@ function getTitle() {
 onMounted(() => {
   editor.value = new Editor({
     extensions: [
-      Color.configure({ types: [TextStyle.name, ListItem.name] }),
-      TextStyle,
+      Color.configure({ types: [TextStyleKit.name, ListItem.name] }),
+      TextStyleKit,
       StarterKit,
-      Underline,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
