@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import type { Editor } from '@tiptap/vue-3'
+import { IonBackButton, IonButton, IonButtons, IonContent, IonFooter, IonHeader, IonIcon, IonPage, IonToolbar, isPlatform, onIonViewWillLeave } from '@ionic/vue'
+import { attachOutline, checkmarkCircleOutline, ellipsisHorizontalCircleOutline, textOutline } from 'ionicons/icons'
+import { nanoid } from 'nanoid'
+import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import NoteMore from '@/components/NoteMore.vue'
 import TextFormatModal from '@/components/TextFormatModal.vue'
@@ -10,11 +15,6 @@ import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { getTime } from '@/utils/date'
-import { IonBackButton, IonButton, IonButtons, IonContent, IonFooter, IonHeader, IonIcon, IonPage, IonToolbar } from '@ionic/vue'
-import { attachOutline, checkmarkCircleOutline, ellipsisHorizontalCircleOutline, textOutline } from 'ionicons/icons'
-import { nanoid } from 'nanoid'
-import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
-import { useRoute } from 'vue-router'
 
 const props = withDefaults(
   defineProps<{
@@ -32,6 +32,7 @@ const { getFileRefsByRefid, updateFileRef } = useFileRefs()
 const { isDesktop } = useDeviceType()
 const { keyboardHeight, restoreHeight } = useVisualViewport()
 
+const isIos = isPlatform('ios')
 const pageRef = ref()
 const editorRef = ref()
 const fileInputRef = ref()
@@ -179,6 +180,10 @@ function onSelectFile(e: Event) {
   editorRef.value.insertFile(e)
 }
 
+function onInsertTable() {
+  editorRef.value?.editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: false }).run()
+}
+
 function onInsertTodo() {
   editorRef.value?.editor.chain().focus().toggleTaskList().run()
 }
@@ -191,6 +196,12 @@ onMounted(async () => {
     newNoteUuid = nanoid(12)
     window.history.replaceState(null, '', `/n/${newNoteUuid}`)
   }
+})
+
+onIonViewWillLeave(() => {
+  setTimeout(() => {
+    state.showFormat = false
+  }, 300)
 })
 </script>
 
@@ -240,7 +251,16 @@ onMounted(async () => {
       <IonToolbar class="note-detail__toolbar">
         <div class="flex justify-evenly items-center select-none">
           <IonButton
-            fill="clear" size="large"
+            fill="clear"
+            size="large"
+            @touchstart.prevent="onInsertTable"
+            @click="onInsertTable"
+          >
+            <Icon name="table" class="text-6.5" />
+          </IonButton>
+          <IonButton
+            fill="clear"
+            size="large"
             @touchstart.prevent="() => {
               if (keyboardHeight > 0) {
                 state.showFormat = true
@@ -251,15 +271,31 @@ onMounted(async () => {
           >
             <IonIcon :icon="textOutline" />
           </IonButton>
-          <IonButton fill="clear" size="large" @click="onInsertTodo">
+          <IonButton
+            fill="clear"
+            size="large"
+            @touchstart.prevent="onInsertTodo"
+            @click="onInsertTodo"
+          >
             <IonIcon :icon="checkmarkCircleOutline" />
           </IonButton>
-          <IonButton fill="clear" size="large" @click="imageInputRef.click()">
+          <IonButton
+            v-if="!isIos"
+            fill="clear"
+            size="large"
+            @touchstart.prevent="imageInputRef.click()"
+            @click="imageInputRef.click()"
+          >
             <Icon name="image" class="text-6.5" />
             <input ref="imageInputRef" type="file" accept="image/*" class="pointer-events-none absolute text-0 opacity-0" @change="onSelectFile">
           </IonButton>
-          <IonButton fill="clear" size="large" @click="fileInputRef.click()">
-            <IonIcon :icon="attachOutline" />
+          <IonButton
+            fill="clear"
+            size="large"
+            @click="fileInputRef.click()"
+          >
+            <Icon v-if="isIos" name="image" class="text-6.5" />
+            <IonIcon v-else :icon="attachOutline" />
             <input ref="fileInputRef" type="file" class="pointer-events-none absolute text-0 opacity-0" @change="onSelectFile">
           </IonButton>
         </div>

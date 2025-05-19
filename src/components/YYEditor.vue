@@ -1,18 +1,18 @@
 <script lang="ts" setup>
-import { useFileRefs } from '@/hooks/useFileRefs'
-import { useFiles } from '@/hooks/useFiles'
-import { getFileHash } from '@/utils'
-import { getTime } from '@/utils/date'
 import { Color } from '@tiptap/extension-color'
 import { ListItem, TaskItem, TaskList } from '@tiptap/extension-list'
+import { TableKit } from '@tiptap/extension-table'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
 import { computed, onBeforeMount, onMounted, ref } from 'vue'
+import { useFileRefs } from '@/hooks/useFileRefs'
+import { useFiles } from '@/hooks/useFiles'
+import { getFileHash } from '@/utils'
+import { getTime } from '@/utils/date'
 import { FileUpload } from './extensions/FileUpload/FileUpload'
-// import { Indent } from './extensions/Indent'
 
 const props = defineProps<{
   uuid: string
@@ -82,7 +82,7 @@ onMounted(() => {
       }),
       TaskList,
       TaskItem,
-      // Indent,
+      TableKit,
       FileUpload.configure({
         /**
          * 通过url从indexeddb获取文件并转为url地址
@@ -467,6 +467,17 @@ defineExpose({
       &::marker {
         font-size: 20px;
       }
+    }
+  }
+  table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    border: 1px solid #3a3a3c;
+    width: 100%;
+    margin: 10px 0;
+    td {
+      border: 1px solid #3a3a3c;
+      padding: 8px;
     }
   }
 }

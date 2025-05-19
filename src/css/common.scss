@@ -19,3 +19,12 @@ ion-footer {
     font-size: 0.75rem;
   }
 }
+
+::selection {
+  color: initial;
+  background-color: #4c3e11;
+}
+
+[contenteditable] {
+  caret-color: var(--primary);
+}
