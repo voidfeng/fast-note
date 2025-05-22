@@ -1,5 +1,5 @@
 import { IonicVue } from '@ionic/vue'
-import VConsole from 'vconsole'
+// import VConsole from 'vconsole'
 import { createApp } from 'vue'
 import App from './App.vue'
 import { useDexie } from './hooks/useDexie'
@@ -40,8 +40,7 @@ import './css/common.scss'
 
 import 'virtual:uno.css'
 
-// eslint-disable-next-line no-new
-new VConsole({ theme: 'dark' })
+// new VConsole({ theme: 'dark' })
 
 const { init } = useDexie()
 

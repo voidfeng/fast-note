@@ -7,6 +7,7 @@ import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import NoteMore from '@/components/NoteMore.vue'
+import TableFormatModal from '@/components/TableFormatModal.vue'
 import TextFormatModal from '@/components/TextFormatModal.vue'
 import YYEditor from '@/components/YYEditor.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
@@ -41,6 +42,7 @@ const data = ref()
 let newNoteUuid = '0'
 const state = reactive({
   showFormat: false,
+  showTableFormat: false,
 })
 
 const noteUuid = computed(() => route.params.uuid as string)
@@ -180,10 +182,6 @@ function onSelectFile(e: Event) {
   editorRef.value.insertFile(e)
 }
 
-function onInsertTable() {
-  editorRef.value?.editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: false }).run()
-}
-
 function onInsertTodo() {
   editorRef.value?.editor.chain().focus().toggleTaskList().run()
 }
@@ -253,8 +251,13 @@ onIonViewWillLeave(() => {
           <IonButton
             fill="clear"
             size="large"
-            @touchstart.prevent="onInsertTable"
-            @click="onInsertTable"
+            @touchstart.prevent="() => {
+              if (keyboardHeight > 0) {
+                state.showTableFormat = true
+                editorRef?.setInputMode('none')
+              }
+            }"
+            @click="state.showTableFormat = true"
           >
             <Icon name="table" class="text-6.5" />
           </IonButton>
@@ -302,7 +305,8 @@ onIonViewWillLeave(() => {
       </IonToolbar>
     </IonFooter>
     <NoteMore />
-    <TextFormatModal v-model:is-open="state.showFormat" :editor="editorRef?.editor as Editor" />
+    <TableFormatModal v-model:is-open="state.showTableFormat" :editor="(editorRef?.editor || {}) as Editor" />
+    <TextFormatModal v-model:is-open="state.showFormat" :editor="(editorRef?.editor || {}) as Editor" />
   </IonPage>
 </template>
 

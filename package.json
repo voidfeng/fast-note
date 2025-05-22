@@ -42,7 +42,7 @@
     "vue-router": "^4.2.0"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^4.13.1",
+    "@antfu/eslint-config": "^4.13.2",
     "@capacitor/cli": "7.0.1",
     "@unocss/eslint-plugin": "^66.0.0",
     "@vitejs/plugin-basic-ssl": "^2.0.0",
