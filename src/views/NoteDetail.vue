@@ -47,7 +47,10 @@ const state = reactive({
 
 const noteUuid = computed(() => route.params.uuid as string)
 
-watch(() => state.showFormat, (n) => {
+watch(() => state.showTableFormat, changeFormatModal)
+watch(() => state.showFormat, changeFormatModal)
+
+function changeFormatModal(n: boolean) {
   if (n) {
     editorRef.value?.setInputMode('none')
     setTimeout(() => {
@@ -63,7 +66,7 @@ watch(() => state.showFormat, (n) => {
       }, 300)
     }, 10)
   }
-})
+}
 
 function getBackButtonText() {
   const win = window as any
