@@ -1,4 +1,5 @@
 @use './ionic-var.scss';
+@use './ionic.scss';
 @use './var.scss';
 @use './var-class.scss';
 ion-content::part(scroll),
@@ -12,12 +13,6 @@ ion-content::part(scroll),
   vertical-align: -0.15em;
   fill: currentColor;
   overflow: hidden;
-}
-
-ion-footer {
-  .title-default {
-    font-size: 0.75rem;
-  }
 }
 
 ::selection {

@@ -189,6 +189,24 @@ function onInsertTodo() {
   editorRef.value?.editor.chain().focus().toggleTaskList().run()
 }
 
+function openTableFormatModal() {
+  if (keyboardHeight.value > 0 || isPlatform('desktop')) {
+    editorRef.value?.setInputMode('none')
+    setTimeout(() => {
+      state.showTableFormat = true
+    }, 300)
+  }
+}
+
+function openTextFormatModal() {
+  if (keyboardHeight.value > 0 || isPlatform('desktop')) {
+    editorRef.value?.setInputMode('none')
+    setTimeout(() => {
+      state.showFormat = true
+    }, 300)
+  }
+}
+
 onMounted(async () => {
   if (noteUuid.value && noteUuid.value !== '0') {
     init(noteUuid.value)
@@ -254,26 +272,16 @@ onIonViewWillLeave(() => {
           <IonButton
             fill="clear"
             size="large"
-            @touchstart.prevent="() => {
-              if (keyboardHeight > 0) {
-                state.showTableFormat = true
-                editorRef?.setInputMode('none')
-              }
-            }"
-            @click="state.showTableFormat = true"
+            @touchstart.prevent="openTableFormatModal"
+            @click="openTableFormatModal"
           >
             <Icon name="table" class="text-6.5" />
           </IonButton>
           <IonButton
             fill="clear"
             size="large"
-            @touchstart.prevent="() => {
-              if (keyboardHeight > 0) {
-                state.showFormat = true
-                editorRef?.setInputMode('none')
-              }
-            }"
-            @click="state.showFormat = true"
+            @touchstart.prevent="openTextFormatModal"
+            @click="openTextFormatModal"
           >
             <IonIcon :icon="textOutline" />
           </IonButton>
@@ -315,7 +323,7 @@ onIonViewWillLeave(() => {
 
 <style lang="scss">
 .note-detail__toolbar {
-  --background: #1c1c1e;
+  --background: var(--bg-gray-900);
   --padding-top: 0;
   --padding-bottom: 0;
   --padding-start: 0;

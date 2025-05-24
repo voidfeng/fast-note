@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import type { Note } from '@/hooks/useDexie'
 import type {
   AlertButton,
 } from '@ionic/vue'
-import NoteList from '@/components/NoteList.vue'
-import SyncState from '@/components/SyncState.vue'
-import { useDeviceType } from '@/hooks/useDeviceType'
-import { useNote } from '@/hooks/useNote'
-import { useSync } from '@/hooks/useSync'
+import type { Note } from '@/hooks/useDexie'
 import {
   IonAlert,
   IonButton,
@@ -19,6 +14,7 @@ import {
   IonPage,
   IonRefresher,
   IonRefresherContent,
+  IonSearchbar,
   IonTitle,
   IonToolbar,
   onIonViewWillEnter,
@@ -26,6 +22,11 @@ import {
 import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import NoteList from '@/components/NoteList.vue'
+import SyncState from '@/components/SyncState.vue'
+import { useDeviceType } from '@/hooks/useDeviceType'
+import { useNote } from '@/hooks/useNote'
+import { useSync } from '@/hooks/useSync'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
@@ -149,6 +150,7 @@ onMounted(() => {
         <SyncState />
       </IonHeader>
 
+      <IonSearchbar placeholder="搜索" />
       <NoteList
         v-model:current-note="state.currentNote"
         :data-list="sortDataList"

@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import type { DefineComponent, Ref } from 'vue'
 import type { ItemType } from '@/components/LongPressMenu.vue'
 import type { Note } from '@/hooks/useDexie'
-import type { DefineComponent, Ref } from 'vue'
+import { IonAccordionGroup, IonList } from '@ionic/vue'
+import { ref } from 'vue'
 import LongPressMenu from '@/components/LongPressMenu.vue'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
-import { IonAccordionGroup, IonList } from '@ionic/vue'
-import { ref } from 'vue'
 import NoteListItem from './NoteListItem.vue'
 
 const props = withDefaults(
@@ -77,6 +77,7 @@ defineExpose({
 
 <template>
   <IonList ref="listRef" inset>
+    <slot name="header" />
     <IonAccordionGroup :value="expandedItems" multiple>
       <NoteListItem
         v-if="showAllNotes"
