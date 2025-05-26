@@ -14,7 +14,6 @@ import {
   IonPage,
   IonRefresher,
   IonRefresherContent,
-  IonSearchbar,
   IonTitle,
   IonToolbar,
   onIonViewWillEnter,
@@ -22,6 +21,8 @@ import {
 import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import GlobalSearch from '@/components/GlobalSearch/GlobalSearch.vue'
+import { useGlobalSearch } from '@/components/GlobalSearch/useGlobalSearch'
 import NoteList from '@/components/NoteList.vue'
 import SyncState from '@/components/SyncState.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
@@ -33,6 +34,7 @@ import NoteDetail from './NoteDetail.vue'
 const { addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid } = useNote()
 const { onSynced } = useSync()
 const { isDesktop } = useDeviceType()
+const { showGlobalSearch } = useGlobalSearch()
 
 const unSub = onSynced(() => {
   init()
@@ -132,9 +134,11 @@ onMounted(() => {
 
 <template>
   <IonPage ref="page" :class="{ 'note-desktop': isDesktop }">
-    <IonHeader :translucent="true">
-      <IonToolbar />
-    </IonHeader>
+    <Transition name="header-slide">
+      <IonHeader v-if="!showGlobalSearch" :translucent="true">
+        <IonToolbar />
+      </IonHeader>
+    </Transition>
 
     <IonContent :fullscreen="true">
       <IonRefresher slot="fixed" @ion-refresh="refresh($event)">
@@ -150,7 +154,8 @@ onMounted(() => {
         <SyncState />
       </IonHeader>
 
-      <IonSearchbar placeholder="搜索" />
+      <GlobalSearch />
+
       <NoteList
         v-model:current-note="state.currentNote"
         :data-list="sortDataList"
@@ -215,5 +220,33 @@ onMounted(() => {
     width: calc(100% + 2px);
     height: 100%;
   }
+}
+/* 进入和离开动画的激活状态 */
+.header-slide-enter-active,
+.header-slide-leave-active {
+  transition:
+    max-height 0.3s ease-in-out,
+    opacity 0.3s ease-in-out;
+  overflow: hidden; /* 非常重要！确保内容在折叠时被裁剪 */
+}
+
+/* 进入动画的起始状态 和 离开动画的结束状态 */
+.header-slide-enter-from,
+.header-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* 进入动画的结束状态 和 离开动画的起始状态 */
+.header-slide-enter-to,
+.header-slide-leave-from {
+  /*
+    设置一个足够大的 max-height 值，使其能容纳 header 的所有内容。
+    一个标准的 ion-toolbar 大约是 56px。
+    如果你的 header 内容更多（例如，多个 toolbar，大标题模式），请增大此值。
+    例如: 100px, 150px, 或根据你的 header 实际最大高度调整。
+  */
+  max-height: 150px; /* 示例值，请根据你的 header 内容调整 */
+  opacity: 1;
 }
 </style>
