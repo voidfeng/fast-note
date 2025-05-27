@@ -141,7 +141,7 @@ onMounted(() => {
     </Transition>
 
     <IonContent :fullscreen="true">
-      <IonRefresher slot="fixed" @ion-refresh="refresh($event)">
+      <IonRefresher v-if="!showGlobalSearch" slot="fixed" @ion-refresh="refresh($event)">
         <IonRefresherContent />
       </IonRefresher>
 
