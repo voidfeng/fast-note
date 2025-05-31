@@ -1,14 +1,24 @@
 <script setup lang="ts">
+import type { Note } from '@/hooks/useDexie'
 import { IonContent, IonSearchbar } from '@ionic/vue'
 import { reactive, ref } from 'vue'
+import { useNote } from '@/hooks/useNote'
 import { useGlobalSearch } from './useGlobalSearch'
 
+const props = withDefaults(defineProps<{
+  puuid?: string
+}>(), {
+  puuid: '',
+})
+
 const { showGlobalSearch, showGlobalSearchState } = useGlobalSearch()
+const { searchNotesByPUuid } = useNote()
 
 const fullScreenRef = ref<HTMLDivElement>()
 const state = reactive({
   cacheTop: 0,
   top: 0,
+  notes: [] as Note[],
 })
 
 function onFocus() {
@@ -31,6 +41,17 @@ function onCancel() {
     showGlobalSearchState.value = 'hide'
   }, 300)
 }
+
+function onInput(event: CustomEvent) {
+  const value = (event.target as HTMLIonSearchbarElement).value
+  if (value) {
+    searchNotesByPUuid(props.puuid, value).then((_notes) => {
+      // 处理搜索结果
+      console.log(value, _notes)
+      state.notes = _notes
+    })
+  }
+}
 </script>
 
 <template>
@@ -51,10 +72,11 @@ function onCancel() {
         cancel-button-text="取消"
         @ion-focus="onFocus"
         @ion-cancel="onCancel"
+        @ion-input="onInput"
       />
       <div class="flex-1 py-2 px-4">
         <IonContent>
-          仍在开发中...
+          共{{ state.notes.length }}条结果
         </IonContent>
       </div>
     </div>

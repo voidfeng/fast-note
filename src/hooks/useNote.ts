@@ -1,7 +1,7 @@
 import type { Note } from './useDexie'
-import { getTime } from '@/utils/date'
 import { nanoid } from 'nanoid'
 import { onUnmounted, ref } from 'vue'
+import { getTime } from '@/utils/date'
 import { useDexie } from './useDexie'
 
 type UpdateFn = (item: Note) => void
@@ -35,6 +35,7 @@ export function useNote() {
           type: 'folder',
           puuid: '',
           lastdotime: time,
+          isdeleted: 0,
         } as Note
         addNote(id1).then(() => {
           fetchNotes().then(() => {
@@ -194,6 +195,34 @@ export function useNote() {
     return []
   }
 
+  async function searchNotesByPUuid(puuid: string, keyword: string) {
+    // 搜索当前 puuid 下符合条件的笔记
+    const directNotes = await db.value.note
+      .where('[type+puuid+isdeleted]')
+      .equals(['note', puuid, 0])
+      .and((item) => {
+        return item.newstext.includes(keyword)
+      })
+      .toArray()
+
+    // 获取当前 puuid 下的所有文件夹
+    const folders = await db.value.note
+      .where('[type+puuid+isdeleted]')
+      .equals(['folder', puuid, 0])
+      .toArray()
+
+    // 递归搜索每个文件夹中的笔记
+    let allMatchedNotes = [...directNotes]
+
+    for (const folder of folders) {
+      // 对每个文件夹递归调用搜索方法
+      const folderNotes = await searchNotesByPUuid(folder.uuid!, keyword)
+      allMatchedNotes = [...allMatchedNotes, ...folderNotes]
+    }
+
+    return allMatchedNotes
+  }
+
   onUnmounted(() => {
     privateNoteUpdateArr.forEach((fn) => {
       onNoteUpdateArr.splice(onNoteUpdateArr.indexOf(fn), 1)
@@ -214,6 +243,7 @@ export function useNote() {
     getNoteCountByUuid,
     getNotesByLastdotime,
     onUpdateNote,
+    searchNotesByPUuid,
     // 文件夹
     getAllFolders,
     getFolderTreeByPUuid,
