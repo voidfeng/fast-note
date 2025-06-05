@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebAuthn 生物识别测试</title>
+  </head>
+  <body>
+    <h1>WebAuthn 生物识别测试</h1>
+    <p>本页面用于测试注册和解锁功能。</p>
+
+    <!-- 按钮：注册和解锁 -->
+    <button id="registerBtn">注册生物识别</button>
+    <button id="unlockBtn">解锁备忘录</button>
+
+    <!-- 显示结果 -->
+    <p id="result"></p>
+
+    <script>
+      // 模拟后端 API 的请求（在实际场景中需要替换为真实的服务端接口）
+      const fakeServer = {
+        challenge: null,
+        publicKey: null,
+        credentialId: null,
+        generateChallenge: function () {
+          // 生成一个随机挑战
+          this.challenge = new Uint8Array(32).map(() => Math.floor(Math.random() * 256))
+          return this.challenge
+        },
+        saveCredential: function (publicKey, credentialId) {
+          this.publicKey = publicKey
+          this.credentialId = credentialId // 保存 credentialId
+        },
+        verifyAssertion: function (credentialId) {
+          // 验证是否存在匹配的凭据
+          return this.credentialId && credentialId === this.credentialId
+        },
+      }
+
+      // 注册生物识别
+      async function registerBiometrics() {
+        const challenge = fakeServer.generateChallenge()
+
+        const publicKeyCredentialCreationOptions = {
+          challenge: challenge,
+          rp: { name: 'WebAuthn Test App' },
+          user: {
+            id: new Uint8Array(16), // 随机生成用户 ID
+            name: 'user@example.com',
+            displayName: '用户姓名',
+          },
+          pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
+          authenticatorSelection: {
+            authenticatorAttachment: 'platform',
+            requireResidentKey: false,
+            userVerification: 'required',
+          },
+          timeout: 60000,
+        }
+
+        try {
+          const credential = await navigator.credentials.create({
+            publicKey: publicKeyCredentialCreationOptions,
+          })
+
+          // 将 credential.id 转换为 Uint8Array 格式
+          const credentialId = new Uint8Array(credential.rawId)
+
+          // 保存公钥和 credentialId
+          fakeServer.saveCredential(credential.response.attestationObject, credentialId)
+
+          document.getElementById('result').innerText = '生物识别注册成功！'
+          console.log('注册成功：', credential)
+        } catch (err) {
+          console.error('注册失败:', err)
+          document.getElementById('result').innerText = '注册失败，请检查设备或浏览器支持！'
+        }
+      }
+
+      // 解锁备忘录
+      async function unlockMemo() {
+        const challenge = fakeServer.generateChallenge()
+
+        const publicKeyCredentialRequestOptions = {
+          challenge: challenge,
+          allowCredentials: [
+            {
+              id: fakeServer.credentialId, // 使用之前保存的 credentialId
+              type: 'public-key',
+            },
+          ],
+          userVerification: 'required',
+          timeout: 60000,
+        }
+
+        try {
+          const assertion = await navigator.credentials.get({
+            publicKey: publicKeyCredentialRequestOptions,
+          })
+
+          // 验证 assertion（模拟验证）
+          const isValid = fakeServer.verifyAssertion(new Uint8Array(assertion.rawId))
+          if (isValid) {
+            document.getElementById('result').innerText = '备忘录解锁成功！'
+            console.log('解锁成功：', assertion)
+          } else {
+            throw new Error('验证失败！')
+          }
+        } catch (err) {
+          console.error('解锁失败:', err)
+          document.getElementById('result').innerText = err.message
+        }
+      }
+
+      // 绑定按钮事件
+      document.getElementById('registerBtn').addEventListener('click', registerBiometrics)
+      document.getElementById('unlockBtn').addEventListener('click', unlockMemo)
+    </script>
+  </body>
+</html>
