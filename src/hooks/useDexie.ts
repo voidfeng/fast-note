@@ -19,6 +19,7 @@ export interface Note {
   puuid: string
   noteCount?: number
   children?: Note[]
+  folderName?: string
 }
 
 export interface NoteDetail extends Note {

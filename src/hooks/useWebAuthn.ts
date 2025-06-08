@@ -1,4 +1,4 @@
-import { computed, reactive, ref } from 'vue'
+import { reactive } from 'vue'
 
 export interface WebAuthnState {
   isSupported: boolean
@@ -9,10 +9,53 @@ export interface WebAuthnState {
   successMessage: string | null
 }
 
+// 检查浏览器是否支持WebAuthn
+const isWebAuthnSupported = typeof window !== 'undefined' && !!window.PublicKeyCredential
+
+// 生成随机挑战
+function generateChallenge(): ArrayBuffer {
+  const challenge = new Uint8Array(32)
+  window.crypto.getRandomValues(challenge)
+  return challenge.buffer
+}
+
+// 保存凭据到 localStorage
+function saveCredential(credentialId: ArrayBuffer) {
+  const credentialIdBase64 = btoa(
+    String.fromCharCode(...new Uint8Array(credentialId)),
+  )
+  localStorage.setItem('webauthn_credential_id', credentialIdBase64)
+}
+
+// 从 localStorage 获取凭据
+function getCredentialId(): ArrayBuffer | null {
+  const credentialIdBase64 = localStorage.getItem('webauthn_credential_id')
+  if (!credentialIdBase64)
+    return null
+
+  const binary = atob(credentialIdBase64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return bytes.buffer
+}
+
+// 检查是否已注册
+function checkRegistrationStatus(): boolean {
+  return localStorage.getItem('webauthn_credential_id') !== null
+}
+
+// 清除消息辅助函数
+function clearMessages(state: WebAuthnState) {
+  state.errorMessage = null
+  state.successMessage = null
+}
+
 export function useWebAuthn() {
   // 状态管理
   const state = reactive<WebAuthnState>({
-    isSupported: !!window.PublicKeyCredential,
+    isSupported: isWebAuthnSupported,
     isRegistered: false,
     isRegistering: false,
     isVerifying: false,
@@ -20,53 +63,12 @@ export function useWebAuthn() {
     successMessage: null,
   })
 
-  // 检查是否已注册
-  const checkRegistrationStatus = () => {
-    state.isRegistered = localStorage.getItem('webauthn_credential_id') !== null
-    return state.isRegistered
-  }
-
   // 初始检查注册状态
-  checkRegistrationStatus()
-
-  // 清除消息
-  const clearMessages = () => {
-    state.errorMessage = null
-    state.successMessage = null
-  }
-
-  // 生成随机挑战
-  const generateChallenge = (): ArrayBuffer => {
-    const challenge = new Uint8Array(32)
-    window.crypto.getRandomValues(challenge)
-    return challenge.buffer
-  }
-
-  // 保存凭据到 localStorage
-  const saveCredential = (credentialId: ArrayBuffer) => {
-    const credentialIdBase64 = btoa(
-      String.fromCharCode(...new Uint8Array(credentialId)),
-    )
-    localStorage.setItem('webauthn_credential_id', credentialIdBase64)
-  }
-
-  // 从 localStorage 获取凭据
-  const getCredentialId = (): ArrayBuffer | null => {
-    const credentialIdBase64 = localStorage.getItem('webauthn_credential_id')
-    if (!credentialIdBase64)
-      return null
-
-    const binary = atob(credentialIdBase64)
-    const bytes = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i)
-    }
-    return bytes.buffer
-  }
+  state.isRegistered = checkRegistrationStatus()
 
   // 注册生物识别
-  const register = async () => {
-    clearMessages()
+  async function register() {
+    clearMessages(state)
 
     if (!state.isSupported) {
       state.errorMessage = '此浏览器不支持WebAuthn'
@@ -119,15 +121,15 @@ export function useWebAuthn() {
   }
 
   // 验证生物识别
-  const verify = async () => {
-    clearMessages()
+  async function verify() {
+    clearMessages(state)
 
     if (!state.isSupported) {
       state.errorMessage = '此浏览器不支持WebAuthn'
       return false
     }
 
-    if (!checkRegistrationStatus()) {
+    if (!state.isRegistered) {
       state.errorMessage = '请先注册生物识别'
       return false
     }
@@ -171,7 +173,7 @@ export function useWebAuthn() {
   }
 
   // 清除已保存的凭据
-  const clearCredentials = () => {
+  function clearCredentials() {
     localStorage.removeItem('webauthn_credential_id')
     state.isRegistered = false
     state.successMessage = '凭据已清除'
@@ -182,6 +184,9 @@ export function useWebAuthn() {
     register,
     verify,
     clearCredentials,
-    checkRegistrationStatus,
+    checkRegistrationStatus: () => {
+      state.isRegistered = checkRegistrationStatus()
+      return state.isRegistered
+    },
   }
 }

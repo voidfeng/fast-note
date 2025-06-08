@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { Note } from '@/hooks/useDexie'
 import { IonContent, IonSearchbar } from '@ionic/vue'
+import { useDebounceFn } from '@vueuse/core'
 import { reactive, ref } from 'vue'
+import NoteList from '@/components/NoteList.vue'
 import { useNote } from '@/hooks/useNote'
 import { useGlobalSearch } from './useGlobalSearch'
 
@@ -42,15 +44,21 @@ function onCancel() {
   }, 300)
 }
 
+const debouncedSearch = useDebounceFn(async (searchText: string) => {
+  if (searchText) {
+    const _notes = await searchNotesByPUuid(props.puuid, '全部', searchText)
+    // 处理搜索结果
+    state.notes = _notes
+  }
+  else {
+    // 当搜索文本为空时，清空搜索结果
+    state.notes = []
+  }
+}, 300)
+
 function onInput(event: CustomEvent) {
   const value = (event.target as HTMLIonSearchbarElement).value
-  if (value) {
-    searchNotesByPUuid(props.puuid, value).then((_notes) => {
-      // 处理搜索结果
-      console.log(value, _notes)
-      state.notes = _notes
-    })
-  }
+  debouncedSearch(value!)
 }
 </script>
 
@@ -77,6 +85,12 @@ function onInput(event: CustomEvent) {
       <div class="flex-1 py-2 px-4">
         <IonContent>
           共{{ state.notes.length }}条结果
+
+          <NoteList
+            :data-list="state.notes"
+            :all-notes-count="state.notes.length"
+            show-parent-folder
+          />
         </IonContent>
       </div>
     </div>

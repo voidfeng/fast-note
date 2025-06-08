@@ -195,13 +195,17 @@ export function useNote() {
     return []
   }
 
-  async function searchNotesByPUuid(puuid: string, keyword: string) {
+  async function searchNotesByPUuid(puuid: string, title: string, keyword: string) {
     // 搜索当前 puuid 下符合条件的笔记
     const directNotes = await db.value.note
       .where('[type+puuid+isdeleted]')
       .equals(['note', puuid, 0])
       .and((item) => {
-        return item.newstext.includes(keyword)
+        if (item.newstext.includes(keyword)) {
+          item.folderName = title
+          return true
+        }
+        return false
       })
       .toArray()
 
@@ -216,7 +220,7 @@ export function useNote() {
 
     for (const folder of folders) {
       // 对每个文件夹递归调用搜索方法
-      const folderNotes = await searchNotesByPUuid(folder.uuid!, keyword)
+      const folderNotes = await searchNotesByPUuid(folder.uuid!, folder.title, keyword)
       allMatchedNotes = [...allMatchedNotes, ...folderNotes]
     }
 
