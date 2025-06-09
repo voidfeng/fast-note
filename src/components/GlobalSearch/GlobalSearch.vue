@@ -82,15 +82,24 @@ function onInput(event: CustomEvent) {
         @ion-cancel="onCancel"
         @ion-input="onInput"
       />
-      <div class="flex-1 py-2 px-4">
+      <div class="flex-1">
         <IonContent>
-          共{{ state.notes.length }}条结果
-
-          <NoteList
-            :data-list="state.notes"
-            :all-notes-count="state.notes.length"
-            show-parent-folder
-          />
+          <template v-if="state.notes.length > 0">
+            <div class="px-4 flex justify-between">
+              <h2 class="mb0">
+                备忘录
+              </h2>
+              <h2 class="mb0 text-gray-400">
+                共<span class="mx-1">{{ state.notes.length }}</span>条结果
+              </h2>
+            </div>
+            <NoteList
+              :data-list="state.notes"
+              :all-notes-count="state.notes.length"
+              show-parent-folder
+            />
+          </template>
+          <div class="h-11" />
         </IonContent>
       </div>
     </div>
@@ -122,6 +131,9 @@ function onInput(event: CustomEvent) {
       ion-content {
         opacity: 0;
       }
+    }
+    ion-searchbar {
+      padding-bottom: 8px !important;
     }
   }
   ion-content {

@@ -34,7 +34,7 @@ import NoteDetail from './NoteDetail.vue'
 const { addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid } = useNote()
 const { onSynced } = useSync()
 const { isDesktop } = useDeviceType()
-const { showGlobalSearch } = useGlobalSearch()
+const { showGlobalSearch, showGlobalSearchState } = useGlobalSearch()
 
 const unSub = onSynced(() => {
   init()
@@ -147,9 +147,11 @@ onMounted(() => {
 
       <IonHeader collapse="condense">
         <IonToolbar>
-          <IonTitle size="large">
-            备忘录
-          </IonTitle>
+          <Transition name="header-slide">
+            <IonTitle v-if="!showGlobalSearch" size="large">
+              备忘录
+            </IonTitle>
+          </Transition>
         </IonToolbar>
         <SyncState />
       </IonHeader>
