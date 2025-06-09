@@ -1,17 +1,27 @@
 <script setup lang="ts">
+import { IonButton, IonIcon, IonItem, IonLabel, IonModal, useIonRouter } from '@ionic/vue'
+import { trashOutline } from 'ionicons/icons'
+import { ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
 import { getTime } from '@/utils/date'
-import { IonIcon, IonItem, IonLabel, IonList, IonPopover, useIonRouter } from '@ionic/vue'
-import { trashOutline } from 'ionicons/icons'
-import { useRoute } from 'vue-router'
+
+withDefaults(defineProps<{
+  isOpen: boolean
+}>(), {})
+
+defineEmits(['update:isOpen'])
 
 const route = useRoute()
 const router = useIonRouter()
 const { updateNote, getNote } = useNote()
 const { getFileRefsByRefid, updateFileRef, getFilesRefByHash } = useFileRefs()
 const { updateFile, getFile } = useFiles()
+
+const modalRef = ref()
+const modalHeightPecent = ref(0.35)
 
 async function onDelete() {
   const uuid = route.params.uuid
@@ -39,16 +49,20 @@ async function onDelete() {
 </script>
 
 <template>
-  <IonPopover :dismiss-on-select="true" trigger="more-trigger" trigger-action="click" class="note-more">
-    <IonList lines="full">
-      <IonItem @click="onDelete">
-        <IonLabel class="danger">
-          删除
-        </IonLabel>
-        <IonIcon :icon="trashOutline" color="danger" size="small" />
-      </IonItem>
-    </IonList>
-  </IonPopover>
+  <IonModal
+    ref="modalRef"
+    v-bind="$attrs"
+    :is-open
+    :initial-breakpoint="0.5"
+    :breakpoints="[0, 0.5, 1]"
+    @did-dismiss="$emit('update:isOpen', false)"
+  >
+    <div>
+      <IonButton @click="onDelete">
+        <IonIcon :icon="trashOutline" />
+      </IonButton>
+    </div>
+  </IonModal>
 </template>
 
 <style lang="scss">

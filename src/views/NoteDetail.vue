@@ -43,6 +43,7 @@ let newNoteUuid = '0'
 const state = reactive({
   showFormat: false,
   showTableFormat: false,
+  showNoteMore: false,
 })
 
 const noteUuid = computed(() => route.params.uuid as string)
@@ -232,7 +233,7 @@ onIonViewWillLeave(() => {
           <IonBackButton :text="getBackButtonText()" default-href="/" />
         </IonButtons>
         <IonButtons slot="end">
-          <IonButton id="more-trigger">
+          <IonButton @click="state.showNoteMore = true">
             <IonIcon :icon="ellipsisHorizontalCircleOutline" />
           </IonButton>
         </IonButtons>
@@ -315,7 +316,7 @@ onIonViewWillLeave(() => {
         </div>
       </IonToolbar>
     </IonFooter>
-    <NoteMore />
+    <NoteMore v-model:is-open="state.showNoteMore" />
     <TableFormatModal v-model:is-open="state.showTableFormat" :editor="(editorRef?.editor || {}) as Editor" />
     <TextFormatModal v-model:is-open="state.showFormat" :editor="(editorRef?.editor || {}) as Editor" />
   </IonPage>
