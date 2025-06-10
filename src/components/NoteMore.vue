@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { IonButton, IonIcon, IonItem, IonLabel, IonModal, useIonRouter } from '@ionic/vue'
-import { trashOutline } from 'ionicons/icons'
+import { IonModal, useIonRouter } from '@ionic/vue'
+import { lockClosed, trashOutline } from 'ionicons/icons'
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
+import IconTextButton from '@/components/IconTextButton.vue'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
@@ -12,7 +13,7 @@ withDefaults(defineProps<{
   isOpen: boolean
 }>(), {})
 
-defineEmits(['update:isOpen'])
+const emit = defineEmits(['update:isOpen'])
 
 const route = useRoute()
 const router = useIonRouter()
@@ -21,7 +22,6 @@ const { getFileRefsByRefid, updateFileRef, getFilesRefByHash } = useFileRefs()
 const { updateFile, getFile } = useFiles()
 
 const modalRef = ref()
-const modalHeightPecent = ref(0.35)
 
 async function onDelete() {
   const uuid = route.params.uuid
@@ -44,6 +44,7 @@ async function onDelete() {
       }
     }
     router.back()
+    emit('update:isOpen', false)
   }
 }
 </script>
@@ -58,9 +59,28 @@ async function onDelete() {
     @did-dismiss="$emit('update:isOpen', false)"
   >
     <div>
-      <IonButton @click="onDelete">
-        <IonIcon :icon="trashOutline" />
-      </IonButton>
+      <ion-grid>
+        <ion-row>
+          <ion-col size="3" class="grid-item">
+            <IconTextButton
+              :icon="lockClosed"
+              class="text-blue-500"
+              text="锁定"
+              color="primary"
+              @click="onDelete"
+            />
+          </ion-col>
+          <ion-col size="3" class="grid-item">
+            <IconTextButton
+              :icon="trashOutline"
+              class="danger"
+              text="删除"
+              color="danger"
+              @click="onDelete"
+            />
+          </ion-col>
+        </ion-row>
+      </ion-grid>
     </div>
   </IonModal>
 </template>
