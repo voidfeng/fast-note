@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { IonModal, useIonRouter } from '@ionic/vue'
-import { lockClosed, trashOutline } from 'ionicons/icons'
+import type { Note } from '@/hooks/useDexie'
+import { IonCol, IonGrid, IonModal, IonRow, useIonRouter } from '@ionic/vue'
+import { lockClosed, lockOpen, trashOutline } from 'ionicons/icons'
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import IconTextButton from '@/components/IconTextButton.vue'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
+import { useWebAuthn } from '@/hooks/useWebAuthn'
 import { getTime } from '@/utils/date'
 
 withDefaults(defineProps<{
@@ -20,8 +22,32 @@ const router = useIonRouter()
 const { updateNote, getNote } = useNote()
 const { getFileRefsByRefid, updateFileRef, getFilesRefByHash } = useFileRefs()
 const { updateFile, getFile } = useFiles()
+const { state, register, verify } = useWebAuthn()
 
 const modalRef = ref()
+const note = ref<Note | undefined>(undefined)
+
+async function onWillPresent() {
+  note.value = await getNote(route.params.uuid as string)
+}
+
+async function onLock() {
+  let isPass = false
+  if (state.isRegistered) {
+    isPass = await verify()
+  }
+  else {
+    isPass = await register()
+  }
+  if (isPass) {
+    if (note.value?.islocked === 1) {
+      await updateNote(note.value.uuid, { ...note.value, islocked: 0 })
+    }
+    else if (note.value) {
+      await updateNote(note.value.uuid, { ...note.value, islocked: 1 })
+    }
+  }
+}
 
 async function onDelete() {
   const uuid = route.params.uuid
@@ -56,21 +82,22 @@ async function onDelete() {
     :is-open
     :initial-breakpoint="0.5"
     :breakpoints="[0, 0.5, 1]"
+    @will-present="onWillPresent"
     @did-dismiss="$emit('update:isOpen', false)"
   >
     <div>
-      <ion-grid>
-        <ion-row>
-          <ion-col size="3" class="grid-item">
+      <IonGrid>
+        <IonRow>
+          <IonCol size="3" class="grid-item">
             <IconTextButton
-              :icon="lockClosed"
+              :icon="note?.islocked === 1 ? lockOpen : lockClosed"
               class="text-blue-500"
-              text="锁定"
+              :text="note?.islocked === 1 ? '移除' : '锁定'"
               color="primary"
-              @click="onDelete"
+              @click="onLock"
             />
-          </ion-col>
-          <ion-col size="3" class="grid-item">
+          </IonCol>
+          <IonCol size="3" class="grid-item">
             <IconTextButton
               :icon="trashOutline"
               class="danger"
@@ -78,9 +105,9 @@ async function onDelete() {
               color="danger"
               @click="onDelete"
             />
-          </ion-col>
-        </ion-row>
-      </ion-grid>
+          </IonCol>
+        </IonRow>
+      </IonGrid>
     </div>
   </IonModal>
 </template>
