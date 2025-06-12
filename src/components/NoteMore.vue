@@ -40,11 +40,18 @@ async function onLock() {
     isPass = await register()
   }
   if (isPass) {
-    if (note.value?.islocked === 1) {
-      await updateNote(note.value.uuid, { ...note.value, islocked: 0 })
+    try {
+      if (note.value?.islocked === 1) {
+        await updateNote(note.value.uuid, { ...note.value, islocked: 0 })
+        note.value.islocked = 0
+      }
+      else if (note.value) {
+        await updateNote(note.value.uuid, { ...note.value, islocked: 1 })
+        note.value.islocked = 1
+      }
     }
-    else if (note.value) {
-      await updateNote(note.value.uuid, { ...note.value, islocked: 1 })
+    finally {
+      emit('update:isOpen', false)
     }
   }
 }

@@ -3,7 +3,7 @@ import type { Editor } from '@tiptap/vue-3'
 import { IonBackButton, IonButton, IonButtons, IonContent, IonFooter, IonHeader, IonIcon, IonPage, IonToolbar, isPlatform, onIonViewWillLeave } from '@ionic/vue'
 import { attachOutline, checkmarkCircleOutline, ellipsisHorizontalCircleOutline, textOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, toRaw, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import NoteMore from '@/components/NoteMore.vue'
@@ -15,6 +15,7 @@ import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
+import { useWebAuthn } from '@/hooks/useWebAuthn'
 import { getTime } from '@/utils/date'
 
 const props = withDefaults(
@@ -32,6 +33,7 @@ const { getFileByUrl } = useFiles()
 const { getFileRefsByRefid, updateFileRef } = useFileRefs()
 const { isDesktop } = useDeviceType()
 const { keyboardHeight, restoreHeight } = useVisualViewport()
+const { verify } = useWebAuthn()
 
 const isIos = isPlatform('ios')
 const pageRef = ref()
@@ -44,6 +46,7 @@ const state = reactive({
   showFormat: false,
   showTableFormat: false,
   showNoteMore: false,
+  isAuth: false,
 })
 
 const noteUuid = computed(() => route.params.uuid as string)
@@ -86,6 +89,7 @@ watch(
 )
 
 async function onBlur() {
+  console.trace()
   restoreHeight()
   /**
    * 保存逻辑
@@ -171,10 +175,15 @@ async function onBlur() {
 async function init(uuid: string) {
   data.value = await getNote(uuid)
   if (data.value) {
-    editorRef.value?.setContent(data.value.newstext)
     if (data.value.isdeleted === 1) {
       editorRef.value?.setEditable(false)
     }
+    if (data.value?.islocked === 1) {
+      state.isAuth = await verify()
+    }
+    nextTick(() => {
+      editorRef.value?.setContent(data.value.newstext)
+    })
   }
 }
 
@@ -254,7 +263,7 @@ onIonViewWillLeave(() => {
         </ion-label>
       </ion-item> -->
 
-      <div class="ion-padding">
+      <div v-if="data?.islocked !== 1 || state.isAuth" class="ion-padding">
         <YYEditor
           v-if="noteUuid === '0' ? newNoteUuid : noteUuid"
           ref="editorRef"

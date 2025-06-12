@@ -52,6 +52,28 @@ function clearMessages(state: WebAuthnState) {
   state.successMessage = null
 }
 
+// 验证过期时间（毫秒）
+const VERIFICATION_EXPIRY = 60 * 1000 // 1分钟
+
+// 保存验证时间戳到 localStorage
+function saveVerificationTimestamp(timestamp: number) {
+  localStorage.setItem('webauthn_last_verified_at', timestamp.toString())
+}
+
+// 获取验证时间戳
+function getVerificationTimestamp(): number | null {
+  const timestamp = localStorage.getItem('webauthn_last_verified_at')
+  return timestamp ? Number.parseInt(timestamp, 10) : null
+}
+
+// 检查验证是否过期
+function isVerificationExpired(): boolean {
+  const lastVerifiedAt = getVerificationTimestamp()
+  if (!lastVerifiedAt)
+    return true
+  return Date.now() - lastVerifiedAt > VERIFICATION_EXPIRY
+}
+
 export function useWebAuthn() {
   // 状态管理
   const state = reactive<WebAuthnState>({
@@ -121,7 +143,7 @@ export function useWebAuthn() {
   }
 
   // 验证生物识别
-  async function verify() {
+  async function verify(force = false) {
     clearMessages(state)
 
     if (!state.isSupported) {
@@ -132,6 +154,14 @@ export function useWebAuthn() {
     if (!state.isRegistered) {
       state.errorMessage = '请先注册生物识别'
       return false
+    }
+
+    // 如果不是强制验证且验证未过期，直接返回成功
+    if (!force && !isVerificationExpired()) {
+      state.successMessage = '验证有效期内，无需重新验证'
+      // 更新验证时间
+      saveVerificationTimestamp(Date.now())
+      return true
     }
 
     state.isVerifying = true
@@ -160,6 +190,8 @@ export function useWebAuthn() {
         publicKey: publicKeyCredentialRequestOptions,
       })
 
+      // 更新验证时间
+      saveVerificationTimestamp(Date.now())
       state.successMessage = '验证成功！'
       return true
     }
@@ -175,6 +207,7 @@ export function useWebAuthn() {
   // 清除已保存的凭据
   function clearCredentials() {
     localStorage.removeItem('webauthn_credential_id')
+    localStorage.removeItem('webauthn_last_verified_at')
     state.isRegistered = false
     state.successMessage = '凭据已清除'
   }
@@ -188,5 +221,6 @@ export function useWebAuthn() {
       state.isRegistered = checkRegistrationStatus()
       return state.isRegistered
     },
+    isVerificationExpired,
   }
 }
