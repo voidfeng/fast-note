@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { Note } from '@/hooks/useDexie'
-import { useNote } from '@/hooks/useNote'
-import { getTime } from '@/utils/date'
 import { IonButton, IonButtons, IonContent, IonHeader, IonModal, IonTitle, IonToolbar } from '@ionic/vue'
 import { ref, toRaw, watch } from 'vue'
+import { useNote } from '@/hooks/useNote'
+import { getTime } from '@/utils/date'
 import NoteList from './NoteList.vue'
 
 const props = withDefaults(defineProps<{

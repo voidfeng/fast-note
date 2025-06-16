@@ -33,7 +33,7 @@ const { getFileByUrl } = useFiles()
 const { getFileRefsByRefid, updateFileRef } = useFileRefs()
 const { isDesktop } = useDeviceType()
 const { keyboardHeight, restoreHeight } = useVisualViewport()
-const { verify } = useWebAuthn()
+const { state: authState, verify, register } = useWebAuthn()
 
 const isIos = isPlatform('ios')
 const pageRef = ref()
@@ -89,7 +89,6 @@ watch(
 )
 
 async function onBlur() {
-  console.trace()
   restoreHeight()
   /**
    * 保存逻辑
@@ -179,7 +178,12 @@ async function init(uuid: string) {
       editorRef.value?.setEditable(false)
     }
     if (data.value?.islocked === 1) {
-      state.isAuth = await verify()
+      if (authState.isRegistered) {
+        state.isAuth = await verify()
+      }
+      else {
+        state.isAuth = await register()
+      }
     }
     nextTick(() => {
       editorRef.value?.setContent(data.value.newstext)

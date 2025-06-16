@@ -1,4 +1,7 @@
+import { toastController } from '@ionic/vue'
 import { reactive } from 'vue'
+
+const unSupportText = '此浏览器不支持生物识别，请更换设备再查看！'
 
 export interface WebAuthnState {
   isSupported: boolean
@@ -93,7 +96,14 @@ export function useWebAuthn() {
     clearMessages(state)
 
     if (!state.isSupported) {
-      state.errorMessage = '此浏览器不支持WebAuthn'
+      state.errorMessage = unSupportText
+      const toast = await toastController.create({
+        message: unSupportText,
+        duration: 1500,
+        position: 'top',
+      })
+
+      await toast.present()
       return false
     }
 
@@ -134,7 +144,15 @@ export function useWebAuthn() {
       return true
     }
     catch (err: any) {
-      state.errorMessage = `注册失败: ${err.message}`
+      const registerErrorText = `❌ 生物识别注册失败: ${err.message}`
+      state.errorMessage = registerErrorText
+      const toast = await toastController.create({
+        message: registerErrorText,
+        duration: 1500,
+        position: 'top',
+      })
+
+      await toast.present()
       return false
     }
     finally {
@@ -147,7 +165,14 @@ export function useWebAuthn() {
     clearMessages(state)
 
     if (!state.isSupported) {
-      state.errorMessage = '此浏览器不支持WebAuthn'
+      state.errorMessage = unSupportText
+      const toast = await toastController.create({
+        message: unSupportText,
+        duration: 1500,
+        position: 'top',
+      })
+
+      await toast.present()
       return false
     }
 
