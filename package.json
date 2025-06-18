@@ -45,6 +45,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^4.14.1",
     "@capacitor/cli": "7.0.1",
+    "@tauri-apps/cli": "^2.5.0",
     "@unocss/eslint-plugin": "^66.0.0",
     "@vitejs/plugin-basic-ssl": "^2.0.0",
     "@vitejs/plugin-legacy": "^6.0.2",

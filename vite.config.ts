@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
 
 import path from 'node:path'
-import basicSsl from '@vitejs/plugin-basic-ssl'
+// import basicSsl from '@vitejs/plugin-basic-ssl'
 // import legacy from '@vitejs/plugin-legacy'
 import vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
   ]
 
   if (env.VITE_HTTPS === 'true') {
-    plugins.push(basicSsl())
+    // plugins.push(basicSsl())
   }
 
   return {
