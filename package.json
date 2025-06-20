@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test:e2e": "cypress run",
     "test:unit": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@capacitor/app": "7.0.0",
@@ -20,6 +21,7 @@
     "@capacitor/status-bar": "7.0.0",
     "@ionic/vue": "^8.6.0",
     "@ionic/vue-router": "^8.6.0",
+    "@tauri-apps/plugin-http": "^2.4.4",
     "@tiptap/core": "^3.0.0-beta.5",
     "@tiptap/extension-color": "^3.0.0-beta.5",
     "@tiptap/extension-image": "^3.0.0-beta.5",
