@@ -1,4 +1,22 @@
-import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http'
+
+// 新增的接口，用于替代 AxiosRequestConfig
+export interface FetchRequestConfig extends RequestInit {
+  url?: string
+  timeout?: number
+  data?: any
+}
+
+// 新增的接口，用于替代 AxiosResponse
+export interface FetchResponse<T> {
+  data: T
+  status: number
+  statusText: string
+  headers: Headers
+  ok: boolean
+}
+
+const targetFetch = location.protocol === 'tauri:' ? tauriFetch : fetch
 
 class ApiService {
   private static instance: ApiService | null = null
@@ -8,6 +26,13 @@ class ApiService {
   private defaultTimeout: number = 30000
   private localStorageKey: string = 'fastestApiUrl'
   private useFastUrl: boolean = true
+
+  private get protocol(): string {
+    if (location.protocol === 'http:' || location.protocol === 'https:')
+      return location.protocol
+
+    return 'https:'
+  }
 
   private constructor() {
     // 私有构造函数，防止外部直接实例化
@@ -25,25 +50,27 @@ class ApiService {
       throw new Error('At least one API URL must be provided')
     }
     this.apiUrls = apiUrls
-    
+
     if (options?.useFastUrl !== undefined) {
       this.useFastUrl = options.useFastUrl
     }
-    
+
     if (this.useFastUrl) {
       this.fastestUrl = this.getFastestUrlFromStorage()
-    } else {
+    }
+    else {
       // 如果禁用了最快URL功能，直接使用第一个URL
       this.fastestUrl = apiUrls[0]
     }
-    
+
     this.checkPromise = null
   }
 
   private getFastestUrlFromStorage(): string | null {
     try {
       return localStorage.getItem(this.localStorageKey)
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error accessing localStorage:', error)
       return null
     }
@@ -52,7 +79,8 @@ class ApiService {
   private setFastestUrlInStorage(url: string): void {
     try {
       localStorage.setItem(this.localStorageKey, url)
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error setting item in localStorage:', error)
     }
   }
@@ -83,7 +111,8 @@ class ApiService {
         this.setFastestUrlInStorage(this.fastestUrl)
       }
       return this.fastestUrl
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Failed to get fastest URL:', error)
       return null
     }
@@ -91,9 +120,9 @@ class ApiService {
 
   private async checkApiUrls(): Promise<void> {
     try {
-      this.fastestUrl = await Promise.race(this.apiUrls.map((url) => this.checkUrl(url)))
-      console.log(`Fastest URL: ${this.fastestUrl}`)
-    } catch (error) {
+      this.fastestUrl = await Promise.race(this.apiUrls.map(url => this.checkUrl(url)))
+    }
+    catch (error) {
       console.error('Error checking API URLs:', error)
       this.fastestUrl = null
       throw error
@@ -101,70 +130,149 @@ class ApiService {
   }
 
   private async checkUrl(url: string): Promise<string> {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
+
     try {
-      await axios.get(`${location.protocol}//${url}/ping`, {
-        timeout: 30000,
+      const pingUrl = url === '/' ? '/ping' : `${this.protocol}//${url}/ping`
+      const response = await targetFetch(pingUrl, {
+        signal: controller.signal,
       })
+      clearTimeout(timeoutId)
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`)
+
       return url
-    } catch (error) {
+    }
+    catch (error) {
+      clearTimeout(timeoutId)
       console.error(`Error checking ${url}:`, error)
       throw error
     }
   }
 
-  async request<T>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    if (this.apiUrls.length === 0) {
+  async request<T>(config: FetchRequestConfig): Promise<FetchResponse<T>> {
+    if (this.apiUrls.length === 0)
       throw new Error('API URLs have not been initialized')
-    }
-
-    const finalConfig: AxiosRequestConfig = {
-      ...config,
-      timeout: config.timeout || this.defaultTimeout,
-    }
 
     const getUrl = async (forceCheck: boolean = false): Promise<string> => {
       // 判断是否为相对路径的辅助函数
-      const isRelativePath = (url: string): boolean => {
+      const isNotAbsolute = (url: string): boolean => {
         return !url.includes('://') && !url.startsWith('//')
       }
-      
-      // 格式化URL，如果不是相对路径，添加协议前缀
+
+      // 格式化URL，如果不是绝对路径，添加协议前缀
       const formatUrl = (url: string): string => {
-        if (isRelativePath(url)) {
-          return url
-        }
-        return `${location.protocol}//${url}`
+        if (url === '/')
+          return '' // Use relative path from root
+
+        if (isNotAbsolute(url))
+          return `${this.protocol}//${url}`
+
+        return url
       }
-      
+
       // 如果禁用了最快URL功能，直接使用第一个URL
-      if (!this.useFastUrl) {
+      if (!this.useFastUrl)
         return formatUrl(this.apiUrls[0])
-      }
-      
+
       const url = await this.getFastestUrl(forceCheck)
-      if (!url) {
+      if (!url)
         throw new Error('No available API URL')
-      }
+
       return formatUrl(url)
     }
 
-    try {
-      finalConfig.baseURL = await getUrl()
-      return await axios.request<T>(finalConfig)
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (
-          ['ERR_NETWORK', 'ECONNABORTED'].includes(error.code as string) ||
-          error.message.includes('timeout')
-        ) {
-          console.log('Request timed out. Rechecking fastest URL...')
-          try {
-            finalConfig.baseURL = await getUrl(true)
-            return await axios.request<T>(finalConfig)
-          } catch (retryError) {
-            console.error('重新ping或重新请求超时')
-            throw error // 仍然返回超时的错误
+    const performFetch = async (forceCheck: boolean = false): Promise<FetchResponse<T>> => {
+      const baseUrl = await getUrl(forceCheck)
+      const requestUrl = config.url || ''
+
+      // 确保 baseUrl 以 / 结尾，requestUrl 不以 / 开头，然后拼接它们
+      const fullUrl = `${baseUrl.replace(/\/$/, '')}/${requestUrl.replace(/^\//, '')}`
+
+      const controller = new AbortController()
+      const timeout = config.timeout || this.defaultTimeout
+      const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+      const fetchOptions: RequestInit = { ...config, signal: controller.signal }
+
+      // axios的 'data' 对应 fetch 的 'body'
+      if (config.data) {
+        // For FormData, the browser automatically sets the Content-Type with the correct boundary.
+        // We should not handle it manually.
+        if (config.data instanceof FormData) {
+          fetchOptions.body = config.data
+        }
+        else {
+          const headers = new Headers(fetchOptions.headers)
+          if (!headers.has('Content-Type'))
+            headers.set('Content-Type', 'application/x-www-form-urlencoded')
+
+          fetchOptions.headers = headers
+          const contentType = headers.get('Content-Type') || ''
+
+          if (contentType.includes('application/json')) {
+            fetchOptions.body = JSON.stringify(config.data)
           }
+          else if (contentType.includes('application/x-www-form-urlencoded')) {
+            fetchOptions.body = new URLSearchParams(
+              config.data as Record<string, string>,
+            ).toString()
+          }
+          else {
+            fetchOptions.body = config.data
+          }
+        }
+      }
+
+      // 清理自定义属性，避免 fetch 报错
+      delete (fetchOptions as any).url
+      delete (fetchOptions as any).data
+      delete (fetchOptions as any).timeout
+
+      try {
+        const response = await targetFetch(fullUrl, fetchOptions)
+        clearTimeout(timeoutId)
+
+        if (!response.ok)
+          throw new Error(`HTTP Error: ${response.status} ${response.statusText}`)
+
+        let responseData: T
+        const responseText = await response.text()
+        try {
+          responseData = JSON.parse(responseText)
+        }
+        catch {
+          // If JSON parsing fails, return the raw text.
+          responseData = responseText as any
+        }
+
+        return {
+          data: responseData,
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers,
+          ok: response.ok,
+        }
+      }
+      catch (error) {
+        clearTimeout(timeoutId)
+        throw error
+      }
+    }
+
+    try {
+      return await performFetch()
+    }
+    catch (error: any) {
+      if (error.name === 'AbortError' || (error instanceof TypeError && error.message === 'Failed to fetch')) {
+        console.warn('Request timed out or network error. Rechecking fastest URL...')
+        try {
+          return await performFetch(true)
+        }
+        catch (retryError: any) {
+          console.error('Retry request failed:', retryError.message)
+          throw error // 仍然返回原始错误
         }
       }
       throw error

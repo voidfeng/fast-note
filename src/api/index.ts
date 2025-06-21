@@ -1,11 +1,7 @@
 import type { FileRef, Note, TypedFile } from '@/hooks/useDexie'
-import type {
-  /* AxiosProgressEvent, */ AxiosRequestConfig,
-  AxiosResponse /* CancelToken */,
-} from 'axios'
-import { useUserInfo } from '@/hooks/useUserInfo'
 import { alertController } from '@ionic/vue'
-import { apiService } from './apiService'
+import { useUserInfo } from '@/hooks/useUserInfo'
+import { apiService, type FetchRequestConfig, type FetchResponse } from './apiService'
 
 export interface ApiResponse<T> {
   s: number
@@ -16,11 +12,11 @@ export interface ApiResponse<T> {
 // 初始化 API URLs
 apiService.initializeUrls(JSON.parse(import.meta.env.VITE_API_URLS), { useFastUrl: false })
 
-export function request<T = any>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
+export function request<T = any>(config: FetchRequestConfig): Promise<ApiResponse<T>> {
   return new Promise((resolve, reject) => {
     apiService
       .request<ApiResponse<T>>(config)
-      .then((d: AxiosResponse<ApiResponse<T>>) => {
+      .then((d: FetchResponse<ApiResponse<T>>) => {
         if (typeof d.data === 'object' && d.data.s !== 0) {
           let message
           if (typeof d.data.m === 'string') {
