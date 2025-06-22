@@ -40,7 +40,7 @@ import './css/common.scss'
 
 import 'virtual:uno.css'
 
-// new VConsole({ theme: 'dark' })
+// const _vConsole = new VConsole({ theme: 'dark' })
 
 const { init } = useDexie()
 

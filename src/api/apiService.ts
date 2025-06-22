@@ -1,3 +1,4 @@
+import { isTauri } from '@tauri-apps/api/core'
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http'
 
 // 新增的接口，用于替代 AxiosRequestConfig
@@ -16,7 +17,8 @@ export interface FetchResponse<T> {
   ok: boolean
 }
 
-const targetFetch = location.protocol === 'tauri:' ? tauriFetch : fetch
+console.log(isTauri())
+const targetFetch = isTauri() ? tauriFetch : fetch
 
 class ApiService {
   private static instance: ApiService | null = null
@@ -28,8 +30,8 @@ class ApiService {
   private useFastUrl: boolean = true
 
   private get protocol(): string {
-    if (location.protocol === 'http:' || location.protocol === 'https:')
-      return location.protocol
+    // if (location.protocol === 'http:' || location.protocol === 'https:')
+    //   return location.protocol
 
     return 'https:'
   }
@@ -152,6 +154,8 @@ class ApiService {
   }
 
   async request<T>(config: FetchRequestConfig): Promise<FetchResponse<T>> {
+    console.log(isTauri())
+
     if (this.apiUrls.length === 0)
       throw new Error('API URLs have not been initialized')
 
@@ -231,6 +235,8 @@ class ApiService {
       delete (fetchOptions as any).timeout
 
       try {
+        console.log(fullUrl)
+        console.log(fetchOptions)
         const response = await targetFetch(fullUrl, fetchOptions)
         clearTimeout(timeoutId)
 
