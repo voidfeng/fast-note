@@ -4,7 +4,7 @@ import { IonBackButton, IonButton, IonButtons, IonContent, IonFooter, IonHeader,
 import { attachOutline, checkmarkCircleOutline, ellipsisHorizontalCircleOutline, textOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
 import { computed, nextTick, onMounted, reactive, ref, toRaw, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import NoteMore from '@/components/NoteMore.vue'
 import TableFormatModal from '@/components/TableFormatModal.vue'
@@ -20,14 +20,15 @@ import { getTime } from '@/utils/date'
 
 const props = withDefaults(
   defineProps<{
-    currentDetail?: string
+    noteUuid?: string
   }>(),
   {
-    currentDetail: '',
+    noteUuid: '',
   },
 )
 
 const route = useRoute()
+const router = useRouter()
 const { getFirstNote, addNote, getNote, updateNote, deleteNote } = useNote()
 const { getFileByUrl } = useFiles()
 const { getFileRefsByRefid, updateFileRef } = useFileRefs()
@@ -41,7 +42,8 @@ const editorRef = ref()
 const fileInputRef = ref()
 const imageInputRef = ref()
 const data = ref()
-let newNoteUuid = '0'
+const newNoteId = ref<string | null>(null)
+
 const state = reactive({
   showFormat: false,
   showTableFormat: false,
@@ -49,7 +51,38 @@ const state = reactive({
   isAuth: false,
 })
 
-const noteUuid = computed(() => route.params.uuid as string)
+const uuidFromRoute = computed(() => route.params.uuid as string)
+const uuidFromSource = computed(() => props.noteUuid || uuidFromRoute.value)
+const isNewNote = computed(() => uuidFromSource.value === '0')
+
+watch(isNewNote, (isNew) => {
+  if (isNew && !newNoteId.value)
+    newNoteId.value = nanoid(12)
+}, { immediate: true })
+
+const effectiveUuid = computed(() => {
+  if (isNewNote.value)
+    return newNoteId.value
+
+  return uuidFromSource.value
+})
+
+watch(uuidFromSource, (uuid) => {
+  if (uuid && uuid !== '0') {
+    init(uuid)
+  }
+  else if (!isNewNote.value) { // This condition means uuid is falsy (e.g. '', undefined)
+    // No note selected, clear editor
+    data.value = null
+    // Using nextTick to ensure editorRef is available
+    nextTick(() => {
+      if (editorRef.value) {
+        editorRef.value.setContent('')
+        editorRef.value.setEditable(true)
+      }
+    })
+  }
+}, { immediate: true })
 
 watch(() => state.showTableFormat, changeFormatModal)
 watch(() => state.showFormat, changeFormatModal)
@@ -78,112 +111,127 @@ function getBackButtonText() {
   return mode === 'ios' ? '备忘录' : ''
 }
 
-watch(
-  () => props.currentDetail,
-  () => {
-    if (props.currentDetail) {
-      init(props.currentDetail)
-    }
-  },
-  { immediate: true },
-)
-
-async function onBlur() {
-  restoreHeight()
-  /**
-   * 保存逻辑
-   * 1. 新建时(id为0)
-   *   - 如果内容为空，则不保存
-   *   - 如果内容不为空，则保存
-   * 2. 编辑时(id不为0)
-   *   - 全部保存
-   */
+async function handleNoteSaving() {
+  if (!editorRef.value)
+    return
+  const content = editorRef.value.getContent()
   const { title, smalltext } = editorRef.value.getTitle()
-  const content = editorRef.value?.getContent()
+
+  // 如果是新笔记且内容为空，则不执行任何操作
+  if (isNewNote.value && !content)
+    return
+
+  // 如果在桌面端首次保存，则生成ID并更新路由
+  if (isNewNote.value && isDesktop.value)
+    router.replace({ path: `/n/${effectiveUuid.value}` })
+
+  const uuid = effectiveUuid.value
+  if (!uuid)
+    return
+
+  restoreHeight()
+
   const time = getTime()
-  const uuid = noteUuid.value === '0' ? newNoteUuid : noteUuid.value
-  const isExist = await getNote(uuid)
-  // 新增
-  if (!isExist) {
-    const firstNote = await getFirstNote()
-    const newNote = {
-      title,
-      smalltext,
-      newstext: content,
-      newstime: time,
-      lastdotime: time,
-      type: 'note',
-      puuid: (route.query.puuid as string) || firstNote?.uuid,
-      uuid,
-      isdeleted: 0,
+
+  // 保存笔记数据
+  if (content) {
+    const noteExists = await getNote(uuid)
+    if (noteExists) {
+      // 更新笔记
+      const updatedNote = Object.assign(toRaw(data.value) || {}, {
+        title,
+        smalltext,
+        newstext: content,
+        lastdotime: time,
+        version: (data.value?.version || 1) + 1,
+      })
+      await updateNote(uuid, updatedNote)
     }
-    await addNote(newNote)
-    data.value = newNote
-  }
-  // 编辑
-  else if (content) {
-    updateNote(
-      uuid,
-      Object.assign(toRaw(data.value), {
+    else {
+      // 新增笔记
+      const firstNote = await getFirstNote()
+      const newNote = {
         title,
         smalltext,
         newstext: content,
         newstime: time,
         lastdotime: time,
-        version: (data.value.version || 1) + 1,
-      }),
-    )
+        type: 'note',
+        puuid: (route.query.puuid as string) || firstNote?.uuid,
+        uuid,
+        isdeleted: 0,
+      }
+      await addNote(newNote)
+      data.value = newNote
+    }
   }
-  // 删除
   else {
+    // 内容为空，删除笔记
     await deleteNote(uuid)
   }
 
-  // 检查附件引用情况
-  const matches = content.matchAll(/<file-upload url="([\w.:/-]+)"/g)
-  const fileUrls = Array.from(matches, (match: RegExpMatchArray) => match[1])
-  console.warn('fileUrls', fileUrls)
-  const dbFiles = await getFileRefsByRefid(uuid)
-  console.warn('dbFiles', dbFiles)
+  // 同步附件引用
+  await syncAttachments(uuid, content)
+}
 
-  const hashArr = []
-  for (const url of fileUrls) {
-    if (!/^[a-f0-9]{64}$/i.test(url)) {
-      const fileObj = await getFileByUrl(url)
-      if (fileObj && fileObj.hash) {
-        hashArr.push(fileObj.hash)
-      }
-      else {
-        continue
-      }
+async function syncAttachments(uuid: string, content: string) {
+  const fileUrls = Array.from(content.matchAll(/<file-upload url="([^"]+)"/g), m => m[1])
+
+  const getHash = async (url: string): Promise<string | null> => {
+    if (/^[a-f0-9]{64}$/i.test(url))
+      return url
+
+    const fileObj = await getFileByUrl(url)
+    return fileObj?.hash || null
+  }
+
+  const currentHashes = (await Promise.all(fileUrls.map(getHash))).filter(Boolean) as string[]
+  const dbFileRefs = await getFileRefsByRefid(uuid)
+  const time = getTime()
+
+  const actions: Promise<any>[] = []
+
+  // 识别并处理需要更新或删除的引用
+  const dbHashes = new Set(dbFileRefs.map(ref => ref.hash))
+  const currentHashesSet = new Set(currentHashes)
+
+  for (const dbFile of dbFileRefs) {
+    if (!currentHashesSet.has(dbFile.hash)) {
+      // 如果数据库中的引用不在当前内容中，则标记为删除
+      if (dbFile.isdeleted !== 1)
+        actions.push(updateFileRef({ ...dbFile, isdeleted: 1, lastdotime: time }))
     }
     else {
-      hashArr.push(url)
+      // 如果引用存在，则确保其为未删除状态并更新时间
+      if (dbFile.isdeleted === 1)
+        actions.push(updateFileRef({ ...dbFile, isdeleted: 0, lastdotime: time }))
+      else
+        actions.push(updateFileRef({ ...dbFile, lastdotime: time }))
     }
   }
 
-  for (const dbFile of dbFiles) {
-    if (hashArr.includes(dbFile.hash)) {
-      await updateFileRef({ ...dbFile, lastdotime: time })
-      continue
+  // 识别并添加新的引用 (虽然当前逻辑主要在上传时添加，但这里可以作为保障)
+  for (const hash of currentHashes) {
+    if (!dbHashes.has(hash)) {
+      // 此处逻辑依赖于文件上传时已创建FileRef记录，sync仅负责更新状态
+      // 若需在此处创建，则需要更多文件信息
     }
-    await updateFileRef({ ...dbFile, isdeleted: 1, lastdotime: time })
   }
+
+  await Promise.all(actions)
 }
 
 async function init(uuid: string) {
   data.value = await getNote(uuid)
   if (data.value) {
-    if (data.value.isdeleted === 1) {
+    if (data.value.isdeleted === 1)
       editorRef.value?.setEditable(false)
-    }
+
     if (data.value?.islocked === 1) {
-      if (authState.isRegistered) {
+      if (authState.isRegistered)
         state.isAuth = await verify()
-      }
-      else {
+      else
         state.isAuth = await register()
-      }
     }
     nextTick(() => {
       editorRef.value?.setContent(data.value.newstext)
@@ -221,14 +269,10 @@ function openTextFormatModal() {
   }
 }
 
-onMounted(async () => {
-  if (noteUuid.value && noteUuid.value !== '0') {
-    init(noteUuid.value)
-  }
-  else if (!isDesktop.value) {
-    newNoteUuid = nanoid(12)
-    window.history.replaceState(null, '', `/n/${newNoteUuid}`)
-  }
+onMounted(() => {
+  // On mobile, when creating a new note from route /n/0, update URL
+  if (isNewNote.value && !isDesktop.value)
+    window.history.replaceState(null, '', `/n/${newNoteId.value}`)
 })
 
 onIonViewWillLeave(() => {
@@ -269,10 +313,10 @@ onIonViewWillLeave(() => {
 
       <div v-if="data?.islocked !== 1 || state.isAuth" class="ion-padding">
         <YYEditor
-          v-if="noteUuid === '0' ? newNoteUuid : noteUuid"
+          v-if="effectiveUuid"
           ref="editorRef"
-          :uuid="noteUuid === '0' ? newNoteUuid : noteUuid"
-          @blur="onBlur"
+          :uuid="effectiveUuid"
+          @blur="handleNoteSaving"
         />
       </div>
       <!-- <div v-if="keyboardHeight > 0" slot="fixed" :style="{ top: `${visualHeight - 66}px` }" class="h-[66px]">

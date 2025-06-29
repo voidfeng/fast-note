@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import type { Note, NoteDetail } from '@/hooks/useDexie'
 import type { AlertButton } from '@ionic/vue'
-import NoteList from '@/components/NoteList.vue'
-import { useDeviceType } from '@/hooks/useDeviceType'
-import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
-import { useNote } from '@/hooks/useNote'
+import type { Note, NoteDetail } from '@/hooks/useDexie'
 import {
   IonAlert,
   IonBackButton,
@@ -23,6 +19,10 @@ import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import NoteList from '@/components/NoteList.vue'
+import { useDeviceType } from '@/hooks/useDeviceType'
+import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
+import { useNote } from '@/hooks/useNote'
 
 const props = withDefaults(
   defineProps<{

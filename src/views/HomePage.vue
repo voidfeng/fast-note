@@ -34,7 +34,7 @@ import NoteDetail from './NoteDetail.vue'
 const { addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid } = useNote()
 const { onSynced } = useSync()
 const { isDesktop } = useDeviceType()
-const { showGlobalSearch, showGlobalSearchState } = useGlobalSearch()
+const { showGlobalSearch } = useGlobalSearch()
 
 const unSub = onSynced(() => {
   init()
@@ -69,8 +69,8 @@ const addButtons: AlertButton[] = [
 ]
 const state = reactive({
   windowWidth: 0,
-  currentFolder: '',
-  currentNote: '',
+  folerUuid: '',
+  noteUuid: '',
 })
 
 const sortDataList = computed(() => {
@@ -159,7 +159,7 @@ onMounted(() => {
       <GlobalSearch />
 
       <NoteList
-        v-model:current-note="state.currentNote"
+        v-model:current-note="state.noteUuid"
         :data-list="sortDataList"
         :all-notes-count="allNotesCount"
         :deleted-note-count="deletedNotes.length"
@@ -167,6 +167,7 @@ onMounted(() => {
         show-delete
         show-all-notes
         @refresh="init"
+        @selected="(id: string) => state.folerUuid = id"
       />
     </IonContent>
     <IonFooter>
@@ -192,12 +193,12 @@ onMounted(() => {
     />
     <div v-if="isDesktop" class="home-list">
       <FolderPage
-        :current-folder="state.currentFolder"
-        @selected="(id: string) => state.currentNote = id"
+        :current-folder="state.folerUuid"
+        @selected="(id: string) => state.noteUuid = id"
       />
     </div>
     <div v-if="isDesktop" class="home-detail">
-      <NoteDetail :current-detail="state.currentNote" />
+      <NoteDetail :note-uuid="state.noteUuid" />
     </div>
   </IonPage>
 </template>
@@ -206,20 +207,21 @@ onMounted(() => {
 .ion-page {
   .note-desktop {
     right: initial;
-    width: 33.33333%;
+    width: 361px;
     border-right: 1px solid #333;
+    .home-list {
+      width: 361px;
+      border-right: 1px solid #333;
+      left: 361px;
+    }
+    .home-detail {
+      width: calc(100vw - 361px * 2);
+      left: 722px;
+    }
   }
-  .home-list {
-    position: absolute;
-    left: calc(100% + 1px);
-    width: 100%;
-    height: 100%;
-    border-right: 1px solid #333;
-  }
+  .home-list,
   .home-detail {
-    position: absolute;
-    left: calc(200% + 1px);
-    width: calc(100% + 2px);
+    position: fixed;
     height: 100%;
   }
 }
