@@ -330,8 +330,8 @@ onIonViewWillLeave(() => {
       </IonToolbar>
     </IonFooter>
     <NoteMore v-model:is-open="state.showNoteMore" />
-    <TableFormatModal v-model:is-open="state.showTableFormat" :editor="(editorRef?.editor || {}) as Editor" />
-    <TextFormatModal v-model:is-open="state.showFormat" :editor="(editorRef?.editor || {}) as Editor" />
+    <TableFormatModal v-model:is-open="state.showTableFormat" :editor="((editorRef?.editor || {}) as Editor)" />
+    <TextFormatModal v-model:is-open="state.showFormat" :editor="((editorRef?.editor || {}) as Editor)" />
   </IonPage>
 </template>
 

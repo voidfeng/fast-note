@@ -5,11 +5,16 @@
   "windows": [
     "main"
   ],
+  "remote": {
+    "urls": ["https://n.0122.vip"]
+  },
   "permissions": [
     "core:default",
     {
       "identifier": "http:default",
-      "allow": [{ "url": "https://*.0122.vip" }]
+      "allow": [
+        { "url": "https://*.0122.vip" }
+      ]
     }
   ]
 }
