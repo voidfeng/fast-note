@@ -1,9 +1,12 @@
+import type { FetchRequestConfig, FetchResponse } from './apiService'
 import type { FileRef, Note, TypedFile } from '@/hooks/useDexie'
 import { alertController } from '@ionic/vue'
+import { isTauri } from '@tauri-apps/api/core'
 import { useUserInfo } from '@/hooks/useUserInfo'
-import { apiService, type FetchRequestConfig, type FetchResponse } from './apiService'
+import { apiService } from './apiService'
 
 export interface ApiResponse<T> {
+  headers?: string[]
   s: number
   m: Array<{ msg: string }>
   d: T
@@ -13,6 +16,13 @@ export interface ApiResponse<T> {
 apiService.initializeUrls(JSON.parse(import.meta.env.VITE_API_URLS), { useFastUrl: false })
 
 export function request<T = any>(config: FetchRequestConfig): Promise<ApiResponse<T>> {
+  const { cookieStringForHeader, setCookiesFromHeaders } = useUserInfo()
+  if (cookieStringForHeader.value) {
+    config.headers = {
+      ...config.headers,
+      Cookie: cookieStringForHeader.value,
+    }
+  }
   return new Promise((resolve, reject) => {
     apiService
       .request<ApiResponse<T>>(config)
@@ -34,6 +44,11 @@ export function request<T = any>(config: FetchRequestConfig): Promise<ApiRespons
             userLogout()
             throw new Error(error)
           }
+        }
+        if (config.data?.toString().includes('enews=login') && isTauri()) {
+          const cookies = d.headers.getSetCookie()
+          if (cookies && cookies.length > 0)
+            setCookiesFromHeaders(cookies)
         }
         resolve(d.data)
       })
@@ -81,6 +96,8 @@ export function login(username: string, password: string) {
           text = text[1].trim()
         }
         if (text && text.includes('登录成功')) {
+          const { refreshUserInfoFromCookie } = useUserInfo()
+          refreshUserInfoFromCookie()
           res({ s: 1, m: '登录成功' })
         }
         else {

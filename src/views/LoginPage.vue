@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import { login } from '@/api'
-import { useDeviceType } from '@/hooks/useDeviceType'
-import { useSync } from '@/hooks/useSync'
-import { useUserInfo } from '@/hooks/useUserInfo'
 import {
   alertController,
   IonBackButton,
@@ -18,6 +14,10 @@ import {
   useIonRouter,
 } from '@ionic/vue'
 import { ref } from 'vue'
+import { login } from '@/api'
+import { useDeviceType } from '@/hooks/useDeviceType'
+import { useSync } from '@/hooks/useSync'
+import { useUserInfo } from '@/hooks/useUserInfo'
 
 const router = useIonRouter()
 const { sync } = useSync()

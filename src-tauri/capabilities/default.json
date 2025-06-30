@@ -13,7 +13,8 @@
     {
       "identifier": "http:default",
       "allow": [
-        { "url": "https://*.0122.vip" }
+        { "url": "https://*.0122.vip" },
+        { "url": "http://localhost:3000" }
       ]
     }
   ]
