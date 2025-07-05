@@ -78,7 +78,7 @@ defineExpose({
 <template>
   <IonList ref="listRef" inset>
     <slot name="header" />
-    <IonAccordionGroup multiple>
+    <IonAccordionGroup :value="expandedItems" multiple @ion-change="(event: CustomEvent) => setExpandedItems(event.detail.value)">
       <NoteListItem
         v-if="showAllNotes"
         :data="{

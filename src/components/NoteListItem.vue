@@ -165,6 +165,7 @@ function onClick() {
   &.accordion-expanded > [slot='header'] .ion-accordion-toggle-icon {
     transform: rotate(360deg);
   }
+  // TODO: 子级选中没有样式变化
   &.active {
     ion-item {
       --background: var(--bg-active);
