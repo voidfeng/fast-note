@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { NoteDetail } from '@/hooks/useDexie'
-import { useDeviceType } from '@/hooks/useDeviceType'
 import { IonAccordion, IonIcon, IonItem, IonLabel, IonNote, useIonRouter } from '@ionic/vue'
 import dayjs from 'dayjs'
 import calendar from 'dayjs/plugin/calendar'
 import { folderOutline, trashOutline } from 'ionicons/icons'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useDeviceType } from '@/hooks/useDeviceType'
 
 defineOptions({
   name: 'MessageListItem',

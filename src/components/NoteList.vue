@@ -16,7 +16,7 @@ const props = withDefaults(
     deletedNoteCount?: number
     showDelete?: boolean
     showAllNotes?: boolean
-    currentNote?: string
+    noteUuid?: string
     showParentFolder?: boolean
     pressItems?: { type: ItemType }[]
     presentingElement?: HTMLElement
@@ -28,7 +28,7 @@ const props = withDefaults(
     deletedNoteCount: 0,
     showDelete: false,
     showAllNotes: false,
-    currentNote: '',
+    noteUuid: '',
     showParentFolder: false,
     pressItems: () => [{ type: 'rename' }, { type: 'move' }, { type: 'delete' }],
     disabledRoute: false,
@@ -36,7 +36,7 @@ const props = withDefaults(
   },
 )
 
-const emit = defineEmits(['refresh', 'update:currentNote', 'selected'])
+const emit = defineEmits(['refresh', 'update:noteUuid', 'selected'])
 
 const { getNote } = useNote()
 
@@ -62,7 +62,7 @@ if (!props.disabledLongPress) {
 }
 
 function onSelected(uuid: string) {
-  emit('update:currentNote', uuid)
+  emit('update:noteUuid', uuid)
   emit('selected', uuid)
 }
 
@@ -78,7 +78,7 @@ defineExpose({
 <template>
   <IonList ref="listRef" inset>
     <slot name="header" />
-    <IonAccordionGroup :value="expandedItems" multiple>
+    <IonAccordionGroup multiple>
       <NoteListItem
         v-if="showAllNotes"
         :data="{
@@ -88,7 +88,7 @@ defineExpose({
           puuid: '',
           noteCount: allNotesCount,
         } as Note"
-        :class="{ active: currentNote === 'allnotes' }"
+        :class="{ active: noteUuid === 'allnotes' }"
         :disabled-route
         @selected="onSelected('allnotes')"
       />
@@ -96,7 +96,7 @@ defineExpose({
         v-for="d in dataList"
         :key="d.uuid"
         :data="d"
-        :class="{ active: currentNote === d.uuid }"
+        :class="{ active: noteUuid === d.uuid }"
         :uuid="d.uuid"
         :show-parent-folder
         :disabled-route
@@ -111,7 +111,7 @@ defineExpose({
           puuid: '',
           noteCount: deletedNoteCount,
         } as Note"
-        :class="{ active: currentNote === 'deleted' }"
+        :class="{ active: noteUuid === 'deleted' }"
         :disabled-route
         @selected="onSelected('deleted')"
       />
