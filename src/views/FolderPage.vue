@@ -59,7 +59,7 @@ const dataList = ref<NoteDetail[]>([])
 
 const state = reactive({
   windowWidth: 0,
-  currentDetail: '',
+  noteUuid: '',
 })
 
 const folderId = computed(() => {
@@ -207,7 +207,7 @@ onIonViewWillEnter(() => {
       </IonHeader>
 
       <NoteList
-        v-model:current-note="state.currentDetail"
+        v-model:note-uuid="state.noteUuid"
         :data-list="[...folders, ...notes]"
         :show-parent-folder="data.uuid === 'allnotes'"
         @selected="$emit('selected', $event)"

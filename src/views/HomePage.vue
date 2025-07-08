@@ -64,6 +64,7 @@ const addButtons: AlertButton[] = [
         uuid: nanoid(12),
         version: 1,
       })
+      init()
     },
   },
 ]
@@ -159,11 +160,12 @@ onMounted(() => {
       <GlobalSearch />
 
       <NoteList
-        v-model:current-note="state.noteUuid"
+        :note-uuid="state.folerUuid"
         :data-list="sortDataList"
         :all-notes-count="allNotesCount"
         :deleted-note-count="deletedNotes.length"
         :presenting-element="presentingElement"
+        :disabled-route="isDesktop"
         show-delete
         show-all-notes
         @refresh="init"

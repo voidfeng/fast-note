@@ -1,9 +1,5 @@
 <script setup lang="ts">
 import type { Note } from '@/hooks/useDexie'
-import NoteList from '@/components/NoteList.vue'
-import { useDeviceType } from '@/hooks/useDeviceType'
-import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
-import { useNote } from '@/hooks/useNote'
 import {
   IonBackButton,
   IonButtons,
@@ -16,6 +12,10 @@ import {
   onIonViewWillEnter,
 } from '@ionic/vue'
 import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import NoteList from '@/components/NoteList.vue'
+import { useDeviceType } from '@/hooks/useDeviceType'
+import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
+import { useNote } from '@/hooks/useNote'
 
 defineEmits(['selected'])
 
@@ -40,7 +40,7 @@ useIonicLongPressList(listRef, {
 })
 const state = reactive({
   windowWidth: 0,
-  currentDetail: '',
+  noteUuid: '',
 })
 
 function init() {
@@ -92,7 +92,7 @@ onUnmounted(() => {
 
       <NoteList
         ref="listRef"
-        v-model:current-note="state.currentDetail"
+        v-model:note-uuid="state.noteUuid"
         :data-list="dataList"
         :press-items="[{ type: 'restore' }, { type: 'deleteNow' }]"
         @selected="$emit('selected', $event)"

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { NoteDetail } from '@/hooks/useDexie'
-import { useDeviceType } from '@/hooks/useDeviceType'
 import { IonAccordion, IonIcon, IonItem, IonLabel, IonNote, useIonRouter } from '@ionic/vue'
 import dayjs from 'dayjs'
 import calendar from 'dayjs/plugin/calendar'
 import { folderOutline, trashOutline } from 'ionicons/icons'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useDeviceType } from '@/hooks/useDeviceType'
 
 defineOptions({
   name: 'MessageListItem',
@@ -165,6 +165,7 @@ function onClick() {
   &.accordion-expanded > [slot='header'] .ion-accordion-toggle-icon {
     transform: rotate(360deg);
   }
+  // TODO: 子级选中没有样式变化
   &.active {
     ion-item {
       --background: var(--bg-active);
