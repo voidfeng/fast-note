@@ -381,7 +381,7 @@ onIonViewWillLeave(() => {
 
 <style lang="scss">
 .note-detail__toolbar {
-  --background: var(--bg-gray-900);
+  // --background: #000;
   --padding-top: 0;
   --padding-bottom: 0;
   --padding-start: 0;

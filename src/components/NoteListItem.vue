@@ -134,7 +134,7 @@ function onClick() {
   &.no-children {
     .ion-accordion-toggle-icon {
       transform: rotate(270deg) !important;
-      color: var(--text-gray-600);
+      color: var(--c-purple-gray-550);
     }
   }
   .child-list-item {
@@ -181,9 +181,9 @@ function onClick() {
 
 <style lang="scss" scoped>
 .list-item {
-  --background: var(--text-gray-900);
-  --border-color: var(--text-gray-750);
-  // --background-hover: var(--text-gray-750);
+  --background: var(--c-blue-gray-950);
+  --border-color: var(--c-blue-gray-700);
+  // --background-hover: var(--c-purple-gray-700);
   &.active {
     --background: var(--bg-active);
   }

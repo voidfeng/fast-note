@@ -131,8 +131,7 @@ function onClick(type: string) {
 }
 .table-format-modal-list {
   ion-item {
-    --background: #2c2c2e;
-    --border-color: #444348;
+    --background: var(--c-blue-gray-800);
     font-size: 18px;
     ion-label {
       margin-top: 14px;

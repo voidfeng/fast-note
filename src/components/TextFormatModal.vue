@@ -142,14 +142,14 @@ onMounted(() => {
 <style lang="scss">
 .text-format-modal-content {
   .close-btn {
-    --color: #a1a1aa;
+    --color: var(--c-blue-gray-300);
     ion-icon {
       font-size: 28px;
     }
   }
   .font-size {
     ion-button {
-      --color: #fff;
+      --color: var(--c-gray-0);
       --padding-start: 10px;
       --padding-end: 10px;
     }
@@ -164,15 +164,14 @@ onMounted(() => {
   .list-indent {
     ion-button {
       --background: var(--primary);
-      --color: #fff;
+      --color: var(--c-gray-0);
       --background-activated: var(--primary);
       --padding-top: 6px;
       --padding-bottom: 6px;
       flex: 1;
       overflow: hidden;
       &[fill='clear'] {
-        --background: #2c2c2e;
-        --background-activated: #3d3c41;
+        --background: var(--c-blue-gray-800);
       }
       &:first-child {
         border-top-left-radius: 6px;

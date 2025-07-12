@@ -3,7 +3,7 @@ import { defineConfig, transformerDirectives } from 'unocss'
 const theme = {
   light: {},
   dark: {
-    // 黄色系
+    // 黄色 系
     'yellow': {
       300: '#f2bc40', // 浅黄
       500: '#dab13d', // 主色调 - primary
@@ -31,7 +31,7 @@ const theme = {
       700: '#3a3a3c', // 深偏蓝灰 - 列表 - 锁定背景
       800: '#2c2c2e', // 深偏蓝灰 - 更多弹窗 - ionItem 背景
       900: '#242426', // 深偏蓝灰 - 更多弹窗背景/ionItem 禁用背景
-      950: '#1c1c1e', // 深偏蓝灰
+      950: '#1c1c1e', // 深偏蓝灰 - input 背景
     },
     // 偏紫灰色系
     'purple-gray': {

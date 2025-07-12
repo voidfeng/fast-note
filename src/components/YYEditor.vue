@@ -316,7 +316,7 @@ defineExpose({
     }
 
     &.error {
-      border: 1px solid #f44336;
+      border: 1px solid var(--danger);
     }
   }
 }
@@ -472,11 +472,11 @@ defineExpose({
   table {
     border-collapse: collapse;
     border-spacing: 0;
-    border: 1px solid #3a3a3c;
+    border: 1px solid var(--c-blue-gray-700);
     width: 100%;
     margin: 10px 0;
     td {
-      border: 1px solid #3a3a3c;
+      border: 1px solid var(--c-blue-gray-700);
       padding: 8px;
     }
   }

@@ -98,7 +98,7 @@ async function onDelete() {
           <IonCol size="3" class="grid-item">
             <IconTextButton
               :icon="note?.islocked === 1 ? lockOpen : lockClosed"
-              class="text-blue-500"
+              class="c-blue-500"
               :text="note?.islocked === 1 ? '移除' : '锁定'"
               color="primary"
               @click="onLock"

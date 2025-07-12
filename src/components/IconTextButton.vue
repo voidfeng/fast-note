@@ -73,21 +73,15 @@ ion-button {
   --border-radius: 12px;
 
   // 自定义背景色（可以通过 CSS 变量覆盖）
-  --background: #2c2c2e96;
-  --background-hover: var(--ion-color-light-shade, #d7d8da);
+  --background: var(--c-blue-gray-800);
 
   // 重置 Ionic button 的默认内边距，让我们的 UnoCSS padding 生效
   --padding-start: 0;
   --padding-end: 0;
   --padding-top: 0;
   --padding-bottom: 0;
-
   transition: all 0.2s ease-in-out;
-
-  // 定义激活状态的背景色，提供即时反馈 (在没有 href 时特别有用)
-  // ion-color() 函数可以从你的主题中获取颜色
   &:active {
-    --background: var(--ion-color-light-shade, #d7d8da);
     transform: scale(0.98);
   }
 }
