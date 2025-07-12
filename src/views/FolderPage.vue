@@ -13,6 +13,7 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  onIonViewDidEnter,
   onIonViewWillEnter,
 } from '@ionic/vue'
 import { addOutline, createOutline } from 'ionicons/icons'
@@ -182,6 +183,11 @@ function init() {
 }
 
 onIonViewWillEnter(() => {
+  if (!isDesktop.value)
+    init()
+})
+
+onIonViewDidEnter(() => {
   if (!isDesktop.value)
     init()
 })

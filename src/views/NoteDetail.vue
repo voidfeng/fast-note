@@ -276,6 +276,7 @@ onMounted(() => {
 })
 
 onIonViewWillLeave(() => {
+  handleNoteSaving()
   setTimeout(() => {
     state.showFormat = false
   }, 300)
