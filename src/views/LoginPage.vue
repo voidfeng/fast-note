@@ -22,7 +22,7 @@ import { useUserInfo } from '@/hooks/useUserInfo'
 const router = useIonRouter()
 const { sync } = useSync()
 const { isDesktop } = useDeviceType()
-const { refreshUserInfoFromCookie } = useUserInfo()
+const { refreshUserInfoFromCookie, setCookiesFromHeaders } = useUserInfo()
 
 const username = ref('')
 const password = ref('')
@@ -37,19 +37,27 @@ async function onLogin() {
   try {
     await login(username.value, password.value)
     refreshUserInfoFromCookie()
+
+    // 登录成功后保存cookie到localStorage
+    const cookies = document.cookie.split('; ')
+    if (cookies.length > 0) {
+      setCookiesFromHeaders(cookies)
+    }
+
+    // 只有登录成功后才进行同步
+    const syncLoading = await loadingController.create({ message: '正在同步...' })
+    syncLoading.present()
+    try {
+      await sync()
+    }
+    finally {
+      syncLoading.dismiss()
+    }
+
     router.back()
   }
   finally {
     loginLoading.dismiss()
-  }
-
-  const syncLoading = await loadingController.create({ message: '正在同步...' })
-  syncLoading.present()
-  try {
-    await sync()
-  }
-  finally {
-    syncLoading.dismiss()
   }
 }
 </script>
