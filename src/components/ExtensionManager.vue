@@ -98,7 +98,7 @@ function closeModal() {
           </IonLabel>
           <div slot="end" class="flex items-center">
             <div v-if="loadingExtensions[extension.id]" class="mr-2 text-sm text-gray-500">
-              加载中...
+              下载中...
             </div>
             <div v-if="errorExtensions[extension.id]" class="mr-2 text-sm text-red-500">
               {{ errorExtensions[extension.id] }}
