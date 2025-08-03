@@ -1,4 +1,4 @@
-import type { TypedFile } from './useDexie'
+import type { TypedFile } from '@/types'
 import { useDexie } from './useDexie'
 
 // 为window.db添加类型声明

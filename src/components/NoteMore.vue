@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Note } from '@/hooks/useDexie'
+import type { Note } from '@/types'
 import { IonCol, IonGrid, IonModal, IonRow, useIonRouter } from '@ionic/vue'
 import { lockClosed, lockOpen, trashOutline } from 'ionicons/icons'
 import { ref } from 'vue'
@@ -28,7 +28,10 @@ const modalRef = ref()
 const note = ref<Note | undefined>(undefined)
 
 async function onWillPresent() {
-  note.value = await getNote(route.params.uuid as string)
+  const result = await getNote(route.params.uuid as string)
+  if (result) {
+    note.value = result
+  }
 }
 
 async function onLock() {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AlertButton } from '@ionic/vue'
-import type { Note, NoteDetail } from '@/hooks/useDexie'
+import type { Note, NoteDetail } from '@/types'
 import {
   IonAlert,
   IonBackButton,

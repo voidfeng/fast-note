@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Note } from '@/hooks/useDexie'
+import type { Note } from '@/types'
 import { IonButton, IonButtons, IonContent, IonHeader, IonModal, IonTitle, IonToolbar } from '@ionic/vue'
 import { ref, toRaw, watch } from 'vue'
 import { useNote } from '@/hooks/useNote'
@@ -82,7 +82,9 @@ watch(() => props.isOpen, (val) => {
       }]
       noteListRef.value.setExpandedItems(findFoldersWithChildren(dataList.value))
       getNote(props.uuid).then((res) => {
-        currentNote.value = res
+        if (res) {
+          currentNote.value = res
+        }
       })
     })
   }

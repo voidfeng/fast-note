@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import type { Note } from '@/hooks/useDexie'
-import { useNote } from '@/hooks/useNote'
-import { getTime } from '@/utils/date'
+import type { Note } from '@/types'
 import { alertController, IonItem, IonLabel, IonList, IonModal } from '@ionic/vue'
 import { ref, toRaw, watch } from 'vue'
+import { useNote } from '@/hooks/useNote'
+import { getTime } from '@/utils/date'
 import NoteMove from './NoteMove.vue'
 
 export type ItemType = 'rename' | 'delete' | 'restore' | 'deleteNow' | 'move'
@@ -112,7 +112,9 @@ const config = ref<IConfig>({
 watch(() => props.uuid, () => {
   if (props.uuid) {
     getNote(props.uuid).then((res) => {
-      note.value = res
+      if (res) {
+        note.value = res
+      }
     })
   }
 })

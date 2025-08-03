@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Note } from '@/hooks/useDexie'
+import type { Note } from '@/types'
 import {
   IonBackButton,
   IonButtons,

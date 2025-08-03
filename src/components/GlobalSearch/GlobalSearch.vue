@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Note } from '@/hooks/useDexie'
+import type { Note } from '@/types'
 import { IonContent, IonSearchbar } from '@ionic/vue'
 import { useDebounceFn } from '@vueuse/core'
 import { reactive, ref } from 'vue'

@@ -1,4 +1,4 @@
-import type { FileRef, Note, TypedFile } from '@/hooks/useDexie'
+import type { FileRef, Note, TypedFile } from '@/types'
 import { request } from '@/api'
 
 // 获取云端备忘录列表
@@ -17,7 +17,7 @@ export function addCloudNote(note: Note) {
     formData.append('addnews', '提交')
 
     Object.entries(note).forEach(([key, value]) => {
-      if (value !== undefined) {
+      if (value !== undefined && value !== null) {
         formData.append(key, value.toString())
       }
     })
@@ -48,7 +48,7 @@ export function updateCloudNote(note: Note) {
   formData.append('classid', '2')
   formData.append('mid', '9')
   Object.entries(note).forEach(([key, value]) => {
-    if (value !== undefined) {
+    if (value !== undefined && value !== null) {
       formData.append(key, value.toString())
     }
   })
@@ -104,7 +104,7 @@ export function updateCloudFileRef(fileRef: FileRef) {
     formData.append('classid', '4')
     formData.append('mid', '11')
     Object.entries(fileRef).forEach(([key, value]) => {
-      if (value !== undefined) {
+      if (value !== undefined && value !== null) {
         formData.append(key, value.toString())
       }
     })

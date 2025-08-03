@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { NoteDetail } from '@/hooks/useDexie'
+import type { NoteDetail } from '@/types'
 import { IonAccordion, IonIcon, IonItem, IonLabel, IonNote, useIonRouter } from '@ionic/vue'
 import dayjs from 'dayjs'
 import calendar from 'dayjs/plugin/calendar'

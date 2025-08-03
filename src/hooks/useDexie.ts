@@ -3,6 +3,9 @@ import type { FileRef, Note, NoteDetail, TypedFile } from '@/types'
 import Dexie from 'dexie'
 import { ref } from 'vue'
 
+// 重新导出类型，以便其他模块可以从这里导入
+export type { FileRef, Note, NoteDetail, TypedFile }
+
 interface NoteDatabase extends Dexie {
   note: Dexie.Table<Note, string>
   file: Dexie.Table<TypedFile, string>

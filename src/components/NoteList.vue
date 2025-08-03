@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DefineComponent, Ref } from 'vue'
 import type { ItemType } from '@/components/LongPressMenu.vue'
-import type { Note } from '@/hooks/useDexie'
+import type { Note } from '@/types'
 import { IonAccordionGroup, IonList } from '@ionic/vue'
 import { ref } from 'vue'
 import LongPressMenu from '@/components/LongPressMenu.vue'

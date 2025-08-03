@@ -1,4 +1,4 @@
-import type { FileRef } from './useDexie'
+import type { FileRef } from '@/types'
 import { useDexie } from './useDexie'
 
 let isInitialized = false
