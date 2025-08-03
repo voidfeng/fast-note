@@ -49,3 +49,43 @@
 
   --bg-active: var(--c-blue-gray-700);
 }
+
+.ion-palette-dark {
+  --danger: theme('colors.dark-red.500');
+  --primary: theme('colors.dark-yellow.500');
+
+  /* 黄色系 */
+  --c-yellow-300: theme('colors.dark-yellow.300');
+  --c-yellow-500: theme('colors.dark-yellow.500');
+
+  /* 红色系 */
+  --c-red-500: theme('colors.dark-red.500');
+
+  /* 蓝色系 */
+  --c-blue-500: theme('colors.dark-blue.500');
+
+  /* 纯灰色系 */
+  --c-gray-0: theme('colors.dark-gray.0');
+  --c-gray-100: theme('colors.dark-gray.100');
+  --c-gray-700: theme('colors.dark-gray.700');
+  --c-gray-900: theme('colors.dark-gray.900');
+  --c-gray-1000: theme('colors.dark-gray.1000');
+
+  /* 偏蓝灰色系 */
+  --c-blue-gray-300: theme('colors.dark-blue-gray.300');
+  --c-blue-gray-400: theme('colors.dark-blue-gray.400');
+  --c-blue-gray-700: theme('colors.dark-blue-gray.700');
+  --c-blue-gray-800: theme('colors.dark-blue-gray.800');
+  --c-blue-gray-900: theme('colors.dark-blue-gray.900');
+  --c-blue-gray-950: theme('colors.dark-blue-gray.950');
+
+  /* 偏紫灰色系 */
+  --c-purple-gray-350: theme('colors.dark-purple-gray.350');
+  --c-purple-gray-400: theme('colors.dark-purple-gray.400');
+  --c-purple-gray-500: theme('colors.dark-purple-gray.500');
+  --c-purple-gray-550: theme('colors.dark-purple-gray.550');
+  --c-purple-gray-700: theme('colors.dark-purple-gray.700');
+  --c-purple-gray-800: theme('colors.dark-purple-gray.800');
+  --c-purple-gray-850: theme('colors.dark-purple-gray.850');
+  --c-purple-gray-900: theme('colors.dark-purple-gray.900');
+}
