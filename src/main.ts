@@ -2,6 +2,7 @@ import { IonicVue } from '@ionic/vue'
 // import VConsole from 'vconsole'
 import { createApp } from 'vue'
 import App from './App.vue'
+import SyncExtension from './extensions/sync'
 import { useDexie } from './hooks/useDexie'
 import router from './router'
 
@@ -49,6 +50,7 @@ const app = createApp(App)
     mode: 'ios',
   })
   .use(router)
+  .use(SyncExtension)
 
 Promise.all([init(), router.isReady()]).then(() => {
   app.mount('#app')

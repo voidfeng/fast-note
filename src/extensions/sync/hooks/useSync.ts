@@ -1,15 +1,24 @@
-import type { FileRef, Note } from './useDexie'
-import { addCloudFile, addCloudFileRef, addCloudNote, deleteCloudFile, getCloudFile, getCloudFileRefsByLastdotime, getCloudNodesByLastdotime, updateCloudFileRef, updateCloudNote } from '@/api'
-import { getTime } from '@/utils/date'
+import type { FileRef, Note, TypedFile } from '@/types'
 import { ref } from 'vue'
-import { useFileRefs } from './useFileRefs'
-import { useFiles } from './useFiles'
-import { useNote } from './useNote'
+import { useFileRefs } from '@/hooks/useFileRefs'
+import { useFiles } from '@/hooks/useFiles'
+import { useNote } from '@/hooks/useNote'
+import { getTime } from '@/utils/date'
+import {
+  addCloudFile,
+  addCloudFileRef,
+  addCloudNote,
+  deleteCloudFile,
+  getCloudFile,
+  getCloudFileRefsByLastdotime,
+  getCloudNodesByLastdotime,
+  updateCloudFileRef,
+  updateCloudNote,
+} from '../api/syncApi'
 
 const defaultLastdotime = getTime('2010/01/01 00:00:00')
 const lastdotime = ref(JSON.parse(localStorage.lastdotime || defaultLastdotime))
 const fileRefLastdotime = ref(JSON.parse(localStorage.fileRefLastdotime || defaultLastdotime))
-// const fileLastdotime = ref(JSON.parse(localStorage.fileLastdotime || defaultLastdotime))
 
 const syncing = ref(false)
 // 存储同步成功的回调函数

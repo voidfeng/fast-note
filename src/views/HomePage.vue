@@ -22,13 +22,15 @@ import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
+import ExtensionButton from '@/components/ExtensionButton.vue'
+import ExtensionManager from '@/components/ExtensionManager.vue'
 import GlobalSearch from '@/components/GlobalSearch/GlobalSearch.vue'
 import { useGlobalSearch } from '@/components/GlobalSearch/useGlobalSearch'
 import NoteList from '@/components/NoteList.vue'
-import SyncState from '@/components/SyncState.vue'
+import { SyncState, useSync } from '@/extensions/sync'
 import { useDeviceType } from '@/hooks/useDeviceType'
+import { useExtensions } from '@/hooks/useExtensions'
 import { useNote } from '@/hooks/useNote'
-import { useSync } from '@/hooks/useSync'
 import { errorHandler, ErrorType, withErrorHandling } from '@/utils/errorHandler'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
@@ -37,6 +39,10 @@ const { addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid } = useNote
 const { onSynced } = useSync()
 const { isDesktop } = useDeviceType()
 const { showGlobalSearch } = useGlobalSearch()
+const { isExtensionEnabled } = useExtensions()
+
+// 扩展管理器状态
+const showExtensionManager = ref(false)
 
 const unSub = onSynced(() => {
   init()
@@ -164,8 +170,12 @@ onMounted(() => {
           </Transition>
         </IonToolbar>
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 16px;">
-          <SyncState />
-          <DarkModeToggle />
+          <!-- 根据扩展状态显示同步组件 -->
+          <SyncState v-if="isExtensionEnabled('sync')" />
+          <div class="flex items-center">
+            <ExtensionButton @click="showExtensionManager = true" />
+            <DarkModeToggle />
+          </div>
         </div>
       </IonHeader>
 
@@ -204,6 +214,12 @@ onMounted(() => {
       header="请输入文件夹名称"
       :buttons="addButtons"
       :inputs="[{ name: 'newFolderName', placeholder: '请输入文件夹名称' }]"
+    />
+
+    <!-- 扩展管理器 -->
+    <ExtensionManager
+      v-model:is-open="showExtensionManager"
+      :presenting-element="presentingElement"
     />
     <div v-if="isDesktop" class="home-list">
       <FolderPage

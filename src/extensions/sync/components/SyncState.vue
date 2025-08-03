@@ -1,15 +1,22 @@
 <script setup lang="ts">
-import { useSync } from '@/hooks/useSync'
-import { useUserInfo } from '@/hooks/useUserInfo'
 import { IonButton, IonSpinner } from '@ionic/vue'
+import { computed } from 'vue'
+import { useExtensions } from '@/hooks/useExtensions'
+import { useUserInfo } from '@/hooks/useUserInfo'
+import { useSync } from '../hooks/useSync'
 
 const { sync, syncing } = useSync()
 const { userInfo } = useUserInfo()
+const { isExtensionEnabled } = useExtensions()
 
 const version = window.version
 
+// 计算属性：检查同步扩展是否启用
+const syncEnabled = computed(() => isExtensionEnabled('sync'))
+
 function onSync() {
-  sync()
+  if (syncEnabled.value)
+    sync()
 }
 </script>
 

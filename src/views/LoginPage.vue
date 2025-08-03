@@ -15,8 +15,8 @@ import {
 } from '@ionic/vue'
 import { ref } from 'vue'
 import { login } from '@/api'
+import { useSync } from '@/extensions/sync'
 import { useDeviceType } from '@/hooks/useDeviceType'
-import { useSync } from '@/hooks/useSync'
 import { useUserInfo } from '@/hooks/useUserInfo'
 
 const router = useIonRouter()
