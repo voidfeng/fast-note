@@ -2,7 +2,7 @@
 import type {
   AlertButton,
 } from '@ionic/vue'
-import type { Note } from '@/hooks/useDexie'
+import type { Note } from '@/types'
 import {
   IonAlert,
   IonButton,
@@ -28,6 +28,7 @@ import SyncState from '@/components/SyncState.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useNote } from '@/hooks/useNote'
 import { useSync } from '@/hooks/useSync'
+import { errorHandler, ErrorType, withErrorHandling } from '@/utils/errorHandler'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
@@ -75,7 +76,7 @@ const state = reactive({
 })
 
 const sortDataList = computed(() => {
-  return dataList.value.toSorted((a, b) => {
+  return dataList.value.toSorted((a: Note, b: Note) => {
     if (a.ftitle === 'default-folder' && b.ftitle !== 'default-folder') {
       return -1
     }
@@ -86,36 +87,43 @@ const sortDataList = computed(() => {
   })
 })
 
-function refresh(ev: CustomEvent) {
-  init().then(() => {
-    ev.detail.complete()
-  })
+async function refresh(ev: CustomEvent) {
+  await init()
+  ev.detail.complete()
 }
 
-function init() {
-  return new Promise((resolve) => {
-    const treePromise = getFolderTreeByPUuid().then((res) => {
-      if (res && res.length > 0) {
-        dataList.value = res
-        // 计算所有笔记总数
-        let notesCount = 0
-        for (const folder of res) {
-          notesCount += folder.noteCount || 0
-        }
-        allNotesCount.value = notesCount
-      }
-    })
+async function init() {
+  // 获取文件夹树数据
+  const { data: treeData, error: treeError } = await withErrorHandling(
+    () => getFolderTreeByPUuid(),
+    ErrorType.DATABASE,
+  )
 
-    // 获取已删除的备忘录
-    const deletedPromise = getDeletedNotes().then((res) => {
-      deletedNotes.value = res
-    })
+  if (treeError) {
+    console.error('获取文件夹数据失败:', errorHandler.getUserFriendlyMessage(treeError))
+  }
+  else if (treeData && treeData.length > 0) {
+    dataList.value = treeData
+    // 计算所有笔记总数
+    let notesCount = 0
+    for (const folder of treeData) {
+      notesCount += folder.noteCount || 0
+    }
+    allNotesCount.value = notesCount
+  }
 
-    // 等待所有Promise完成
-    Promise.all([treePromise, deletedPromise]).then(() => {
-      resolve(true)
-    })
-  })
+  // 获取已删除的备忘录
+  const { data: deletedData, error: deletedError } = await withErrorHandling(
+    () => getDeletedNotes(),
+    ErrorType.DATABASE,
+  )
+
+  if (deletedError) {
+    console.error('获取已删除笔记失败:', errorHandler.getUserFriendlyMessage(deletedError))
+  }
+  else if (deletedData) {
+    deletedNotes.value = deletedData
+  }
 }
 
 onUpdateNote((item) => {

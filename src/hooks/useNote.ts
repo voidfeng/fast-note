@@ -1,7 +1,9 @@
-import type { Note } from './useDexie'
+import type { Note } from '@/types'
 import { nanoid } from 'nanoid'
 import { onUnmounted, ref } from 'vue'
+import { noteService } from '@/services/noteService'
 import { getTime } from '@/utils/date'
+import { errorHandler, ErrorType, withErrorHandling } from '@/utils/errorHandler'
 import { useDexie } from './useDexie'
 
 type UpdateFn = (item: Note) => void
@@ -70,33 +72,60 @@ export function useNote() {
   }
 
   async function addNote(note: any) {
-    const r = await db.value.note.add(note)
-    fetchNotes()
-    return r
+    const { data, error } = await withErrorHandling(
+      () => noteService.createNote(note),
+      ErrorType.DATABASE,
+    )
+
+    if (error) {
+      console.error('添加笔记失败:', errorHandler.getUserFriendlyMessage(error))
+      throw error
+    }
+
+    await fetchNotes()
+    return data
   }
 
   async function getNote(uuid: string) {
-    if (uuid === 'allnotes') {
-      return Promise.resolve({
-        title: '全部备忘录',
-        type: 'folder',
-        puuid: '',
-        uuid: 'allnotes',
-      } as Note)
+    const { data, error } = await withErrorHandling(
+      () => noteService.getNote(uuid),
+      ErrorType.DATABASE,
+    )
+
+    if (error) {
+      console.error('获取笔记失败:', errorHandler.getUserFriendlyMessage(error))
+      return null
     }
-    else {
-      return db.value.note.where('uuid').equals(uuid).first()
-    }
+
+    return data
   }
 
   async function deleteNote(uuid: string) {
-    await db.value.note.where('uuid').equals(uuid).delete()
-    fetchNotes()
+    const { error } = await withErrorHandling(
+      () => noteService.deleteNote(uuid),
+      ErrorType.DATABASE,
+    )
+
+    if (error) {
+      console.error('删除笔记失败:', errorHandler.getUserFriendlyMessage(error))
+      throw error
+    }
+
+    await fetchNotes()
   }
 
-  async function updateNote(uuid: string, note: any) {
-    await db.value.note.put(note, uuid)
-    fetchNotes()
+  async function updateNote(uuid: string, updates: any) {
+    const { error } = await withErrorHandling(
+      () => noteService.updateNote(uuid, updates),
+      ErrorType.DATABASE,
+    )
+
+    if (error) {
+      console.error('更新笔记失败:', errorHandler.getUserFriendlyMessage(error))
+      throw error
+    }
+
+    await fetchNotes()
   }
 
   async function getAllFolders() {

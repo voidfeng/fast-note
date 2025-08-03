@@ -1,50 +1,7 @@
 import type { Ref } from 'vue'
+import type { FileRef, Note, NoteDetail, TypedFile } from '@/types'
 import Dexie from 'dexie'
 import { ref } from 'vue'
-
-// 定义数据库结构
-
-export interface Note {
-  islocked?: 0 | 1
-  isdeleted: 0 | 1
-  version: number
-  lastdotime: number
-  id?: number
-  uuid: string
-  title: string
-  smalltext: string
-  ftitle: string
-  newstime: number
-  newstext: string
-  type: 'folder' | 'note'
-  puuid: string
-  noteCount?: number
-  children?: Note[]
-  folderName?: string
-}
-
-export interface NoteDetail extends Note {
-  folderName?: string
-}
-
-export interface TypedFile {
-  localId?: string
-  url?: string
-  file?: File
-  hash?: string
-  id?: number
-  ids?: number[]
-  isdeleted?: 0 | 1
-  lastdotime?: number
-}
-
-export interface FileRef {
-  id?: number
-  hash: string
-  refid: string
-  lastdotime: number
-  isdeleted: 0 | 1
-}
 
 interface NoteDatabase extends Dexie {
   note: Dexie.Table<Note, string>

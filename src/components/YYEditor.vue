@@ -1,18 +1,7 @@
 <script lang="ts" setup>
-import { Color } from '@tiptap/extension-color'
-import { ListItem, TaskItem, TaskList } from '@tiptap/extension-list'
-import { TableKit } from '@tiptap/extension-table'
-import TextAlign from '@tiptap/extension-text-align'
-import { TextStyleKit } from '@tiptap/extension-text-style'
-import StarterKit from '@tiptap/starter-kit'
-import { Editor, EditorContent } from '@tiptap/vue-3'
-import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
-import { computed, onBeforeMount, onMounted, ref } from 'vue'
-import { useFileRefs } from '@/hooks/useFileRefs'
-import { useFiles } from '@/hooks/useFiles'
-import { getFileHash } from '@/utils'
-import { getTime } from '@/utils/date'
-import { FileUpload } from './extensions/FileUpload/FileUpload'
+import { EditorContent } from '@tiptap/vue-3'
+import { onMounted } from 'vue'
+import { useEditor } from '@/composables/useEditor'
 
 const props = defineProps<{
   uuid: string
@@ -20,220 +9,45 @@ const props = defineProps<{
 
 const emit = defineEmits(['focus', 'blur'])
 
-// 定义编辑器类型
-type EditorInstance = Editor | null
+// 使用新的编辑器组合式函数
+const {
+  editor,
+  initEditor,
+  insertFiles,
+  getContentInfo,
+  setContent,
+  getContent,
+  setEditable,
+  setInputMode,
+} = useEditor(props.uuid)
 
-const { addFile, getFileByHash, getFileByUrl } = useFiles()
-const { addFileRef, getFileRefByHashAndRefid } = useFileRefs()
-
-const editor = ref<EditorInstance>(null)
-// const fileInput = ref<HTMLInputElement | null>(null)
-
-function getTitle() {
-  // 递归遍历节点提取文本
-  function extractTextFromNode(node: any): string {
-    if (!node)
-      return ''
-
-    // 如果是文本节点，直接返回文本内容
-    if (node.type === 'text') {
-      return node.text || ''
-    }
-
-    // 如果是heading、listItem或paragraph，提取其内部文本并直接返回
-    if (['heading', 'listItem', 'paragraph'].includes(node.type)) {
-      let text = ''
-      if (node.content && Array.isArray(node.content)) {
-        node.content.forEach((child: any) => {
-          if (child.type === 'text') {
-            text += child.text || ''
-          }
-        })
-      }
-      return text
-    }
-
-    // 其他类型节点，返回节点类型
-    return `[${node.type}]`
-  }
-
-  const json = editor.value?.getJSON()
-
-  // 获取标题
-  let title = ''
-  if (json?.content && json.content.length > 0 && json.content[0]) {
-    title = extractTextFromNode(json.content[0]).trim()
-  }
-
-  // 获取简介
-  const smalltext = editor.value?.getText().replace(title, '').replace(/\n+/g, ' ').trim().slice(0, 255)
-
-  return { title, smalltext }
-}
-
+// 组件挂载时初始化编辑器
 onMounted(() => {
-  editor.value = new Editor({
-    extensions: [
-      Color.configure({ types: [TextStyleKit.name, ListItem.name] }),
-      TextStyleKit,
-      StarterKit,
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      TaskList,
-      TaskItem,
-      TableKit,
-      FileUpload.configure({
-        /**
-         * 通过url从indexeddb获取文件并转为url地址
-         * 如果没有获取到就直接抛出错误
-         * @param url 文件url
-         */
-        async loadFile(url: string) {
-          let fileObj
-          // 判断是否为SHA256哈希
-          if (/^[a-f0-9]{64}$/i.test(url)) {
-            // 如果是SHA256哈希，使用getFileByHash获取文件
-            fileObj = await getFileByHash(url)
-          }
-          else {
-            // 否则使用getFileByUrl获取文件
-            fileObj = await getFileByUrl(url)
-          }
-
-          if (!fileObj) {
-            console.warn('文件不存在:', url)
-            throw new Error('文件不存在')
-          }
-
-          if (fileObj.file) {
-            // 如果有文件对象，创建URL
-            const fileType = fileObj.file.type || 'unknown'
-            const fileUrl = URL.createObjectURL(fileObj.file)
-
-            return {
-              url: fileUrl,
-              type: fileType,
-            }
-          }
-          else if (fileObj.url) {
-            // 如果有URL但没有文件对象，直接返回URL
-            return {
-              url: fileObj.url,
-              type: 'unknown',
-            }
-          }
-
-          // 如果没有文件也没有URL，抛出错误
-          throw new Error('文件格式不支持')
-        },
-        /**
-         * 图片加载完成后的回调
-         * @param url 图片url
-         * @param width 图片原始宽度
-         * @param height 图片原始高度
-         */
-        onImageLoaded(url: string, width: number, height: number) {
-          console.warn('图片加载完成', url, width, height)
-          // 这里可以添加图片加载完成后的处理逻辑
-          /**
-           * 1. 先检查 file 是否存在
-           * 2. 如果不存在，请求图片路径，把图片下载下来，然后转为blob再转为File对象
-           */
-        },
-      }),
-      GlobalDragHandle.configure({
-        dragHandleWidth: 20, // default
-
-        // The scrollTreshold specifies how close the user must drag an element to the edge of the lower/upper screen for automatic
-        // scrolling to take place. For example, scrollTreshold = 100 means that scrolling starts automatically when the user drags an
-        // element to a position that is max. 99px away from the edge of the screen
-        // You can set this to 0 to prevent auto scrolling caused by this extension
-        scrollTreshold: 100, // default
-
-        // The css selector to query for the drag handle. (eg: '.custom-handle').
-        // If handle element is found, that element will be used as drag handle.
-        // If not, a default handle will be created
-        dragHandleSelector: '.custom-drag-handle', // default is undefined
-
-        // Tags to be excluded for drag handle
-        // If you want to hide the global drag handle for specific HTML tags, you can use this option.
-        // For example, setting this option to ['p', 'hr'] will hide the global drag handle for <p> and <hr> tags.
-        excludedTags: [], // default
-
-        // Custom nodes to be included for drag handle
-        // For example having a custom Alert component. Add data-type="alert" to the node component wrapper.
-        // Then add it to this list as ['alert']
-        //
-        customNodes: [],
-      }),
-    ],
-    content: '',
-    onBlur: () => {
-      emit('blur')
-    },
-    onFocus: () => {
-      emit('focus')
-    },
+  initEditor({
+    onFocus: () => emit('focus'),
+    onBlur: () => emit('blur'),
   })
 })
-
-function setContent(content: string): void {
-  editor.value?.commands.setContent(content)
-}
 
 /**
- * 1. 获取所选择文件，可能为多个
- * 2. 将文件转换为blob地址，并且正确匹配blob的文件类型
- * 3. 将blob地址使用setFileUpload插入到编辑器中
+ * 处理文件输入事件
  */
-async function insertFile(e: Event) {
+async function handleFileInput(e: Event) {
   const files = (e.target as HTMLInputElement).files
-  if (!files)
-    return
-
-  for (const file of Array.from(files)) {
-    const hash = await getFileHash(file)
-    const existFile = await getFileByHash(hash)
-    const existFileRef = await getFileRefByHashAndRefid(hash, props.uuid)
-    if (existFile) {
-      editor.value!.commands.setFileUpload({ url: existFile?.url || hash })
-    }
-    else {
-      await addFile({ hash, file, id: 0 })
-      editor.value!.commands.setFileUpload({ url: hash })
-    }
-    if (!existFileRef)
-      await addFileRef({ hash, refid: props.uuid, lastdotime: getTime(), isdeleted: 0 })
+  if (files) {
+    await insertFiles(files)
   }
 }
 
-function setEditable(editable: boolean) {
-  editor.value!.setEditable(editable)
-}
-
-function setInputMode(inputMode: 'text' | 'none') {
-  editor.value!.setOptions({
-    editorProps: {
-      attributes: {
-        inputmode: inputMode,
-      },
-    },
-  })
-}
-
-onBeforeMount(() => {
-  editor.value?.destroy()
-})
-
+// 暴露给父组件的方法和属性
 defineExpose({
-  getContent: (): string | undefined => editor.value?.getHTML(),
-  getTitle,
+  getContent,
+  getTitle: getContentInfo,
   setContent,
   setEditable,
   setInputMode,
-  editor: computed(() => editor.value),
-  insertFile,
+  editor,
+  insertFile: handleFileInput,
 })
 </script>
 

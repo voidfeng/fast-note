@@ -22,23 +22,8 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/NoteDetail.vue'),
   },
   {
-    path: '/f/:uuid/',
-    component: () => import('../views/FolderPage.vue'),
-  },
-  {
-    path: '/f/:uuid/:uuid2',
-    component: () => import('../views/FolderPage.vue'),
-  },
-  {
-    path: '/f/:uuid/:uuid2/:uuid3',
-    component: () => import('../views/FolderPage.vue'),
-  },
-  {
-    path: '/f/:uuid/:uuid2/:uuid3/:uuid4',
-    component: () => import('../views/FolderPage.vue'),
-  },
-  {
-    path: '/f/:uuid/:uuid2/:uuid3/:uuid4/:uuid5',
+    path: '/f/:pathMatch(.*)*',
+    name: 'Folder',
     component: () => import('../views/FolderPage.vue'),
   },
   {
