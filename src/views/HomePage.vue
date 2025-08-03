@@ -21,6 +21,7 @@ import {
 import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import GlobalSearch from '@/components/GlobalSearch/GlobalSearch.vue'
 import { useGlobalSearch } from '@/components/GlobalSearch/useGlobalSearch'
 import NoteList from '@/components/NoteList.vue'
@@ -162,7 +163,10 @@ onMounted(() => {
             </IonTitle>
           </Transition>
         </IonToolbar>
-        <SyncState />
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 16px;">
+          <SyncState />
+          <DarkModeToggle />
+        </div>
       </IonHeader>
 
       <GlobalSearch />
