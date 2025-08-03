@@ -2,7 +2,6 @@ import { IonicVue } from '@ionic/vue'
 // import VConsole from 'vconsole'
 import { createApp } from 'vue'
 import App from './App.vue'
-import SyncExtension from './extensions/sync'
 import { useDexie } from './hooks/useDexie'
 import router from './router'
 
@@ -50,7 +49,9 @@ const app = createApp(App)
     mode: 'ios',
   })
   .use(router)
-  .use(SyncExtension)
+
+// 将Vue应用实例存储在全局对象中，以便扩展可以访问
+;(window as any).__VUE_APP__ = app
 
 Promise.all([init(), router.isReady()]).then(() => {
   app.mount('#app')

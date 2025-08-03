@@ -13,16 +13,34 @@ import {
   loadingController,
   useIonRouter,
 } from '@ionic/vue'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { login } from '@/api'
-import { useSync } from '@/extensions/sync'
 import { useDeviceType } from '@/hooks/useDeviceType'
+import { useExtensions } from '@/hooks/useExtensions'
 import { useUserInfo } from '@/hooks/useUserInfo'
 
 const router = useIonRouter()
-const { sync } = useSync()
+const { isExtensionEnabled, getExtensionModule } = useExtensions()
 const { isDesktop } = useDeviceType()
 const { refreshUserInfoFromCookie, setCookiesFromHeaders } = useUserInfo()
+
+// 动态获取同步功能
+const syncFunction = ref<Function | null>(null)
+
+// 监听同步扩展的加载状态
+watch(() => isExtensionEnabled('sync'), async (enabled) => {
+  if (enabled) {
+    // 如果同步扩展已启用，动态获取其钩子函数
+    const syncModule = getExtensionModule('sync')
+    if (syncModule && syncModule.useSync) {
+      const { sync } = syncModule.useSync()
+      syncFunction.value = sync
+    }
+  }
+  else {
+    syncFunction.value = null
+  }
+}, { immediate: true })
 
 const username = ref('')
 const password = ref('')
@@ -44,14 +62,16 @@ async function onLogin() {
       setCookiesFromHeaders(cookies)
     }
 
-    // 只有登录成功后才进行同步
-    const syncLoading = await loadingController.create({ message: '正在同步...' })
-    syncLoading.present()
-    try {
-      await sync()
-    }
-    finally {
-      syncLoading.dismiss()
+    // 只有登录成功后且同步功能可用时才进行同步
+    if (syncFunction.value) {
+      const syncLoading = await loadingController.create({ message: '正在同步...' })
+      syncLoading.present()
+      try {
+        await syncFunction.value()
+      }
+      finally {
+        syncLoading.dismiss()
+      }
     }
 
     router.back()

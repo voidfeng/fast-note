@@ -20,14 +20,14 @@ import {
 } from '@ionic/vue'
 import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import ExtensionButton from '@/components/ExtensionButton.vue'
 import ExtensionManager from '@/components/ExtensionManager.vue'
+import ExtensionRenderer from '@/components/ExtensionRenderer.vue'
 import GlobalSearch from '@/components/GlobalSearch/GlobalSearch.vue'
 import { useGlobalSearch } from '@/components/GlobalSearch/useGlobalSearch'
 import NoteList from '@/components/NoteList.vue'
-import { SyncState, useSync } from '@/extensions/sync'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useExtensions } from '@/hooks/useExtensions'
 import { useNote } from '@/hooks/useNote'
@@ -36,19 +36,40 @@ import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
 const { addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid } = useNote()
-const { onSynced } = useSync()
 const { isDesktop } = useDeviceType()
 const { showGlobalSearch } = useGlobalSearch()
-const { isExtensionEnabled } = useExtensions()
+const { isExtensionEnabled, getExtensionModule } = useExtensions()
 
 // 扩展管理器状态
 const showExtensionManager = ref(false)
 
-const unSub = onSynced(() => {
-  init()
-  onUnmounted(() => {
+// 动态获取同步扩展的钩子函数
+let unSub: (() => void) | undefined
+
+// 监听同步扩展的加载状态
+watch(() => isExtensionEnabled('sync'), async (enabled) => {
+  if (enabled) {
+    // 如果同步扩展已启用，动态获取其钩子函数
+    const syncModule = getExtensionModule('sync')
+    if (syncModule && syncModule.useSync) {
+      const { onSynced } = syncModule.useSync()
+      unSub = onSynced(() => {
+        init()
+      })
+    }
+  }
+  else if (unSub) {
+    // 如果同步扩展被禁用，取消订阅
     unSub()
-  })
+    unSub = undefined
+  }
+}, { immediate: true })
+
+// 在组件卸载时取消订阅
+onUnmounted(() => {
+  if (unSub) {
+    unSub()
+  }
 })
 
 const page = ref()
@@ -170,8 +191,12 @@ onMounted(() => {
           </Transition>
         </IonToolbar>
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 16px;">
-          <!-- 根据扩展状态显示同步组件 -->
-          <SyncState v-if="isExtensionEnabled('sync')" />
+          <!-- 使用扩展渲染器动态渲染同步组件 -->
+          <ExtensionRenderer
+            extension-id="sync"
+            component-name="SyncState"
+            :component-props="{}"
+          />
           <div class="flex items-center">
             <ExtensionButton @click="showExtensionManager = true" />
             <DarkModeToggle />
