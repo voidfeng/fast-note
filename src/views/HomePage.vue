@@ -191,12 +191,20 @@ onMounted(() => {
           </Transition>
         </IonToolbar>
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 16px;">
-          <!-- 使用扩展渲染器动态渲染同步组件 -->
-          <ExtensionRenderer
-            extension-id="sync"
-            component-name="SyncState"
-            :component-props="{}"
-          />
+          <div class="flex items-center space-x-2">
+            <!-- 使用扩展渲染器动态渲染同步组件 -->
+            <ExtensionRenderer
+              extension-id="sync"
+              component-name="SyncState"
+              :component-props="{}"
+            />
+            <!-- 使用扩展渲染器动态渲染 Supabase 用户信息组件 -->
+            <ExtensionRenderer
+              extension-id="supabase"
+              component-name="UserProfile"
+              :component-props="{}"
+            />
+          </div>
           <div class="flex items-center">
             <ExtensionButton @click="showExtensionManager = true" />
             <DarkModeToggle />
