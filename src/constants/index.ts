@@ -35,7 +35,6 @@ export const FILE_CONFIG = {
 // 路由路径
 export const ROUTES = {
   HOME: '/home',
-  LOGIN: '/login',
   NOTE_DETAIL: '/n/:uuid',
   FOLDER: '/f/:pathMatch(.*)*',
   DELETED: '/deleted',

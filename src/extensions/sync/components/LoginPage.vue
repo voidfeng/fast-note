@@ -13,68 +13,53 @@ import {
   loadingController,
   useIonRouter,
 } from '@ionic/vue'
-import { ref, watch } from 'vue'
-import { login } from '@/api'
+import { ref } from 'vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
-import { useExtensions } from '@/hooks/useExtensions'
-import { useUserInfo } from '@/hooks/useUserInfo'
+import { useAuth } from '../hooks/useAuth'
+import { useSync } from '../hooks/useSync'
 
 const router = useIonRouter()
-const { isExtensionEnabled, getExtensionModule } = useExtensions()
 const { isDesktop } = useDeviceType()
-const { refreshUserInfoFromCookie, setCookiesFromHeaders } = useUserInfo()
-
-// 动态获取同步功能
-const syncFunction = ref<Function | null>(null)
-
-// 监听同步扩展的加载状态
-watch(() => isExtensionEnabled('sync'), async (enabled) => {
-  if (enabled) {
-    // 如果同步扩展已启用，动态获取其钩子函数
-    const syncModule = getExtensionModule('sync')
-    if (syncModule && syncModule.useSync) {
-      const { sync } = syncModule.useSync()
-      syncFunction.value = sync
-    }
-  }
-  else {
-    syncFunction.value = null
-  }
-}, { immediate: true })
+const { login } = useAuth()
+const { sync } = useSync()
 
 const username = ref('')
 const password = ref('')
+
 async function onLogin() {
   if (!username.value || !password.value) {
     const alert = await alertController.create({ header: '请输入用户名和密码', buttons: ['确定'] })
     alert.present()
     return
   }
+
   const loginLoading = await loadingController.create({ message: '正在登录...' })
   loginLoading.present()
+
   try {
     await login(username.value, password.value)
-    refreshUserInfoFromCookie()
 
-    // 登录成功后保存cookie到localStorage
-    const cookies = document.cookie.split('; ')
-    if (cookies.length > 0) {
-      setCookiesFromHeaders(cookies)
+    // 登录成功后进行同步
+    const syncLoading = await loadingController.create({ message: '正在同步...' })
+    syncLoading.present()
+    try {
+      await sync()
     }
-
-    // 只有登录成功后且同步功能可用时才进行同步
-    if (syncFunction.value) {
-      const syncLoading = await loadingController.create({ message: '正在同步...' })
-      syncLoading.present()
-      try {
-        await syncFunction.value()
-      }
-      finally {
-        syncLoading.dismiss()
-      }
+    finally {
+      syncLoading.dismiss()
     }
 
     router.back()
+  }
+  catch (error) {
+    if (error instanceof Error)
+      console.error(error)
+    const alert = await alertController.create({
+      header: '登录失败',
+      message: '请检查用户名和密码是否正确',
+      buttons: ['确定'],
+    })
+    alert.present()
   }
   finally {
     loginLoading.dismiss()

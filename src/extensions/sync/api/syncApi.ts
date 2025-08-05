@@ -1,5 +1,8 @@
 import type { FileRef, Note, TypedFile } from '@/types'
-import { request } from '@/api'
+import { login as apiLogin, request } from '@/api'
+
+// 导出登录功能供内部使用
+export { apiLogin as login }
 
 // 获取云端备忘录列表
 export function getCloudNodesByLastdotime(lastdotime: number) {

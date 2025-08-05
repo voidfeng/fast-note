@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from '@ionic/vue-router'
 import HomePage from '../views/HomePage.vue'
+import { routeManager } from './routeManager'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -11,11 +12,6 @@ const routes: Array<RouteRecordRaw> = [
     path: '/home',
     name: 'Home',
     component: HomePage,
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: () => import('../views/LoginPage.vue'),
   },
   {
     path: '/n/:uuid',
@@ -36,5 +32,8 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
+
+// 初始化路由管理器
+routeManager.setRouter(router)
 
 export default router

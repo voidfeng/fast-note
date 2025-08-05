@@ -2,11 +2,11 @@
 import { IonButton, IonSpinner } from '@ionic/vue'
 import { computed } from 'vue'
 import { useExtensions } from '@/hooks/useExtensions'
-import { useUserInfo } from '@/hooks/useUserInfo'
+import { useAuth } from '../hooks/useAuth'
 import { useSync } from '../hooks/useSync'
 
 const { sync, syncing } = useSync()
-const { userInfo } = useUserInfo()
+const { userInfo } = useAuth()
 const { isExtensionEnabled } = useExtensions()
 
 const version = window.version
@@ -23,7 +23,7 @@ function onSync() {
 <template>
   <IonButton
     v-if="!userInfo.userid"
-    router-link="/login"
+    router-link="/sync/login"
     router-direction="forward"
     size="small"
     fill="outline"
