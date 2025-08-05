@@ -252,12 +252,10 @@ function onInsertTodo() {
 }
 
 function openTableFormatModal() {
-  if (keyboardHeight.value > 0 || isPlatform('desktop')) {
-    editorRef.value?.setInputMode('none')
-    setTimeout(() => {
-      state.showTableFormat = true
-    }, 300)
-  }
+  editorRef.value?.setInputMode('none')
+  setTimeout(() => {
+    state.showTableFormat = true
+  }, 300)
 }
 
 function openTextFormatModal() {

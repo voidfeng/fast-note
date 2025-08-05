@@ -1,31 +1,14 @@
 <script setup lang="ts">
 import { IonButton, IonIcon, IonItem, IonLabel, IonList, IonPopover } from '@ionic/vue'
 import { contrastOutline, moonOutline, sunnyOutline } from 'ionicons/icons'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
+import { ThemeMode, useTheme } from '@/composables/useTheme'
 
-// 主题模式枚举
-enum ThemeMode {
-  Auto = 'auto',
-  Light = 'light',
-  Dark = 'dark',
-}
-
-// 当前主题模式
-const currentMode = ref<ThemeMode>(ThemeMode.Auto)
-
-// 使用 matchMedia 检查用户偏好
-const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
+// 使用主题 composable
+const { currentMode, isDarkMode, setThemeMode } = useTheme()
 
 // 是否显示弹出菜单
 const showPopover = ref(false)
-
-// 计算当前是否为深色模式
-const isDarkMode = computed(() => {
-  if (currentMode.value === ThemeMode.Auto) {
-    return prefersDark.matches
-  }
-  return currentMode.value === ThemeMode.Dark
-})
 
 // 计算当前图标
 const currentIcon = computed(() => {
@@ -49,25 +32,9 @@ const buttonTitle = computed(() => {
   }
 })
 
-// 在 html 元素上添加或移除 "ion-palette-dark" 类
-function applyDarkMode(isDark: boolean) {
-  document.documentElement.classList.toggle('ion-palette-dark', isDark)
-}
-
-// 设置主题模式
-function setThemeMode(mode: ThemeMode) {
-  currentMode.value = mode
-  localStorage.setItem('themeMode', mode)
-
-  // 应用深色模式
-  if (mode === ThemeMode.Auto) {
-    applyDarkMode(prefersDark.matches)
-  }
-  else {
-    applyDarkMode(mode === ThemeMode.Dark)
-  }
-
-  // 关闭弹出菜单
+// 设置主题模式并关闭弹出菜单
+function handleSetThemeMode(mode: ThemeMode) {
+  setThemeMode(mode)
   showPopover.value = false
 }
 
@@ -75,35 +42,6 @@ function setThemeMode(mode: ThemeMode) {
 function togglePopover() {
   showPopover.value = !showPopover.value
 }
-
-onMounted(() => {
-  // 首先检查 localStorage 中的用户偏好
-  const savedThemeMode = localStorage.getItem('themeMode') as ThemeMode | null
-
-  if (savedThemeMode && Object.values(ThemeMode).includes(savedThemeMode as ThemeMode)) {
-    // 如果有保存的偏好，使用保存的值
-    currentMode.value = savedThemeMode as ThemeMode
-  }
-  else {
-    // 否则默认为自动模式
-    currentMode.value = ThemeMode.Auto
-  }
-
-  // 应用初始主题
-  if (currentMode.value === ThemeMode.Auto) {
-    applyDarkMode(prefersDark.matches)
-  }
-  else {
-    applyDarkMode(currentMode.value === ThemeMode.Dark)
-  }
-
-  // 监听系统偏好变化（仅在自动模式时生效）
-  prefersDark.addEventListener('change', (mediaQuery) => {
-    if (currentMode.value === ThemeMode.Auto) {
-      applyDarkMode(mediaQuery.matches)
-    }
-  })
-})
 </script>
 
 <template>
@@ -124,15 +62,15 @@ onMounted(() => {
 
     <IonPopover trigger="theme-mode-button" :is-open="showPopover" @did-dismiss="showPopover = false">
       <IonList>
-        <IonItem button :detail="false" @click="setThemeMode(ThemeMode.Auto)">
+        <IonItem button :detail="false" @click="handleSetThemeMode(ThemeMode.Auto)">
           <IonIcon slot="start" :icon="contrastOutline" />
           <IonLabel>自动（跟随系统）</IonLabel>
         </IonItem>
-        <IonItem button :detail="false" @click="setThemeMode(ThemeMode.Light)">
+        <IonItem button :detail="false" @click="handleSetThemeMode(ThemeMode.Light)">
           <IonIcon slot="start" :icon="moonOutline" />
           <IonLabel>浅色模式</IonLabel>
         </IonItem>
-        <IonItem button :detail="false" @click="setThemeMode(ThemeMode.Dark)">
+        <IonItem button :detail="false" @click="handleSetThemeMode(ThemeMode.Dark)">
           <IonIcon slot="start" :icon="sunnyOutline" />
           <IonLabel>深色模式</IonLabel>
         </IonItem>
