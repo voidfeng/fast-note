@@ -37,7 +37,7 @@ export interface TypedFile {
   hash: string
   id?: number
   isdeleted?: 0 | 1
-  lastdotime?: number
+  lastdotime: number
   user_id?: string
 }
 
@@ -46,7 +46,7 @@ export interface FileRef {
   id?: number
   hash: string
   refid: string
-  lastdotime?: number
+  lastdotime: number
   isdeleted?: 0 | 1
   user_id?: string
 }

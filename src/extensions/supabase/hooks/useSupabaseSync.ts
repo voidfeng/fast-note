@@ -142,8 +142,8 @@ export function useSupabaseSync() {
       }
       else {
         // 比较时间戳
-        const supabaseTime = supabaseNote.lastdotime || 0
-        const localTime = localNote.lastdotime || 0
+        const supabaseTime = supabaseNote.lastdotime
+        const localTime = localNote.lastdotime
 
         if (supabaseTime > localTime) {
           // 云端更新，需要更新本地
@@ -162,8 +162,8 @@ export function useSupabaseSync() {
       }
       else {
         // 比较时间戳
-        const supabaseTime = supabaseNote.lastdotime || 0
-        const localTime = localNote.lastdotime || 0
+        const supabaseTime = supabaseNote.lastdotime
+        const localTime = localNote.lastdotime
 
         if (localTime > supabaseTime) {
           // 本地更新，需要上传
@@ -198,8 +198,8 @@ export function useSupabaseSync() {
         toInsert.push(supabaseFile)
       }
       else {
-        const supabaseTime = supabaseFile.lastdotime || 0
-        const localTime = localFile.lastdotime || 0
+        const supabaseTime = supabaseFile.lastdotime
+        const localTime = localFile.lastdotime
 
         if (supabaseTime > localTime) {
           toUpdate.push(supabaseFile)
@@ -215,8 +215,8 @@ export function useSupabaseSync() {
         toUpload.push(localFile)
       }
       else {
-        const supabaseTime = supabaseFile.lastdotime || 0
-        const localTime = localFile.lastdotime || 0
+        const supabaseTime = supabaseFile.lastdotime
+        const localTime = localFile.lastdotime
 
         if (localTime > supabaseTime) {
           toUpload.push(localFile)
@@ -251,8 +251,8 @@ export function useSupabaseSync() {
         toInsert.push(supabaseRef)
       }
       else {
-        const supabaseTime = supabaseRef.lastdotime || 0
-        const localTime = localRef.lastdotime || 0
+        const supabaseTime = supabaseRef.lastdotime
+        const localTime = localRef.lastdotime
 
         if (supabaseTime > localTime) {
           toUpdate.push(supabaseRef)
@@ -269,8 +269,8 @@ export function useSupabaseSync() {
         toUpload.push(localRef)
       }
       else {
-        const supabaseTime = supabaseRef.lastdotime || 0
-        const localTime = localRef.lastdotime || 0
+        const supabaseTime = supabaseRef.lastdotime
+        const localTime = localRef.lastdotime
 
         if (localTime > supabaseTime) {
           toUpload.push(localRef)
@@ -412,7 +412,7 @@ export function useSupabaseSync() {
       id: supabaseFileRef.id,
       hash: supabaseFileRef.hash,
       refid: supabaseFileRef.refid,
-      lastdotime: supabaseFileRef.lastdotime || Date.now(),
+      lastdotime: supabaseFileRef.lastdotime,
     }
   }
 
@@ -439,7 +439,7 @@ export function useSupabaseSync() {
       hash: localFile.hash,
       id: localFile.id,
       url: localFile.url,
-      lastdotime: localFile.lastdotime || Date.now(),
+      lastdotime: localFile.lastdotime,
       isdeleted: localFile.isdeleted || 0,
       user_id: localFile.user_id,
     }
@@ -450,7 +450,7 @@ export function useSupabaseSync() {
       id: localFileRef.id,
       hash: localFileRef.hash,
       refid: localFileRef.refid,
-      lastdotime: new Date(localFileRef.lastdotime || Date.now()).toISOString(),
+      lastdotime: new Date(localFileRef.lastdotime).toISOString(),
     }
   }
 

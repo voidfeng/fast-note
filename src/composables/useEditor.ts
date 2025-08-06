@@ -110,7 +110,13 @@ export function useEditor(uuid: string) {
         editor.value.commands.setFileUpload({ url: existFile?.url || hash })
       }
       else {
-        await addFile({ hash, file, id: 0 })
+        await addFile({
+          hash,
+          file,
+          id: 0,
+          lastdotime: getTime(),
+          isdeleted: 0,
+        })
         editor.value.commands.setFileUpload({ url: hash })
       }
 

@@ -48,6 +48,8 @@ export class NoteService {
       version: 1,
       isdeleted: DELETE_STATUS.ACTIVE,
       ...data,
+      // 确保必需属性不被覆盖为 undefined
+      islocked: data.islocked ?? 0,
     }
 
     await this.db.value.note.add(note)

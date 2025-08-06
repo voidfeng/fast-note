@@ -164,8 +164,8 @@ export function useSync() {
       }
       else {
         // 本地和云端都存在 - 比较版本号
-        const localLastdotime = note.lastdotime || 0
-        const cloudLastdotime = cloudNote.lastdotime || 0
+        const localLastdotime = note.lastdotime
+        const cloudLastdotime = cloudNote.lastdotime
 
         if (localLastdotime > cloudLastdotime) {
           // 本地版本更新，上传到云端
@@ -384,9 +384,9 @@ export function useSync() {
       if (refCount === 0) {
         const file = await getFileByHash(hash)
         if (file) {
-          // TypedFile可能没有lastdotime属性，所以要小心处理
+          // TypedFile现在lastdotime是必需属性
           const _now = getTime()
-          const fileLastdotime = (file as any).lastdotime || 0
+          const fileLastdotime = file.lastdotime
 
           if (!file.isdeleted || fileLastdotime > thirtyDaysAgo) {
             // 标记为删除状态，但不实际删除

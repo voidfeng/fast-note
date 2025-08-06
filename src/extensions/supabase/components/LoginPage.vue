@@ -313,13 +313,13 @@ async function handleForgotPassword() {
           <div v-if="isOTPMode" class="flex gap-2">
             <IonInput
               v-model="formData.otp"
+              :maxlength="6"
               label="验证码"
               label-placement="floating"
               fill="outline"
               placeholder="请输入6位验证码"
               type="text"
               mode="md"
-              maxlength="6"
               class="flex-1"
             />
             <IonButton

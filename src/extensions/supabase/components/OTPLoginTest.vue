@@ -111,13 +111,13 @@ async function handleVerifyOTP() {
 
           <IonInput
             v-model="otp"
+            :maxlength="6"
             label="验证码"
             label-placement="floating"
             fill="outline"
             placeholder="请输入6位验证码"
             type="text"
             mode="md"
-            maxlength="6"
           />
 
           <div class="h4" />

@@ -68,15 +68,16 @@ watch(() => props.isOpen, (val) => {
       const filteredData = filterNotesByUuid(res, props.uuid)
       dataList.value = [{
         uuid: '',
-        title: '全部备忘录',
+        title: '根目录',
         type: 'folder',
         puuid: '',
-        children: filteredData,
+        children: [],
         isdeleted: 0,
+        islocked: 0,
         version: 1,
         lastdotime: Date.now(),
         smalltext: '',
-        ftitle: '全部备忘录',
+        ftitle: '',
         newstime: Date.now(),
         newstext: '',
       }]
