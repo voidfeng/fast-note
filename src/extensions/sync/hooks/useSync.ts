@@ -1,4 +1,4 @@
-import type { FileRef, Note, TypedFile } from '@/types'
+import type { FileRef, Note } from '@/types'
 import { ref } from 'vue'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
@@ -25,7 +25,7 @@ const syncing = ref(false)
 const syncSyncedCallbacks: Array<(result?: any) => void> = []
 
 export function useSync() {
-  const { getNotesByLastdotime, getNote, getNotesByPUuid, addNote, deleteNote, updateNote } = useNote()
+  const { getNotesByLastdotime, getNote, addNote, deleteNote, updateNote } = useNote()
 
   // 注册同步成功的回调函数
   function onSynced(callback: (result?: any) => void) {
@@ -88,18 +88,18 @@ export function useSync() {
     })
 
     // 合并 本地的备忘录 和 云端的备忘录: 移除本地
-    const localDefaultFoler = localNotes.find(note => note.ftitle === 'default-folder')
-    const cloudDefaultFoler = cloudNotes.d.find((note: Note) => note.ftitle === 'default-folder')
-    if (localDefaultFoler && cloudDefaultFoler) {
-      const index = localNotes.indexOf(localDefaultFoler)
-      localNotes.splice(index, 1)
-      await deleteNote(localDefaultFoler.uuid)
-      const changePUuidNotes = await getNotesByPUuid(localDefaultFoler.uuid)
-      for (const note of changePUuidNotes) {
-        note.puuid = cloudDefaultFoler.uuid
-        await updateNote(note.uuid, note)
-      }
-    }
+    // const localDefaultFoler = localNotes.find(note => note.ftitle === 'default-folder')
+    // const cloudDefaultFoler = cloudNotes.d.find((note: Note) => note.ftitle === 'default-folder')
+    // if (localDefaultFoler && cloudDefaultFoler) {
+    //   const index = localNotes.indexOf(localDefaultFoler)
+    //   localNotes.splice(index, 1)
+    //   await deleteNote(localDefaultFoler.uuid)
+    //   const changePUuidNotes = await getNotesByPUuid(localDefaultFoler.uuid)
+    //   for (const note of changePUuidNotes) {
+    //     note.puuid = cloudDefaultFoler.uuid
+    //     await updateNote(note.uuid, note)
+    //   }
+    // }
 
     // 创建UUID映射以便快速查找
     const localNotesMap = new Map(localNotes.map(note => [note.uuid, note]))

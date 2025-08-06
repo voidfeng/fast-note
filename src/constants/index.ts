@@ -7,7 +7,6 @@ export const APP_CONFIG = {
   NAME: '备忘录',
   VERSION: '1.0.0',
   DEFAULT_FOLDER_NAME: '备忘录',
-  DEFAULT_FOLDER_FTITLE: 'default-folder',
 } as const
 
 // 数据库配置

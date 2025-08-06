@@ -6,16 +6,18 @@ import { IonAccordionGroup, IonList } from '@ionic/vue'
 import { ref } from 'vue'
 import LongPressMenu from '@/components/LongPressMenu.vue'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
-import { useNote } from '@/hooks/useNote'
+// import { useNote } from '@/hooks/useNote'
 import NoteListItem from './NoteListItem.vue'
 
 const props = withDefaults(
   defineProps<{
     dataList: Note[]
     allNotesCount?: number
+    unfiledNotesCount?: number
     deletedNoteCount?: number
-    showDelete?: boolean
     showAllNotes?: boolean
+    showUnfiledNotes?: boolean
+    showDelete?: boolean
     noteUuid?: string
     showParentFolder?: boolean
     pressItems?: { type: ItemType }[]
@@ -25,9 +27,11 @@ const props = withDefaults(
   }>(),
   {
     allNotesCount: 0,
+    unfiledNotesCount: 0,
     deletedNoteCount: 0,
-    showDelete: false,
     showAllNotes: false,
+    showUnfiledNotes: false,
+    showDelete: false,
     noteUuid: '',
     showParentFolder: false,
     pressItems: () => [{ type: 'rename' }, { type: 'move' }, { type: 'delete' }],
@@ -38,7 +42,7 @@ const props = withDefaults(
 
 const emit = defineEmits(['refresh', 'update:noteUuid', 'selected'])
 
-const { getNote } = useNote()
+// const { getNote } = useNote()
 
 const listRef = ref<DefineComponent>()
 const longPressUUID = ref('')
@@ -52,8 +56,7 @@ if (!props.disabledLongPress) {
     pressedClass: 'item-long-press',
     onItemLongPress: async (element) => {
       const uuid = element.getAttribute('uuid')
-      const note = await getNote(`${uuid}`)
-      if (uuid && !['allnotes', 'deleted'].includes(uuid) && note?.ftitle !== 'default-folder') {
+      if (uuid && !['allnotes', 'deleted', 'unfilednotes'].includes(uuid)) {
         longPressUUID.value = uuid
         longPressMenuOpen.value = true
       }
@@ -91,6 +94,19 @@ defineExpose({
         :class="{ active: noteUuid === 'allnotes' }"
         :disabled-route
         @selected="onSelected('allnotes')"
+      />
+      <NoteListItem
+        v-if="showUnfiledNotes"
+        :data="{
+          uuid: 'unfilednotes',
+          title: '备忘录',
+          type: 'folder',
+          puuid: '',
+          noteCount: unfiledNotesCount,
+        } as Note"
+        :class="{ active: noteUuid === 'allnotes' }"
+        :disabled-route
+        @selected="onSelected('unfilednotes')"
       />
       <NoteListItem
         v-for="d in dataList"

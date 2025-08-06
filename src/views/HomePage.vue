@@ -35,7 +35,7 @@ import { errorHandler, ErrorType, withErrorHandling } from '@/utils/errorHandler
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
-const { addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid } = useNote()
+const { addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid, getUnfiledNotesCount } = useNote()
 const { isDesktop } = useDeviceType()
 const { showGlobalSearch } = useGlobalSearch()
 const { isExtensionEnabled, getExtensionModule } = useExtensions()
@@ -75,8 +75,9 @@ onUnmounted(() => {
 const page = ref()
 
 const dataList = ref<Note[]>([])
-const deletedNotes = ref<Note[]>([])
 const allNotesCount = ref(0)
+const unfiledNotesCount = ref(0)
+const deletedNotes = ref<Note[]>([])
 const presentingElement = ref()
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
@@ -103,17 +104,7 @@ const state = reactive({
   noteUuid: '',
 })
 
-const sortDataList = computed(() => {
-  return dataList.value.toSorted((a: Note, b: Note) => {
-    if (a.ftitle === 'default-folder' && b.ftitle !== 'default-folder') {
-      return -1
-    }
-    if (a.ftitle !== 'default-folder' && b.ftitle === 'default-folder') {
-      return 1
-    }
-    return b.lastdotime! - a.lastdotime!
-  })
-})
+const sortDataList = computed(() => dataList.value.toSorted((a: Note, b: Note) => b.lastdotime! - a.lastdotime!))
 
 async function refresh(ev: CustomEvent) {
   await init()
@@ -127,6 +118,12 @@ async function init() {
     ErrorType.DATABASE,
   )
 
+  const { data: _unfiledNotesCount } = await withErrorHandling(
+    () => getUnfiledNotesCount(),
+    ErrorType.DATABASE,
+  )
+  unfiledNotesCount.value = _unfiledNotesCount!
+
   if (treeError) {
     console.error('获取文件夹数据失败:', errorHandler.getUserFriendlyMessage(treeError))
   }
@@ -137,7 +134,7 @@ async function init() {
     for (const folder of treeData) {
       notesCount += folder.noteCount || 0
     }
-    allNotesCount.value = notesCount
+    allNotesCount.value = notesCount + unfiledNotesCount.value
   }
 
   // 获取已删除的备忘录
@@ -217,12 +214,14 @@ onMounted(() => {
       <NoteList
         :note-uuid="state.folerUuid"
         :data-list="sortDataList"
-        :all-notes-count="allNotesCount"
+        :all-notes-count
+        :unfiled-notes-count
         :deleted-note-count="deletedNotes.length"
         :presenting-element="presentingElement"
         :disabled-route="isDesktop"
-        show-delete
         show-all-notes
+        show-unfiled-notes
+        show-delete
         @refresh="init"
         @selected="(id: string) => state.folerUuid = id"
       />

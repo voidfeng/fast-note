@@ -29,7 +29,7 @@ const props = withDefaults(
 
 const route = useRoute()
 const router = useRouter()
-const { getFirstNote, addNote, getNote, updateNote, deleteNote } = useNote()
+const { addNote, getNote, updateNote, deleteNote } = useNote()
 const { getFileByUrl } = useFiles()
 const { getFileRefsByRefid, updateFileRef } = useFileRefs()
 const { isDesktop } = useDeviceType()
@@ -149,7 +149,6 @@ async function handleNoteSaving() {
     }
     else {
       // 新增笔记
-      const firstNote = await getFirstNote()
       const newNote = {
         title,
         smalltext,
@@ -157,7 +156,7 @@ async function handleNoteSaving() {
         newstime: time,
         lastdotime: time,
         type: 'note',
-        puuid: (route.query.puuid as string) || firstNote?.uuid,
+        puuid: (route.query.puuid as string) || '',
         uuid,
         isdeleted: 0,
       }

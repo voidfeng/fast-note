@@ -1,5 +1,4 @@
 import type { Note } from '@/types'
-import { nanoid } from 'nanoid'
 import { onUnmounted, ref } from 'vue'
 import { noteService } from '@/services/noteService'
 import { getTime } from '@/utils/date'
@@ -13,42 +12,13 @@ let initializing = false
 let isInitialized = false
 const onNoteUpdateArr: UpdateFn[] = []
 
-function notifyNoteUpdate(item: Note) {
-  onNoteUpdateArr.forEach((fn) => {
-    fn(item)
-  })
-}
-
 export function useNote() {
   const { db } = useDexie()
   const privateNoteUpdateArr: UpdateFn[] = []
-  const time = Math.floor(Date.now() / 1000)
   if (!isInitialized && !initializing) {
     initializing = true
     fetchNotes().then(() => {
-      if (notes.value.length === 0) {
-        const id1 = {
-          id: 1,
-          uuid: nanoid(12),
-          title: '备忘录',
-          ftitle: 'default-folder',
-          newstime: time,
-          newstext: '',
-          type: 'folder',
-          puuid: '',
-          lastdotime: time,
-          isdeleted: 0,
-        } as Note
-        addNote(id1).then(() => {
-          fetchNotes().then(() => {
-            isInitialized = true
-            notifyNoteUpdate(id1)
-          })
-        })
-      }
-      else {
-        isInitialized = true
-      }
+      isInitialized = true
       initializing = false
     })
   }
@@ -135,6 +105,9 @@ export function useNote() {
   async function getNotesByPUuid(puuid: string) {
     if (puuid === 'allnotes') {
       return db.value.note.where('type').equals('note').and(item => item.isdeleted !== 1).toArray()
+    }
+    else if (puuid === 'unfilednotes') {
+      return db.value.note.where('[type+puuid+isdeleted]').equals(['note', '', 0]).toArray()
     }
     else {
       return db.value.note.where('puuid').equals(puuid).and(item => item.isdeleted !== 1).toArray()
@@ -224,6 +197,13 @@ export function useNote() {
     return []
   }
 
+  function getUnfiledNotesCount() {
+    return db.value.note
+      .where('[type+puuid+isdeleted]')
+      .equals(['note', '', 0])
+      .count()
+  }
+
   async function searchNotesByPUuid(puuid: string, title: string, keyword: string) {
     // 搜索当前 puuid 下符合条件的笔记
     const directNotes = await db.value.note
@@ -280,5 +260,6 @@ export function useNote() {
     // 文件夹
     getAllFolders,
     getFolderTreeByPUuid,
+    getUnfiledNotesCount,
   }
 }
