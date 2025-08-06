@@ -6,17 +6,17 @@
 export interface Note {
   id?: number
   uuid: string
-  title?: string
-  smalltext?: string
-  ftitle?: string
-  newstime?: string | number
-  newstext?: string
-  type?: string
-  puuid?: string
-  lastdotime?: string | number
-  version?: number
-  isdeleted?: boolean | 0 | 1
-  islocked?: 0 | 1
+  title: string
+  smalltext: string
+  ftitle: string
+  newstime: number
+  newstext: string
+  type: string
+  puuid: string
+  lastdotime: number
+  version: number
+  isdeleted: boolean | 0 | 1
+  islocked: 0 | 1
   noteCount?: number
   children?: Note[]
   folderName?: string
@@ -35,10 +35,9 @@ export interface TypedFile {
   url?: string
   file?: File
   hash: string
-  id?: string
-  ids?: string
+  id?: number
   isdeleted?: 0 | 1
-  lastdotime?: string | number
+  lastdotime?: number
   user_id?: string
 }
 
@@ -47,7 +46,7 @@ export interface FileRef {
   id?: number
   hash: string
   refid: string
-  lastdotime?: string | number
+  lastdotime?: number
   isdeleted?: 0 | 1
   user_id?: string
 }

@@ -33,28 +33,32 @@ export function useFiles() {
   }
 
   function getFileByNoteId(noteId: number) {
-    return db.value?.file.where('ids').anyOf([noteId]).toArray()
+    // 通过 file_refs 表来查找与笔记关联的文件
+    return db.value?.file_refs.where('refid').equals(noteId.toString()).toArray().then(async (refs) => {
+      if (!refs || refs.length === 0)
+        return []
+      const files = []
+      for (const ref of refs) {
+        const file = await db.value?.file.get(ref.hash)
+        if (file)
+          files.push(file)
+      }
+      return files
+    })
   }
 
   async function deleteFileByNoteId(noteId: number) {
-    const files = await getFileByNoteId(noteId)
+    // 删除文件引用关系
+    await db.value?.file_refs.where('refid').equals(noteId.toString()).delete()
 
-    if (!files || files.length === 0)
-      return
+    // 检查是否有文件不再被任何笔记引用，如果是则删除文件
+    const allRefs = await db.value?.file_refs.toArray()
+    const referencedHashes = new Set(allRefs?.map(ref => ref.hash) || [])
 
-    for (const file of files) {
-      if (file.ids && file.ids.length === 1 && file.ids[0] === noteId) {
-        // 如果ids数组中只有这一个noteId，则删除整个文件记录
-        if (file.hash) {
-          await db.value?.file.delete(file.hash)
-        }
-      }
-      else if (file.ids) {
-        // 如果ids数组中还有其他id，则只移除这个noteId
-        const updatedIds = file.ids.filter(id => id !== noteId)
-        if (file.hash) {
-          await db.value?.file.update(file.hash, { ids: updatedIds })
-        }
+    const allFiles = await db.value?.file.toArray()
+    for (const file of allFiles || []) {
+      if (!referencedHashes.has(file.hash)) {
+        await db.value?.file.delete(file.hash)
       }
     }
   }

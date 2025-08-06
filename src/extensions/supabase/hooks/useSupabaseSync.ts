@@ -142,12 +142,8 @@ export function useSupabaseSync() {
       }
       else {
         // 比较时间戳
-        const supabaseTime = typeof supabaseNote.lastdotime === 'string'
-          ? new Date(supabaseNote.lastdotime).getTime()
-          : (supabaseNote.lastdotime || 0)
-        const localTime = typeof localNote.lastdotime === 'string'
-          ? new Date(localNote.lastdotime).getTime()
-          : (localNote.lastdotime || 0)
+        const supabaseTime = supabaseNote.lastdotime || 0
+        const localTime = localNote.lastdotime || 0
 
         if (supabaseTime > localTime) {
           // 云端更新，需要更新本地
@@ -166,12 +162,8 @@ export function useSupabaseSync() {
       }
       else {
         // 比较时间戳
-        const supabaseTime = typeof supabaseNote.lastdotime === 'string'
-          ? new Date(supabaseNote.lastdotime).getTime()
-          : (supabaseNote.lastdotime || 0)
-        const localTime = typeof localNote.lastdotime === 'string'
-          ? new Date(localNote.lastdotime).getTime()
-          : (localNote.lastdotime || 0)
+        const supabaseTime = supabaseNote.lastdotime || 0
+        const localTime = localNote.lastdotime || 0
 
         if (localTime > supabaseTime) {
           // 本地更新，需要上传
@@ -206,12 +198,8 @@ export function useSupabaseSync() {
         toInsert.push(supabaseFile)
       }
       else {
-        const supabaseTime = typeof supabaseFile.lastdotime === 'string'
-          ? new Date(supabaseFile.lastdotime).getTime()
-          : (supabaseFile.lastdotime || 0)
-        const localTime = typeof localFile.lastdotime === 'string'
-          ? new Date(localFile.lastdotime).getTime()
-          : (localFile.lastdotime || 0)
+        const supabaseTime = supabaseFile.lastdotime || 0
+        const localTime = localFile.lastdotime || 0
 
         if (supabaseTime > localTime) {
           toUpdate.push(supabaseFile)
@@ -227,12 +215,8 @@ export function useSupabaseSync() {
         toUpload.push(localFile)
       }
       else {
-        const supabaseTime = typeof supabaseFile.lastdotime === 'string'
-          ? new Date(supabaseFile.lastdotime).getTime()
-          : (supabaseFile.lastdotime || 0)
-        const localTime = typeof localFile.lastdotime === 'string'
-          ? new Date(localFile.lastdotime).getTime()
-          : (localFile.lastdotime || 0)
+        const supabaseTime = supabaseFile.lastdotime || 0
+        const localTime = localFile.lastdotime || 0
 
         if (localTime > supabaseTime) {
           toUpload.push(localFile)
@@ -267,12 +251,8 @@ export function useSupabaseSync() {
         toInsert.push(supabaseRef)
       }
       else {
-        const supabaseTime = typeof supabaseRef.lastdotime === 'string'
-          ? new Date(supabaseRef.lastdotime).getTime()
-          : (supabaseRef.lastdotime || 0)
-        const localTime = typeof localRef.lastdotime === 'string'
-          ? new Date(localRef.lastdotime).getTime()
-          : (localRef.lastdotime || 0)
+        const supabaseTime = supabaseRef.lastdotime || 0
+        const localTime = localRef.lastdotime || 0
 
         if (supabaseTime > localTime) {
           toUpdate.push(supabaseRef)
@@ -289,12 +269,8 @@ export function useSupabaseSync() {
         toUpload.push(localRef)
       }
       else {
-        const supabaseTime = typeof supabaseRef.lastdotime === 'string'
-          ? new Date(supabaseRef.lastdotime).getTime()
-          : (supabaseRef.lastdotime || 0)
-        const localTime = typeof localRef.lastdotime === 'string'
-          ? new Date(localRef.lastdotime).getTime()
-          : (localRef.lastdotime || 0)
+        const supabaseTime = supabaseRef.lastdotime || 0
+        const localTime = localRef.lastdotime || 0
 
         if (localTime > supabaseTime) {
           toUpload.push(localRef)
@@ -406,22 +382,28 @@ export function useSupabaseSync() {
   function convertSupabaseNoteToLocal(supabaseNote: any): Note {
     return {
       uuid: supabaseNote.uuid,
-      type: supabaseNote.type || 0,
-      puuid: supabaseNote.puuid || '',
       title: supabaseNote.title || '',
+      smalltext: supabaseNote.smalltext || '',
+      ftitle: supabaseNote.ftitle || '',
+      newstime: supabaseNote.newstime ? new Date(supabaseNote.newstime).getTime() : Date.now(),
       newstext: supabaseNote.newstext || '',
+      type: supabaseNote.type || 'note',
+      puuid: supabaseNote.puuid || '',
       lastdotime: supabaseNote.lastdotime ? new Date(supabaseNote.lastdotime).getTime() : Date.now(),
-      // 其他字段根据需要添加
+      version: supabaseNote.version || 1,
+      isdeleted: supabaseNote.isdeleted || 0,
+      islocked: supabaseNote.islocked || 0,
     }
   }
 
   function convertSupabaseFileToLocal(supabaseFile: any): TypedFile {
     return {
       hash: supabaseFile.hash,
-      id: supabaseFile.id || '',
+      id: typeof supabaseFile.id === 'number' ? supabaseFile.id : (supabaseFile.id ? Number.parseInt(supabaseFile.id, 10) : 0),
       url: supabaseFile.url || '',
-      ids: supabaseFile.ids || '',
       lastdotime: supabaseFile.lastdotime ? new Date(supabaseFile.lastdotime).getTime() : Date.now(),
+      isdeleted: supabaseFile.isdeleted || 0,
+      user_id: supabaseFile.user_id,
     }
   }
 
@@ -430,7 +412,7 @@ export function useSupabaseSync() {
       id: supabaseFileRef.id,
       hash: supabaseFileRef.hash,
       refid: supabaseFileRef.refid,
-      lastdotime: supabaseFileRef.lastdotime ? new Date(supabaseFileRef.lastdotime).getTime() : Date.now(),
+      lastdotime: supabaseFileRef.lastdotime || Date.now(),
     }
   }
 
@@ -438,11 +420,17 @@ export function useSupabaseSync() {
   function convertLocalNoteToSupabase(localNote: Note) {
     return {
       uuid: localNote.uuid,
+      title: localNote.title,
+      smalltext: localNote.smalltext,
+      ftitle: localNote.ftitle,
+      newstime: new Date(localNote.newstime).toISOString(),
+      newstext: localNote.newstext,
       type: localNote.type,
       puuid: localNote.puuid || null, // 确保空字符串转换为 null
-      title: localNote.title,
-      newstext: localNote.newstext,
-      lastdotime: new Date(localNote.lastdotime || Date.now()).toISOString(),
+      lastdotime: new Date(localNote.lastdotime).toISOString(),
+      version: localNote.version,
+      isdeleted: localNote.isdeleted,
+      islocked: localNote.islocked,
     }
   }
 
@@ -451,8 +439,9 @@ export function useSupabaseSync() {
       hash: localFile.hash,
       id: localFile.id,
       url: localFile.url,
-      ids: localFile.ids,
-      lastdotime: new Date(localFile.lastdotime || Date.now()).toISOString(),
+      lastdotime: localFile.lastdotime || Date.now(),
+      isdeleted: localFile.isdeleted || 0,
+      user_id: localFile.user_id,
     }
   }
 
