@@ -98,6 +98,40 @@ export function useSupabaseAuth() {
     }
   }
 
+  // 发送邮箱验证码
+  const sendEmailOTP = async (email: string) => {
+    try {
+      isLoading.value = true
+      await authApi.sendEmailOTP(email)
+      return { success: true }
+    }
+    catch (error: any) {
+      console.error('发送验证码失败:', error.message)
+      return { success: false, error: error.message }
+    }
+    finally {
+      isLoading.value = false
+    }
+  }
+
+  // 使用邮箱验证码登录
+  const loginWithEmailOTP = async (email: string, token: string) => {
+    try {
+      isLoading.value = true
+      const { user, session } = await authApi.verifyEmailOTP(email, token)
+      currentUser.value = user
+      currentSession.value = session
+      return { success: true, user, session }
+    }
+    catch (error: any) {
+      console.error('验证码登录失败:', error.message)
+      return { success: false, error: error.message }
+    }
+    finally {
+      isLoading.value = false
+    }
+  }
+
   // 初始化用户状态
   const initializeAuth = async () => {
     try {
@@ -158,6 +192,8 @@ export function useSupabaseAuth() {
     register,
     logout,
     resetPassword,
+    sendEmailOTP,
+    loginWithEmailOTP,
     initializeAuth,
   }
 }

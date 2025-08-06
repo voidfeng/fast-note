@@ -6,20 +6,22 @@
 export interface Note {
   id?: number
   uuid: string
-  title: string
-  smalltext: string
-  ftitle: string
-  newstime: number
-  newstext: string
-  type: 'folder' | 'note'
-  puuid: string
-  lastdotime: number
-  version: number
-  isdeleted: 0 | 1
+  title?: string
+  smalltext?: string
+  ftitle?: string
+  newstime?: string | number
+  newstext?: string
+  type?: string
+  puuid?: string
+  lastdotime?: string | number
+  version?: number
+  isdeleted?: boolean | 0 | 1
   islocked?: 0 | 1
   noteCount?: number
   children?: Note[]
   folderName?: string
+  user_id?: string
+  created_at?: string
 }
 
 // 笔记详情类型
@@ -32,11 +34,12 @@ export interface TypedFile {
   localId?: string
   url?: string
   file?: File
-  hash?: string
-  id?: number
-  ids?: number[]
+  hash: string
+  id?: string
+  ids?: string
   isdeleted?: 0 | 1
-  lastdotime?: number
+  lastdotime?: string | number
+  user_id?: string
 }
 
 // 文件引用类型
@@ -44,8 +47,9 @@ export interface FileRef {
   id?: number
   hash: string
   refid: string
-  lastdotime: number
-  isdeleted: 0 | 1
+  lastdotime?: string | number
+  isdeleted?: 0 | 1
+  user_id?: string
 }
 
 // 用户信息类型

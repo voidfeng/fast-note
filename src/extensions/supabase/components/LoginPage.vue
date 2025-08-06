@@ -22,10 +22,13 @@ import { useSupabaseAuth } from '../hooks/useSupabaseAuth'
 
 const router = useIonRouter()
 const { isDesktop } = useDeviceType()
-const { login, register, resetPassword } = useSupabaseAuth()
+const { login, register, resetPassword, sendEmailOTP, loginWithEmailOTP } = useSupabaseAuth()
 
 const isRegisterMode = ref(false)
+const isOTPMode = ref(false) // 验证码登录模式
 const loading = ref(false)
+const otpSending = ref(false) // 发送验证码状态
+const otpCountdown = ref(0) // 验证码倒计时
 const error = ref('')
 const message = ref('')
 
@@ -33,15 +36,80 @@ const formData = ref({
   email: '',
   password: '',
   confirmPassword: '',
+  otp: '', // 验证码
 })
 
 function toggleMode() {
   isRegisterMode.value = !isRegisterMode.value
+  isOTPMode.value = false
   error.value = ''
   message.value = ''
+  formData.value.otp = ''
+  otpCountdown.value = 0
+}
+
+function toggleOTPMode() {
+  isOTPMode.value = !isOTPMode.value
+  isRegisterMode.value = false
+  error.value = ''
+  message.value = ''
+  formData.value.password = ''
+  formData.value.confirmPassword = ''
+  formData.value.otp = ''
+  otpCountdown.value = 0
+}
+
+// 开始倒计时
+function startCountdown() {
+  otpCountdown.value = 60
+  const timer = setInterval(() => {
+    otpCountdown.value--
+    if (otpCountdown.value <= 0) {
+      clearInterval(timer)
+    }
+  }, 1000)
 }
 
 async function handleSubmit() {
+  // 验证码登录模式
+  if (isOTPMode.value) {
+    if (!formData.value.email || !formData.value.otp) {
+      const alert = await alertController.create({
+        header: '提示',
+        message: '请输入邮箱和验证码',
+        buttons: ['确定'],
+      })
+      alert.present()
+      return
+    }
+
+    const loadingInstance = await loadingController.create({
+      message: '正在验证登录...',
+    })
+    loadingInstance.present()
+
+    try {
+      error.value = ''
+      message.value = ''
+
+      const { success, error: otpError } = await loginWithEmailOTP(formData.value.email, formData.value.otp)
+      if (!success || otpError) {
+        throw new Error(otpError || '验证码登录失败')
+      }
+      // 登录成功，返回上一页
+      router.back()
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : '验证码登录失败'
+      console.error('验证码登录错误:', err)
+    }
+    finally {
+      loadingInstance.dismiss()
+    }
+    return
+  }
+
+  // 密码登录模式
   if (!formData.value.email || !formData.value.password) {
     const alert = await alertController.create({
       header: '提示',
@@ -96,6 +164,39 @@ async function handleSubmit() {
   }
 }
 
+// 发送验证码
+async function handleSendOTP() {
+  if (!formData.value.email) {
+    const alert = await alertController.create({
+      header: '提示',
+      message: '请先输入邮箱地址',
+      buttons: ['确定'],
+    })
+    alert.present()
+    return
+  }
+
+  otpSending.value = true
+  error.value = ''
+  message.value = ''
+
+  try {
+    const { success, error: otpError } = await sendEmailOTP(formData.value.email)
+    if (!success || otpError) {
+      throw new Error(otpError || '发送验证码失败')
+    }
+    message.value = '验证码已发送到您的邮箱，请查收'
+    startCountdown()
+  }
+  catch (err) {
+    error.value = err instanceof Error ? err.message : '发送验证码失败'
+    console.error('发送验证码错误:', err)
+  }
+  finally {
+    otpSending.value = false
+  }
+}
+
 async function handleForgotPassword() {
   if (!formData.value.email) {
     const alert = await alertController.create({
@@ -142,18 +243,28 @@ async function handleForgotPassword() {
       <div class="px4 flex items-center justify-center h-full">
         <IonList :class="{ 'w-full': !isDesktop, 'w-90': isDesktop }">
           <h1 class="text-center">
-            {{ isRegisterMode ? '创建账户' : '用户登录' }}
+            {{ isRegisterMode ? '创建账户' : (isOTPMode ? '验证码登录' : '用户登录') }}
           </h1>
 
           <div class="h4" />
 
           <div class="text-center">
             <IonButton
+              v-if="!isOTPMode"
               fill="clear"
               size="small"
               @click="toggleMode"
             >
               {{ isRegisterMode ? '已有账户？立即登录' : '还没有账户？立即注册' }}
+            </IonButton>
+
+            <IonButton
+              v-if="!isRegisterMode"
+              fill="clear"
+              size="small"
+              @click="toggleOTPMode"
+            >
+              {{ isOTPMode ? '使用密码登录' : '使用验证码登录' }}
             </IonButton>
           </div>
 
@@ -171,7 +282,9 @@ async function handleForgotPassword() {
 
           <div class="h4" />
 
+          <!-- 密码登录模式 -->
           <IonInput
+            v-if="!isOTPMode"
             v-model="formData.password"
             label="密码"
             label-placement="floating"
@@ -181,10 +294,10 @@ async function handleForgotPassword() {
             mode="md"
           />
 
-          <div v-if="isRegisterMode" class="h4" />
+          <div v-if="isRegisterMode && !isOTPMode" class="h4" />
 
           <IonInput
-            v-if="isRegisterMode"
+            v-if="isRegisterMode && !isOTPMode"
             v-model="formData.confirmPassword"
             label="确认密码"
             label-placement="floating"
@@ -193,6 +306,30 @@ async function handleForgotPassword() {
             type="password"
             mode="md"
           />
+
+          <!-- 验证码登录模式 -->
+          <div v-if="isOTPMode" class="h4" />
+
+          <div v-if="isOTPMode" class="flex gap-2">
+            <IonInput
+              v-model="formData.otp"
+              label="验证码"
+              label-placement="floating"
+              fill="outline"
+              placeholder="请输入6位验证码"
+              type="text"
+              mode="md"
+              maxlength="6"
+              class="flex-1"
+            />
+            <IonButton
+              :disabled="otpSending || otpCountdown > 0 || !formData.email"
+              @click="handleSendOTP"
+            >
+              <IonSpinner v-if="otpSending" name="crescent" class="mr-1" />
+              {{ otpSending ? '发送中' : (otpCountdown > 0 ? `${otpCountdown}s` : '发送验证码') }}
+            </IonButton>
+          </div>
 
           <div class="h4" />
 
@@ -212,7 +349,7 @@ async function handleForgotPassword() {
             @click="handleSubmit"
           >
             <IonSpinner v-if="loading" name="crescent" class="mr-2" />
-            {{ loading ? '处理中...' : (isRegisterMode ? '注册' : '登录') }}
+            {{ loading ? '处理中...' : (isRegisterMode ? '注册' : (isOTPMode ? '验证码登录' : '密码登录')) }}
           </IonButton>
 
           <div v-if="error" class="h4" />

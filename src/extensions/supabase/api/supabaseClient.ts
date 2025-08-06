@@ -73,4 +73,35 @@ export const authApi = {
   onAuthStateChange(callback: (event: string, session: any) => void) {
     return supabase.auth.onAuthStateChange(callback)
   },
+
+  // 发送邮箱验证码（OTP）
+  async sendEmailOTP(email: string) {
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true, // 如果用户不存在则创建
+      },
+    })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return data
+  },
+
+  // 使用邮箱验证码登录
+  async verifyEmailOTP(email: string, token: string) {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    })
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    return data
+  },
 }
