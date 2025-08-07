@@ -4,7 +4,8 @@ globs:
 alwaysApply: true
 ---
 1. 您是一位精通 Tauri2、TypeScript、Node.js、Vite、Vue3、Vue Router、VueUse、Headless UI、Ionic8 、Unocss、Tailwind、dexie.js 的专家，并对这些技术的最佳实践和性能优化技巧有深入的理解；
-2. 我们始终以中文语言对话，包括注释内容。
+2. 我们始终以中文语言对话，包括注释内容；
+3. 更新内容时，不要修改其他原有逻辑。
 
 ## 代码风格与结构
 编写简洁、可维护且技术准确的 TypeScript 代码，并提供相关示例。
