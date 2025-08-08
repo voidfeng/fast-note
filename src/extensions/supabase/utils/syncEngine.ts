@@ -85,6 +85,7 @@ export interface ExecuteSyncOptions<T> {
   sortFn?: (data: any[]) => any[]
   getDeleteId?: (item: T) => any
   tableName?: string
+  parallel?: boolean // 是否并行执行
 }
 
 export async function executeSyncOperations<T>(
@@ -96,40 +97,145 @@ export async function executeSyncOperations<T>(
   options?: ExecuteSyncOptions<T>,
 ): Promise<void> {
   const tableName = options?.tableName || 'data'
+  const parallel = options?.parallel ?? false
+
+  if (parallel) {
+    // 并行执行所有操作
+    const promises: Promise<any>[] = []
+
+    // 1. 更新本地数据
+    if (operations.toUpdate.length > 0) {
+      const localData = operations.toUpdate.map(item => converter.toLocal(item))
+      promises.push(table.bulkPut(localData))
+    }
+
+    // 2. 插入本地数据
+    if (operations.toInsert.length > 0) {
+      const localData = operations.toInsert.map(item => converter.toLocal(item))
+      promises.push(table.bulkAdd(localData))
+    }
+
+    // 3. 上传到云端
+    if (operations.toUpload.length > 0) {
+      const remoteData = operations.toUpload.map(item => converter.toRemote(item))
+      const sortedData = options?.sortFn ? options.sortFn(remoteData) : remoteData
+
+      promises.push(
+        uploadFn(sortedData).then(success => {
+          if (!success) {
+            console.error(`上传 ${operations.toUpload.length} 条${tableName}到云端失败`)
+          }
+        })
+      )
+    }
+
+    // 4. 处理硬删除
+    if (operations.toHardDelete.length > 0 && deleteFn && options?.getDeleteId) {
+      promises.push(
+        processHardDelete(
+          operations.toHardDelete,
+          table,
+          deleteFn,
+          options.getDeleteId,
+          tableName,
+        )
+      )
+    }
+
+    // 等待所有操作完成
+    await Promise.all(promises)
+  } else {
+    // 顺序执行（原有逻辑）
+    // 1. 更新本地数据
+    if (operations.toUpdate.length > 0) {
+      const localData = operations.toUpdate.map(item => converter.toLocal(item))
+      await table.bulkPut(localData)
+    }
+
+    // 2. 插入本地数据
+    if (operations.toInsert.length > 0) {
+      const localData = operations.toInsert.map(item => converter.toLocal(item))
+      await table.bulkAdd(localData)
+    }
+
+    // 3. 上传到云端
+    if (operations.toUpload.length > 0) {
+      const remoteData = operations.toUpload.map(item => converter.toRemote(item))
+      const sortedData = options?.sortFn ? options.sortFn(remoteData) : remoteData
+
+      const success = await uploadFn(sortedData)
+      if (!success) {
+        console.error(`上传 ${operations.toUpload.length} 条${tableName}到云端失败`)
+      }
+    }
+
+    // 4. 处理硬删除
+    if (operations.toHardDelete.length > 0 && deleteFn && options?.getDeleteId) {
+      await processHardDelete(
+        operations.toHardDelete,
+        table,
+        deleteFn,
+        options.getDeleteId,
+        tableName,
+      )
+    }
+  }
+}
+
+// 专门为文件同步设计的执行函数
+export async function executeFileSyncOperations<T>(
+  operations: SyncOperations<T>,
+  table: Dexie.Table<T, any>,
+  converter: DataConverter<T, any>,
+  uploadFn: (data: any[]) => Promise<boolean>,
+  uploadFilesFn: (files: any[]) => Promise<any>, // 文件上传函数
+  deleteFn?: (ids: any[]) => Promise<boolean>,
+  options?: ExecuteSyncOptions<T>,
+): Promise<void> {
+  const tableName = options?.tableName || 'files'
+
+  // 并行执行所有操作
+  const promises: Promise<any>[] = []
 
   // 1. 更新本地数据
   if (operations.toUpdate.length > 0) {
     const localData = operations.toUpdate.map(item => converter.toLocal(item))
-    await table.bulkPut(localData)
+    promises.push(table.bulkPut(localData))
   }
 
   // 2. 插入本地数据
   if (operations.toInsert.length > 0) {
     const localData = operations.toInsert.map(item => converter.toLocal(item))
-    await table.bulkAdd(localData)
+    promises.push(table.bulkAdd(localData))
   }
 
-  // 3. 上传到云端
+  // 3. 上传文件和元数据到云端
   if (operations.toUpload.length > 0) {
-    const remoteData = operations.toUpload.map(item => converter.toRemote(item))
-    const sortedData = options?.sortFn ? options.sortFn(remoteData) : remoteData
-
-    const success = await uploadFn(sortedData)
-    if (!success) {
-      console.error(`上传 ${operations.toUpload.length} 条${tableName}到云端失败`)
-    }
+    // 使用专门的文件上传函数，它会同时处理文件上传和元数据更新
+    promises.push(
+      uploadFilesFn(operations.toUpload).then(result => {
+        if (!result.success) {
+          console.error(`文件同步失败: 上传 ${result.uploaded} 个，失败 ${result.failed} 个`)
+        }
+      })
+    )
   }
 
   // 4. 处理硬删除
   if (operations.toHardDelete.length > 0 && deleteFn && options?.getDeleteId) {
-    await processHardDelete(
-      operations.toHardDelete,
-      table,
-      deleteFn,
-      options.getDeleteId,
-      tableName,
+    promises.push(
+      processHardDelete(
+        operations.toHardDelete,
+        table,
+        deleteFn,
+        options.getDeleteId,
+        tableName,
+      )
     )
   }
+
+  // 等待所有操作完成
+  await Promise.all(promises)
 }
 
 // 处理硬删除

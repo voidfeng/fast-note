@@ -3,13 +3,13 @@ import type { FileRef, Note, TypedFile } from '@/types'
 import { ref } from 'vue'
 import { useDexie } from '@/hooks/useDexie'
 import { sortNotesByHierarchy } from '../utils/noteHelpers'
-import { analyzeSyncOperations, executeSyncOperations, getLastSyncTime, saveLastSyncTime } from '../utils/syncEngine'
+import { analyzeSyncOperations, executeFileSyncOperations, executeSyncOperations, getLastSyncTime, saveLastSyncTime } from '../utils/syncEngine'
 import { useSupabaseAuth } from './useSupabaseAuth'
 import { useSupabaseData } from './useSupabaseData'
 
 export function useSupabaseSync() {
   const { db } = useDexie()
-  const { getUserNotes, getUserFiles, getUserFileRefs, upsertNotes, upsertFiles, upsertFileRefs, deleteNotes, deleteFiles, deleteFileRefs } = useSupabaseData()
+  const { getUserNotes, getUserFiles, getUserFileRefs, upsertNotes, upsertFiles, upsertFileRefs, deleteNotes, deleteFiles, deleteFileRefs, uploadAndUpsertFiles } = useSupabaseData()
   const { isLoggedIn } = useSupabaseAuth()
 
   // 同步状态
@@ -174,11 +174,14 @@ export function useSupabaseSync() {
 
       syncStatus.value.progress = 70
 
-      // 执行所有同步操作
+      // 执行同步操作（考虑外键约束）
       syncStatus.value.currentStep = `执行同步操作 (${totalOperations} 项)...`
 
-      // 执行笔记同步
-      await executeSyncOperations(
+      // 第一阶段：并行执行笔记和文件同步
+      const firstPhaseTasks: Promise<void>[] = []
+
+      // 1. 笔记同步任务
+      const noteSyncTask = executeSyncOperations(
         noteOperations,
         db.value.note,
         identityConverter<Note>(),
@@ -188,25 +191,40 @@ export function useSupabaseSync() {
           sortFn: sortNotesByHierarchy,
           getDeleteId: note => note.uuid,
           tableName: '笔记',
+          parallel: true, // 启用并行处理
         },
-      )
-      completedOperations += noteOperations.toUpdate.length + noteOperations.toInsert.length + noteOperations.toUpload.length
+      ).then(() => {
+        completedOperations += noteOperations.toUpdate.length + noteOperations.toInsert.length + noteOperations.toUpload.length
+        const progress = 70 + (completedOperations / totalOperations) * 20
+        syncStatus.value.progress = Math.min(progress, 90)
+      })
+      firstPhaseTasks.push(noteSyncTask)
 
-      // 执行文件同步
-      await executeSyncOperations(
+      // 2. 文件同步任务（使用专门的文件同步函数）
+      const fileSyncTask = executeFileSyncOperations(
         fileOperations,
         db.value.file,
         identityConverter<TypedFile>(),
         upsertFiles,
+        uploadAndUpsertFiles, // 使用新的上传函数
         deleteFiles,
         {
           getDeleteId: file => file.hash,
           tableName: '文件',
         },
-      )
-      completedOperations += fileOperations.toUpdate.length + fileOperations.toInsert.length + fileOperations.toUpload.length
+      ).then(() => {
+        completedOperations += fileOperations.toUpdate.length + fileOperations.toInsert.length + fileOperations.toUpload.length
+        const progress = 70 + (completedOperations / totalOperations) * 20
+        syncStatus.value.progress = Math.min(progress, 90)
+      })
+      firstPhaseTasks.push(fileSyncTask)
 
-      // 执行文件引用同步
+      // 等待第一阶段完成（笔记和文件）
+      await Promise.all(firstPhaseTasks)
+
+      // 第二阶段：文件引用同步（需要文件数据已存在）
+      syncStatus.value.currentStep = '同步文件引用数据...'
+      
       await executeSyncOperations(
         fileRefOperations,
         db.value.file_refs,
@@ -216,9 +234,12 @@ export function useSupabaseSync() {
         {
           getDeleteId: ref => ref.id,
           tableName: '文件引用',
+          parallel: true, // 启用并行处理
         },
       )
+      
       completedOperations += fileRefOperations.toUpdate.length + fileRefOperations.toInsert.length + fileRefOperations.toUpload.length
+      syncStatus.value.progress = 95
 
       // 保存最后同步时间
       await saveLastSyncTime(Date.now())
@@ -272,9 +293,18 @@ export function useSupabaseSync() {
       syncStatus.value.currentStep = '上传文件数据...'
       syncStatus.value.progress = 50
 
-      // 上传文件
+      // 并行上传文件和文件引用
+      const uploadTasks: Promise<any>[] = []
+
+      // 上传文件（包含文件内容和元数据）
       if (localFiles.length > 0) {
-        await upsertFiles(localFiles)
+        uploadTasks.push(
+          uploadAndUpsertFiles(localFiles).then((result) => {
+            if (!result.success && result.errors.size > 0) {
+              console.error('文件上传失败:', result.errors)
+            }
+          }),
+        )
       }
 
       syncStatus.value.currentStep = '上传文件引用数据...'
@@ -282,8 +312,11 @@ export function useSupabaseSync() {
 
       // 上传文件引用
       if (localFileRefs.length > 0) {
-        await upsertFileRefs(localFileRefs)
+        uploadTasks.push(upsertFileRefs(localFileRefs))
       }
+
+      // 等待所有上传任务完成
+      await Promise.all(uploadTasks)
 
       syncStatus.value.progress = 100
       syncStatus.value.currentStep = '上传完成'

@@ -1,7 +1,10 @@
 import type { FileRef, Note, TypedFile } from '@/types'
 import { supabase } from '../api/supabaseClient'
+import { uploadFilesToStorage } from '../utils/fileStorage'
+import { useSupabaseAuth } from './useSupabaseAuth'
 
 export function useSupabaseData() {
+  const { currentUser } = useSupabaseAuth()
   // 获取用户的笔记数据 - 支持增量同步
   async function getUserNotes(lastSyncTime?: number): Promise<Note[]> {
     try {
@@ -181,7 +184,7 @@ export function useSupabaseData() {
         }
       }
 
-      console.log(`成功更新 ${successCount}/${notes.length} 条笔记到云端`)
+      // 成功更新笔记到云端
       return successCount > 0
     }
     catch (error) {
@@ -190,19 +193,66 @@ export function useSupabaseData() {
     }
   }
 
-  // 批量插入或更新文件数据
+  // 批量插入或更新文件数据（包含文件上传）
   async function upsertFiles(files: any[]): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('file')
-        .upsert(files, { onConflict: 'hash' })
-
-      if (error) {
-        console.error('批量更新文件失败:', error)
+      // 检查用户是否已登录
+      if (!currentUser.value) {
+        console.error('用户未登录，无法更新文件')
         return false
       }
 
-      console.log(`成功更新 ${files.length} 条文件到云端`)
+      // 分离需要上传的文件和只需要更新元数据的文件
+      const filesToUpload = files.filter(f => f.file && f.file instanceof File)
+      const metadataOnly = files.filter(f => !f.file || !(f.file instanceof File))
+
+      // 并行执行文件上传和元数据更新
+      const uploadPromise = filesToUpload.length > 0
+        ? uploadFilesToStorage(filesToUpload, currentUser.value.id)
+        : Promise.resolve(new Map())
+
+      // 准备所有文件的元数据（包括已上传的和仅元数据的）
+      // 为仅元数据的文件添加 user_id
+      const allMetadata = metadataOnly.map(file => ({
+        ...file,
+        user_id: currentUser.value!.id, // 使用非空断言，因为我们已经检查过了
+      }))
+
+      // 等待文件上传完成
+      const uploadResults = await uploadPromise
+
+      // 处理上传结果，添加成功上传的文件元数据
+      if (uploadResults instanceof Map) {
+        for (const fileData of filesToUpload) {
+          const result = uploadResults.get(fileData.hash)
+          if (result?.success) {
+            // 移除 file 字段，只保留元数据
+            const { file, ...metadata } = fileData
+            allMetadata.push({
+              ...metadata,
+              url: result.url,
+              user_id: currentUser.value!.id, // 添加 user_id，使用非空断言
+            })
+          }
+          else {
+            console.error(`文件 ${fileData.hash} 上传失败:`, result?.error)
+          }
+        }
+      }
+
+      // 批量更新文件元数据到数据库
+      if (allMetadata.length > 0) {
+        const { error } = await supabase
+          .from('file')
+          .upsert(allMetadata, { onConflict: 'hash' })
+
+        if (error) {
+          console.error('批量更新文件元数据失败:', error)
+          return false
+        }
+      }
+
+      // 成功处理文件
       return true
     }
     catch (error) {
@@ -223,7 +273,7 @@ export function useSupabaseData() {
         return false
       }
 
-      console.log(`成功更新 ${fileRefs.length} 条文件引用到云端`)
+      // 成功更新文件引用到云端
       return true
     }
     catch (error) {
@@ -245,7 +295,7 @@ export function useSupabaseData() {
         return false
       }
 
-      console.log(`成功删除 ${noteUuids.length} 条笔记`)
+      // 成功删除笔记
       return true
     }
     catch (error) {
@@ -267,7 +317,7 @@ export function useSupabaseData() {
         return false
       }
 
-      console.log(`成功删除 ${fileHashes.length} 条文件`)
+      // 成功删除文件
       return true
     }
     catch (error) {
@@ -289,12 +339,89 @@ export function useSupabaseData() {
         return false
       }
 
-      console.log(`成功删除 ${refIds.length} 条文件引用`)
+      // 成功删除文件引用
       return true
     }
     catch (error) {
       console.error('删除文件引用异常:', error)
       return false
+    }
+  }
+
+  // 批量上传文件并更新元数据
+  async function uploadAndUpsertFiles(files: TypedFile[]): Promise<{
+    success: boolean
+    uploaded: number
+    failed: number
+    errors: Map<string, string>
+  }> {
+    if (!currentUser.value) {
+      return {
+        success: false,
+        uploaded: 0,
+        failed: files.length,
+        errors: new Map([['all', '用户未登录']]),
+      }
+    }
+
+    const errors = new Map<string, string>()
+    let uploaded = 0
+    let failed = 0
+
+    try {
+      // 上传文件到存储
+      const uploadResults = await uploadFilesToStorage(
+        files.filter(f => f.file instanceof File),
+        currentUser.value.id,
+      )
+
+      // 准备要更新的文件元数据
+      const successfulFiles: any[] = []
+
+      for (const file of files) {
+        const uploadResult = uploadResults.get(file.hash)
+
+        if (uploadResult?.success) {
+          uploaded++
+          const { file: fileObj, ...metadata } = file
+          successfulFiles.push({
+            ...metadata,
+            url: uploadResult.url,
+            user_id: currentUser.value.id,
+          })
+        }
+        else {
+          failed++
+          errors.set(file.hash, uploadResult?.error || '未知错误')
+        }
+      }
+
+      // 批量更新成功上传的文件元数据
+      if (successfulFiles.length > 0) {
+        const success = await upsertFiles(successfulFiles)
+        if (!success) {
+          // 如果元数据更新失败，将这些文件标记为失败
+          failed += successfulFiles.length
+          uploaded -= successfulFiles.length
+          errors.set('metadata', '元数据更新失败')
+        }
+      }
+
+      return {
+        success: failed === 0,
+        uploaded,
+        failed,
+        errors,
+      }
+    }
+    catch (error) {
+      console.error('文件上传和更新失败:', error)
+      return {
+        success: false,
+        uploaded: 0,
+        failed: files.length,
+        errors: new Map([['all', error instanceof Error ? error.message : '未知错误']]),
+      }
     }
   }
 
@@ -311,5 +438,6 @@ export function useSupabaseData() {
     deleteNotes,
     deleteFiles,
     deleteFileRefs,
+    uploadAndUpsertFiles,
   }
 }
