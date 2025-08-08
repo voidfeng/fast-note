@@ -87,20 +87,6 @@ export function useSync() {
       note.newstext = note.newstext.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
     })
 
-    // 合并 本地的备忘录 和 云端的备忘录: 移除本地
-    // const localDefaultFoler = localNotes.find(note => note.ftitle === 'default-folder')
-    // const cloudDefaultFoler = cloudNotes.d.find((note: Note) => note.ftitle === 'default-folder')
-    // if (localDefaultFoler && cloudDefaultFoler) {
-    //   const index = localNotes.indexOf(localDefaultFoler)
-    //   localNotes.splice(index, 1)
-    //   await deleteNote(localDefaultFoler.uuid)
-    //   const changePUuidNotes = await getNotesByPUuid(localDefaultFoler.uuid)
-    //   for (const note of changePUuidNotes) {
-    //     note.puuid = cloudDefaultFoler.uuid
-    //     await updateNote(note.uuid, note)
-    //   }
-    // }
-
     // 创建UUID映射以便快速查找
     const localNotesMap = new Map(localNotes.map(note => [note.uuid, note]))
     const cloudNotesMap = new Map((cloudNotes.d as Note[]).map(note => [note.uuid, note]))

@@ -77,7 +77,6 @@ watch(() => props.isOpen, (val) => {
         version: 1,
         lastdotime: Date.now(),
         smalltext: '',
-        ftitle: '',
         newstime: Date.now(),
         newstext: '',
       }]

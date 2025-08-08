@@ -13,9 +13,24 @@ export interface SyncStatus {
   lastSyncTime?: Date
 }
 
+// 同步配置
+interface SyncConfig {
+  lastSyncTime: number // 最后同步时间戳
+  deletionGracePeriod: number // 删除宽限期（毫秒）
+}
+
+// 笔记同步操作类型
+interface NoteSyncOperations {
+  toUpdate: Note[] // 需要更新到本地的
+  toInsert: Note[] // 需要插入到本地的
+  toUpload: Note[] // 需要上传到云端的
+  toDelete: Note[] // 需要软删除的
+  toHardDelete: Note[] // 需要硬删除的
+}
+
 export function useSupabaseSync() {
   const { db } = useDexie()
-  const { getUserNotes, getUserFiles, getUserFileRefs, upsertNotes, upsertFiles, upsertFileRefs } = useSupabaseData()
+  const { getUserNotes, getUserFiles, getUserFileRefs, upsertNotes, upsertFiles, upsertFileRefs, deleteNotes, deleteFiles, deleteFileRefs } = useSupabaseData()
   const { isLoggedIn } = useSupabaseAuth()
 
   // 同步状态
@@ -24,6 +39,297 @@ export function useSupabaseSync() {
     progress: 0,
     currentStep: '',
   })
+
+  // 同步配置
+  const syncConfig: SyncConfig = {
+    lastSyncTime: 0,
+    deletionGracePeriod: 30 * 24 * 60 * 60 * 1000, // 30天
+  }
+
+  // 获取本地存储的最后同步时间
+  async function getLastSyncTime(): Promise<number> {
+    try {
+      const stored = localStorage.getItem('supabase_last_sync_time')
+      return stored ? Number.parseInt(stored, 10) : 0
+    }
+    catch {
+      return 0
+    }
+  }
+
+  // 保存最后同步时间
+  async function saveLastSyncTime(timestamp: number): Promise<void> {
+    try {
+      localStorage.setItem('supabase_last_sync_time', timestamp.toString())
+      syncConfig.lastSyncTime = timestamp
+    }
+    catch (error) {
+      console.error('保存同步时间失败:', error)
+    }
+  }
+
+  // 增量同步笔记：只同步指定时间戳之后的数据
+  async function incrementalNoteSync(lastSyncTime: number = 0): Promise<boolean> {
+    if (!isLoggedIn.value || !db.value) {
+      console.error('用户未登录或数据库未初始化')
+      return false
+    }
+
+    try {
+      syncStatus.value = {
+        isSync: true,
+        progress: 0,
+        currentStep: '开始增量同步笔记...',
+      }
+
+      // 获取本地和云端在指定时间之后修改的笔记
+      const [supabaseNotes, localNotes] = await Promise.all([
+        getUserNotes(), // 这里需要支持时间戳参数的版本
+        db.value.note.where('lastdotime').above(lastSyncTime).toArray(),
+      ])
+
+      console.log(`增量同步: 云端 ${supabaseNotes.length} 条，本地 ${localNotes.length} 条笔记需要处理`)
+
+      const operations = await analyzeNoteSyncOperations(supabaseNotes, localNotes)
+      await executeNoteSyncOperations(operations)
+
+      // 更新最后同步时间为当前时间
+      await saveLastSyncTime(Date.now())
+
+      syncStatus.value.progress = 100
+      syncStatus.value.currentStep = '增量同步完成'
+      syncStatus.value.lastSyncTime = new Date()
+
+      return true
+    }
+    catch (error) {
+      console.error('增量同步失败:', error)
+      syncStatus.value.error = error instanceof Error ? error.message : '增量同步失败'
+      return false
+    }
+    finally {
+      setTimeout(() => {
+        syncStatus.value.isSync = false
+      }, 1000)
+    }
+  }
+
+  // 分析笔记同步操作（增强版，支持软删除）
+  async function analyzeNoteSyncOperations(supabaseNotes: Note[], localNotes: Note[]): Promise<NoteSyncOperations> {
+    const operations: NoteSyncOperations = {
+      toUpdate: [],
+      toInsert: [],
+      toUpload: [],
+      toDelete: [],
+      toHardDelete: [],
+    }
+
+    // 创建映射表便于查找
+    const localNotesMap = new Map(localNotes.map(note => [note.uuid, note]))
+    const supabaseNotesMap = new Map(supabaseNotes.map(note => [note.uuid, note]))
+
+    // 分析云端数据
+    for (const supabaseNote of supabaseNotes) {
+      const localNote = localNotesMap.get(supabaseNote.uuid)
+
+      if (!localNote) {
+        // 本地没有，需要插入
+        operations.toInsert.push(supabaseNote)
+      }
+      else {
+        // 比较时间戳，最后写入获胜策略
+        const supabaseTime = new Date(supabaseNote.lastdotime).getTime()
+        const localTime = localNote.lastdotime
+
+        if (supabaseTime > localTime) {
+          // 云端更新，需要更新本地
+          operations.toUpdate.push(supabaseNote)
+        }
+      }
+    }
+
+    // 分析本地数据
+    for (const localNote of localNotes) {
+      const supabaseNote = supabaseNotesMap.get(localNote.uuid)
+
+      if (!supabaseNote) {
+        // 云端没有，需要上传
+        operations.toUpload.push(localNote)
+      }
+      else {
+        // 比较时间戳
+        const supabaseTime = new Date(supabaseNote.lastdotime).getTime()
+        const localTime = localNote.lastdotime
+
+        if (localTime > supabaseTime) {
+          // 本地更新，需要上传
+          operations.toUpload.push(localNote)
+        }
+      }
+    }
+
+    // 检查需要硬删除的笔记（超过30天的软删除笔记）
+    const now = Date.now()
+    const allNotes = [...supabaseNotes, ...localNotes]
+
+    for (const note of allNotes) {
+      if (note.isdeleted === 1) {
+        const deletionTime = note.lastdotime
+        if (now - deletionTime > syncConfig.deletionGracePeriod) {
+          operations.toHardDelete.push(note)
+        }
+      }
+    }
+
+    console.log('笔记同步操作分析:', {
+      toUpdate: operations.toUpdate.length,
+      toInsert: operations.toInsert.length,
+      toUpload: operations.toUpload.length,
+      toDelete: operations.toDelete.length,
+      toHardDelete: operations.toHardDelete.length,
+    })
+
+    return operations
+  }
+
+  // 执行笔记同步操作（增强版）
+  async function executeNoteSyncOperations(operations: NoteSyncOperations): Promise<void> {
+    if (!db.value)
+      return
+
+    // 1. 更新本地数据
+    if (operations.toUpdate.length > 0) {
+      const localNotes = operations.toUpdate.map(convertSupabaseNoteToLocal)
+      await db.value.note.bulkPut(localNotes)
+      console.log(`更新了 ${localNotes.length} 条本地笔记`)
+    }
+
+    // 2. 插入本地数据
+    if (operations.toInsert.length > 0) {
+      const localNotes = operations.toInsert.map(convertSupabaseNoteToLocal)
+      await db.value.note.bulkAdd(localNotes)
+      console.log(`插入了 ${localNotes.length} 条本地笔记`)
+    }
+
+    // 3. 上传到云端（按层级顺序）
+    if (operations.toUpload.length > 0) {
+      const supabaseNotes = operations.toUpload.map(convertLocalNoteToSupabase)
+      const sortedNotes = sortNotesByHierarchy(supabaseNotes)
+
+      const success = await upsertNotes(sortedNotes)
+      if (success) {
+        console.log(`成功上传 ${operations.toUpload.length} 条笔记到云端`)
+      }
+      else {
+        console.error(`上传 ${operations.toUpload.length} 条笔记到云端失败`)
+      }
+    }
+
+    // 4. 处理硬删除
+    if (operations.toHardDelete.length > 0) {
+      await processHardDeleteNotes(operations.toHardDelete)
+    }
+  }
+
+  // 处理笔记硬删除
+  async function processHardDeleteNotes(notes: Note[]): Promise<void> {
+    if (!db.value)
+      return
+
+    try {
+      const uuids = notes.map(note => note.uuid)
+
+      // 从云端删除
+      const cloudDeleteSuccess = await deleteNotes(uuids)
+
+      // 从本地删除
+      await db.value.note.where('uuid').anyOf(uuids).delete()
+
+      if (cloudDeleteSuccess) {
+        console.log(`成功硬删除了 ${notes.length} 条笔记（本地和云端）`)
+      }
+      else {
+        console.log(`硬删除了 ${notes.length} 条本地笔记，但云端删除失败`)
+      }
+    }
+    catch (error) {
+      console.error('硬删除笔记失败:', error)
+    }
+  }
+
+  // 处理文件硬删除
+  async function processHardDeleteFiles(files: TypedFile[]): Promise<void> {
+    if (!db.value)
+      return
+
+    try {
+      const hashes = files.map(file => file.hash)
+
+      // 从云端删除
+      const cloudDeleteSuccess = await deleteFiles(hashes)
+
+      // 从本地删除
+      await db.value.file.where('hash').anyOf(hashes).delete()
+
+      if (cloudDeleteSuccess) {
+        console.log(`成功硬删除了 ${files.length} 条文件（本地和云端）`)
+      }
+      else {
+        console.log(`硬删除了 ${files.length} 条本地文件，但云端删除失败`)
+      }
+    }
+    catch (error) {
+      console.error('硬删除文件失败:', error)
+    }
+  }
+
+  // 处理文件引用硬删除
+  async function processHardDeleteFileRefs(fileRefs: FileRef[]): Promise<void> {
+    if (!db.value)
+      return
+
+    try {
+      // 过滤掉 id 为 undefined 的记录
+      const validIds = fileRefs
+        .map(ref => ref.id)
+        .filter((id): id is number => id !== undefined)
+
+      if (validIds.length === 0) {
+        console.log('没有有效的文件引用ID需要硬删除')
+        return
+      }
+
+      // 从云端删除
+      const cloudDeleteSuccess = await deleteFileRefs(validIds)
+
+      // 从本地删除
+      await db.value.file_refs.where('id').anyOf(validIds).delete()
+
+      if (cloudDeleteSuccess) {
+        console.log(`成功硬删除了 ${validIds.length} 条文件引用（本地和云端）`)
+      }
+      else {
+        console.log(`硬删除了 ${validIds.length} 条本地文件引用，但云端删除失败`)
+      }
+    }
+    catch (error) {
+      console.error('硬删除文件引用失败:', error)
+    }
+  }
+
+  // 智能同步：根据是否首次同步选择全量或增量
+  async function smartNoteSync(): Promise<boolean> {
+    const lastSyncTime = await getLastSyncTime()
+
+    if (lastSyncTime === 0) {
+      console.log('首次同步，执行双向全量同步')
+      return await bidirectionalSync()
+    }
+    else {
+      console.log(`增量同步，上次同步时间: ${new Date(lastSyncTime).toLocaleString()}`)
+      return await incrementalNoteSync(lastSyncTime)
+    }
+  }
 
   // 双向增量同步：基于时间戳比较
   async function bidirectionalSync(): Promise<boolean> {
@@ -142,7 +448,7 @@ export function useSupabaseSync() {
       }
       else {
         // 比较时间戳
-        const supabaseTime = supabaseNote.lastdotime
+        const supabaseTime = new Date(supabaseNote.lastdotime).getTime()
         const localTime = localNote.lastdotime
 
         if (supabaseTime > localTime) {
@@ -162,9 +468,9 @@ export function useSupabaseSync() {
       }
       else {
         // 比较时间戳
-        const supabaseTime = supabaseNote.lastdotime
+        const supabaseTime = new Date(supabaseNote.lastdotime).getTime()
         const localTime = localNote.lastdotime
-
+        console.log(supabaseTime, localTime)
         if (localTime > supabaseTime) {
           // 本地更新，需要上传
           toUpload.push(localNote)
@@ -186,6 +492,7 @@ export function useSupabaseSync() {
     const toUpdate: TypedFile[] = []
     const toInsert: TypedFile[] = []
     const toUpload: TypedFile[] = []
+    const toHardDelete: TypedFile[] = []
 
     const localFilesMap = new Map(localFiles.map(file => [file.hash, file]))
     const supabaseFilesMap = new Map(supabaseFiles.map(file => [file.hash, file]))
@@ -198,7 +505,7 @@ export function useSupabaseSync() {
         toInsert.push(supabaseFile)
       }
       else {
-        const supabaseTime = supabaseFile.lastdotime
+        const supabaseTime = new Date(supabaseFile.lastdotime).getTime()
         const localTime = localFile.lastdotime
 
         if (supabaseTime > localTime) {
@@ -215,7 +522,7 @@ export function useSupabaseSync() {
         toUpload.push(localFile)
       }
       else {
-        const supabaseTime = supabaseFile.lastdotime
+        const supabaseTime = new Date(supabaseFile.lastdotime).getTime()
         const localTime = localFile.lastdotime
 
         if (localTime > supabaseTime) {
@@ -224,13 +531,27 @@ export function useSupabaseSync() {
       }
     }
 
+    // 检查需要硬删除的文件（超过30天的软删除文件）
+    const now = Date.now()
+    const allFiles = [...supabaseFiles, ...localFiles]
+
+    for (const file of allFiles) {
+      if (file.isdeleted === 1) {
+        const deletionTime = file.lastdotime
+        if (now - deletionTime > syncConfig.deletionGracePeriod) {
+          toHardDelete.push(file)
+        }
+      }
+    }
+
     console.log('文件同步分析:', {
       toUpdate: toUpdate.length,
       toInsert: toInsert.length,
       toUpload: toUpload.length,
+      toHardDelete: toHardDelete.length,
     })
 
-    return { toUpdate, toInsert, toUpload }
+    return { toUpdate, toInsert, toUpload, toHardDelete }
   }
 
   // 文件引用数据同步分析
@@ -238,6 +559,7 @@ export function useSupabaseSync() {
     const toUpdate: FileRef[] = []
     const toInsert: FileRef[] = []
     const toUpload: FileRef[] = []
+    const toHardDelete: FileRef[] = []
 
     const localFileRefsMap = new Map(localFileRefs.map(ref => [`${ref.hash}-${ref.refid}`, ref]))
     const supabaseFileRefsMap = new Map(supabaseFileRefs.map(ref => [`${ref.hash}-${ref.refid}`, ref]))
@@ -251,7 +573,7 @@ export function useSupabaseSync() {
         toInsert.push(supabaseRef)
       }
       else {
-        const supabaseTime = supabaseRef.lastdotime
+        const supabaseTime = new Date(supabaseRef.lastdotime).getTime()
         const localTime = localRef.lastdotime
 
         if (supabaseTime > localTime) {
@@ -269,22 +591,26 @@ export function useSupabaseSync() {
         toUpload.push(localRef)
       }
       else {
-        const supabaseTime = supabaseRef.lastdotime
+        const supabaseTime = new Date(supabaseRef.lastdotime).getTime()
         const localTime = localRef.lastdotime
-
+        console.log(supabaseTime, localTime)
         if (localTime > supabaseTime) {
           toUpload.push(localRef)
         }
       }
     }
 
+    // 注意：文件引用通常没有软删除机制，但为了完整性，我们检查是否有需要清理的孤立引用
+    // 这里可以根据实际业务需求调整硬删除逻辑
+
     console.log('文件引用同步分析:', {
       toUpdate: toUpdate.length,
       toInsert: toInsert.length,
       toUpload: toUpload.length,
+      toHardDelete: toHardDelete.length,
     })
 
-    return { toUpdate, toInsert, toUpload }
+    return { toUpdate, toInsert, toUpload, toHardDelete }
   }
 
   // 全量同步：从本地 IndexedDB 同步到 Supabase
@@ -384,7 +710,6 @@ export function useSupabaseSync() {
       uuid: supabaseNote.uuid,
       title: supabaseNote.title || '',
       smalltext: supabaseNote.smalltext || '',
-      ftitle: supabaseNote.ftitle || '',
       newstime: supabaseNote.newstime ? new Date(supabaseNote.newstime).getTime() : Date.now(),
       newstext: supabaseNote.newstext || '',
       type: supabaseNote.type || 'note',
@@ -412,7 +737,7 @@ export function useSupabaseSync() {
       id: supabaseFileRef.id,
       hash: supabaseFileRef.hash,
       refid: supabaseFileRef.refid,
-      lastdotime: supabaseFileRef.lastdotime,
+      lastdotime: supabaseFileRef.lastdotime ? new Date(supabaseFileRef.lastdotime).getTime() : Date.now(),
     }
   }
 
@@ -422,7 +747,6 @@ export function useSupabaseSync() {
       uuid: localNote.uuid,
       title: localNote.title,
       smalltext: localNote.smalltext,
-      ftitle: localNote.ftitle,
       newstime: new Date(localNote.newstime).toISOString(),
       newstext: localNote.newstext,
       type: localNote.type,
@@ -523,7 +847,7 @@ export function useSupabaseSync() {
   }
 
   // 执行文件同步操作
-  async function executeFileSync(operations: { toUpdate: TypedFile[], toInsert: TypedFile[], toUpload: TypedFile[] }) {
+  async function executeFileSync(operations: { toUpdate: TypedFile[], toInsert: TypedFile[], toUpload: TypedFile[], toHardDelete: TypedFile[] }) {
     if (!db.value)
       return
 
@@ -552,10 +876,15 @@ export function useSupabaseSync() {
         console.error(`上传 ${operations.toUpload.length} 条文件到云端失败`)
       }
     }
+
+    // 处理硬删除
+    if (operations.toHardDelete.length > 0) {
+      await processHardDeleteFiles(operations.toHardDelete)
+    }
   }
 
   // 执行文件引用同步操作
-  async function executeFileRefSync(operations: { toUpdate: FileRef[], toInsert: FileRef[], toUpload: FileRef[] }) {
+  async function executeFileRefSync(operations: { toUpdate: FileRef[], toInsert: FileRef[], toUpload: FileRef[], toHardDelete: FileRef[] }) {
     if (!db.value)
       return
 
@@ -584,13 +913,22 @@ export function useSupabaseSync() {
         console.error(`上传 ${operations.toUpload.length} 条文件引用到云端失败`)
       }
     }
+
+    // 处理硬删除
+    if (operations.toHardDelete.length > 0) {
+      await processHardDeleteFileRefs(operations.toHardDelete)
+    }
   }
 
   return {
     syncStatus,
     bidirectionalSync,
     fullSyncToSupabase,
+    incrementalNoteSync,
+    smartNoteSync,
     getLocalDataStats,
     clearLocalData,
+    getLastSyncTime,
+    saveLastSyncTime,
   }
 }

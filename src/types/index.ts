@@ -8,7 +8,6 @@ export interface Note {
   uuid: string
   title: string
   smalltext: string
-  ftitle: string
   newstime: number
   newstext: string
   type: string

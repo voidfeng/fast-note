@@ -39,7 +39,6 @@ export class NoteService {
       uuid: nanoid(12),
       title: data.title || '无标题',
       smalltext: data.smalltext || '',
-      ftitle: data.ftitle || '',
       newstime: time,
       newstext: data.newstext || '',
       type: (data.type || NOTE_TYPES.NOTE) as 'note' | 'folder',

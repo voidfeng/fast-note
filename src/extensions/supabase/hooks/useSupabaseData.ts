@@ -2,14 +2,25 @@ import type { FileRef, Note, TypedFile } from '@/types'
 import { supabase } from '../api/supabaseClient'
 
 export function useSupabaseData() {
-  // 获取用户的笔记数据
-  async function getUserNotes(): Promise<Note[]> {
+  // 获取用户的笔记数据 - 支持增量同步
+  async function getUserNotes(lastSyncTime?: number): Promise<Note[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('note')
         .select('*')
         .order('lastdotime', { ascending: false })
-        .limit(50)
+
+      // 如果提供了时间戳，只获取该时间之后的数据
+      if (lastSyncTime && lastSyncTime > 0) {
+        const syncDate = new Date(lastSyncTime).toISOString()
+        query = query.gte('lastdotime', syncDate)
+      }
+      else {
+        // 全量同步时限制数量
+        query = query.limit(1000)
+      }
+
+      const { data, error } = await query
 
       if (error) {
         console.error('获取笔记数据失败:', error)
@@ -24,14 +35,25 @@ export function useSupabaseData() {
     }
   }
 
-  // 获取用户的文件数据
-  async function getUserFiles(): Promise<TypedFile[]> {
+  // 获取用户的文件数据 - 支持增量同步
+  async function getUserFiles(lastSyncTime?: number): Promise<TypedFile[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('file')
         .select('*')
         .order('lastdotime', { ascending: false })
-        .limit(50)
+
+      // 如果提供了时间戳，只获取该时间之后的数据
+      if (lastSyncTime && lastSyncTime > 0) {
+        const syncDate = new Date(lastSyncTime).toISOString()
+        query = query.gte('lastdotime', syncDate)
+      }
+      else {
+        // 全量同步时限制数量
+        query = query.limit(1000)
+      }
+
+      const { data, error } = await query
 
       if (error) {
         console.error('获取文件数据失败:', error)
@@ -46,14 +68,25 @@ export function useSupabaseData() {
     }
   }
 
-  // 获取用户的文件引用数据
-  async function getUserFileRefs(): Promise<FileRef[]> {
+  // 获取用户的文件引用数据 - 支持增量同步
+  async function getUserFileRefs(lastSyncTime?: number): Promise<FileRef[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('file_refs')
         .select('*')
         .order('lastdotime', { ascending: false })
-        .limit(50)
+
+      // 如果提供了时间戳，只获取该时间之后的数据
+      if (lastSyncTime && lastSyncTime > 0) {
+        const syncDate = new Date(lastSyncTime).toISOString()
+        query = query.gte('lastdotime', syncDate)
+      }
+      else {
+        // 全量同步时限制数量
+        query = query.limit(1000)
+      }
+
+      const { data, error } = await query
 
       if (error) {
         console.error('获取文件引用数据失败:', error)
@@ -199,6 +232,72 @@ export function useSupabaseData() {
     }
   }
 
+  // 硬删除笔记数据
+  async function deleteNotes(noteUuids: string[]): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('note')
+        .delete()
+        .in('uuid', noteUuids)
+
+      if (error) {
+        console.error('删除笔记失败:', error)
+        return false
+      }
+
+      console.log(`成功删除 ${noteUuids.length} 条笔记`)
+      return true
+    }
+    catch (error) {
+      console.error('删除笔记异常:', error)
+      return false
+    }
+  }
+
+  // 硬删除文件数据
+  async function deleteFiles(fileHashes: string[]): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('file')
+        .delete()
+        .in('hash', fileHashes)
+
+      if (error) {
+        console.error('删除文件失败:', error)
+        return false
+      }
+
+      console.log(`成功删除 ${fileHashes.length} 条文件`)
+      return true
+    }
+    catch (error) {
+      console.error('删除文件异常:', error)
+      return false
+    }
+  }
+
+  // 硬删除文件引用数据
+  async function deleteFileRefs(refIds: number[]): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('file_refs')
+        .delete()
+        .in('id', refIds)
+
+      if (error) {
+        console.error('删除文件引用失败:', error)
+        return false
+      }
+
+      console.log(`成功删除 ${refIds.length} 条文件引用`)
+      return true
+    }
+    catch (error) {
+      console.error('删除文件引用异常:', error)
+      return false
+    }
+  }
+
   return {
     getUserNotes,
     getUserFiles,
@@ -209,5 +308,8 @@ export function useSupabaseData() {
     upsertNotes,
     upsertFiles,
     upsertFileRefs,
+    deleteNotes,
+    deleteFiles,
+    deleteFileRefs,
   }
 }
