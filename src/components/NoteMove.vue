@@ -70,14 +70,14 @@ watch(() => props.isOpen, (val) => {
         uuid: '',
         title: '根目录',
         type: 'folder',
-        puuid: '',
+        puuid: null,
         children: [],
         isdeleted: 0,
         islocked: 0,
         version: 1,
-        lastdotime: Date.now(),
+        lastdotime: getTime(),
         smalltext: '',
-        newstime: Date.now(),
+        newstime: getTime(),
         newstext: '',
       }]
       noteListRef.value.setExpandedItems(findFoldersWithChildren(dataList.value))
@@ -91,7 +91,7 @@ watch(() => props.isOpen, (val) => {
 })
 
 async function onSelected(uuid: string) {
-  currentNote.value!.puuid = uuid
+  currentNote.value!.puuid = uuid || null
   currentNote.value!.lastdotime = getTime()
   await updateNote(currentNote.value!.uuid, toRaw(currentNote.value!))
   dismiss()

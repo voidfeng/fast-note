@@ -24,6 +24,7 @@ import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
+import { getTime } from '@/utils/date'
 
 const props = withDefaults(
   defineProps<{
@@ -74,13 +75,13 @@ const addButtons: AlertButton[] = [
   {
     text: '确认',
     handler: async (d) => {
-      const time = Math.floor(Date.now() / 1000)
+      const isoTime = getTime()
       await addNote({
         title: d.newFolderName,
-        newstime: time,
-        lastdotime: time,
+        newstime: getTime(),
+        lastdotime: isoTime,
         type: 'folder',
-        puuid: folderId.value,
+        puuid: folderId.value || null,
         uuid: nanoid(12),
         version: 1,
       })
@@ -101,7 +102,7 @@ const folders = computed(() => {
 })
 
 const notes = computed(() => {
-  return dataList.value.filter(d => d.type === 'note').sort((a, b) => b.lastdotime - a.lastdotime)
+  return dataList.value.filter(d => d.type === 'note').sort((a, b) => new Date(b.lastdotime).getTime() - new Date(a.lastdotime).getTime())
 })
 
 const defaultHref = computed(() => {

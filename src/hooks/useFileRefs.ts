@@ -47,7 +47,7 @@ export function useFileRefs() {
   }
 
   // 根据lastdotime获取全部引用
-  function getFileRefsByLastdotime(lastdotime: number) {
+  function getFileRefsByLastdotime(lastdotime: string) {
     return db.value?.file_refs.where('lastdotime').aboveOrEqual(lastdotime).toArray()
   }
 

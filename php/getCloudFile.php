@@ -50,8 +50,9 @@ try {
     $result = $empire->query($sql);
     $data = null;
 
-    // 数字字段列表
-    $numeric_fields = ['newstime', 'lastdotime', 'isdeleted', 'id']; // 添加id到数字字段
+    // 数字字段列表（newstime 和 lastdotime 将转换为 ISO 8601 字符串）
+    $numeric_fields = ['isdeleted', 'id']; // 添加id到数字字段
+    $iso_fields = ['newstime', 'lastdotime']; // 需要转换为 ISO 8601 的字段
 
     // 帝国CMS的查询结果需要循环获取 (虽然我们期望只有一条)
     // 使用关联数组模式，去除数字索引
@@ -64,6 +65,9 @@ try {
                 // 对数字字段进行类型转换
                 if (in_array($key, $numeric_fields) && is_numeric($value)) {
                     $clean_row[$key] = (int)$value; // 或者用 (float)$value 对于小数
+                } elseif (in_array($key, $iso_fields) && is_numeric($value)) {
+                    // 将时间戳转换为 ISO 8601 格式
+                    $clean_row[$key] = date('c', $value);
                 } else {
                      // 注释掉对 newstext 的特殊处理，因为我们没有选择这个字段
                     // if ($key == 'newstext') {

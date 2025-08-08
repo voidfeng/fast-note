@@ -31,6 +31,7 @@ import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useExtensions } from '@/hooks/useExtensions'
 import { useNote } from '@/hooks/useNote'
+import { getTime } from '@/utils/date'
 import { errorHandler, ErrorType, withErrorHandling } from '@/utils/errorHandler'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
@@ -84,13 +85,13 @@ const addButtons: AlertButton[] = [
   {
     text: '确认',
     handler: async (d) => {
-      const time = Math.floor(Date.now() / 1000)
+      const isoTime = getTime()
       await addNote({
         title: d.newFolderName,
-        newstime: time,
-        lastdotime: time,
+        newstime: getTime(),
+        lastdotime: isoTime,
         type: 'folder',
-        puuid: '',
+        puuid: null,
         uuid: nanoid(12),
         version: 1,
       })
@@ -104,7 +105,7 @@ const state = reactive({
   noteUuid: '',
 })
 
-const sortDataList = computed(() => dataList.value.toSorted((a: Note, b: Note) => b.lastdotime! - a.lastdotime!))
+const sortDataList = computed(() => dataList.value.toSorted((a: Note, b: Note) => new Date(b.lastdotime!).getTime() - new Date(a.lastdotime!).getTime()))
 
 async function refresh(ev: CustomEvent) {
   await init()
@@ -152,7 +153,7 @@ async function init() {
 }
 
 onUpdateNote((item) => {
-  if (item.puuid === '') {
+  if (item.puuid === null) {
     init()
   }
 })

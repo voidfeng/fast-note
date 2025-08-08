@@ -8,13 +8,13 @@ export interface Note {
   uuid: string
   title: string
   smalltext: string
-  newstime: number
+  newstime: string
   newstext: string
   type: string
-  puuid: string
-  lastdotime: number
+  puuid: string | null
+  lastdotime: string
   version: number
-  isdeleted: boolean | 0 | 1
+  isdeleted: 0 | 1
   islocked: 0 | 1
   noteCount?: number
   children?: Note[]
@@ -36,7 +36,7 @@ export interface TypedFile {
   hash: string
   id?: number
   isdeleted?: 0 | 1
-  lastdotime: number
+  lastdotime: string
   user_id?: string
 }
 
@@ -45,7 +45,7 @@ export interface FileRef {
   id?: number
   hash: string
   refid: string
-  lastdotime: number
+  lastdotime: string
   isdeleted?: 0 | 1
   user_id?: string
 }

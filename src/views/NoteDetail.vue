@@ -153,12 +153,13 @@ async function handleNoteSaving() {
         title,
         smalltext,
         newstext: content,
-        newstime: time,
+        newstime: getTime(),
         lastdotime: time,
         type: 'note',
-        puuid: (route.query.puuid as string) || '',
+        puuid: (!route.query.puuid || route.query.puuid === 'unfilednotes') ? null : route.query.puuid as string,
         uuid,
         isdeleted: 0,
+        islocked: 0,
       }
       await addNote(newNote)
       data.value = newNote

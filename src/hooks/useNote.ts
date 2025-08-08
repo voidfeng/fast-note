@@ -107,7 +107,7 @@ export function useNote() {
       return db.value.note.where('type').equals('note').and(item => item.isdeleted !== 1).toArray()
     }
     else if (puuid === 'unfilednotes') {
-      return db.value.note.where('[type+puuid+isdeleted]').equals(['note', '', 0]).toArray()
+      return db.value.note.where('type').equals('note').and(item => item.puuid === null && item.isdeleted !== 1).toArray()
     }
     else {
       return db.value.note.where('puuid').equals(puuid).and(item => item.isdeleted !== 1).toArray()
@@ -115,7 +115,7 @@ export function useNote() {
   }
 
   async function getDeletedNotes() {
-    const thirtyDaysAgo = getTime() - (30 * 24 * 60 * 60) // 30天前的时间戳
+    const thirtyDaysAgo = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString() // 30天前的ISO字符串
     return db.value.note.where('isdeleted').equals(1).and(item => item.lastdotime >= thirtyDaysAgo).toArray()
   }
 
@@ -145,11 +145,11 @@ export function useNote() {
     privateNoteUpdateArr.push(fn)
   }
 
-  function getNotesByLastdotime(lastdotime: number) {
+  function getNotesByLastdotime(lastdotime: string) {
     return db.value.note.where('lastdotime').aboveOrEqual(lastdotime).toArray()
   }
 
-  async function getFolderTreeByPUuid(puuid: string = '') {
+  async function getFolderTreeByPUuid(puuid: string | null = null) {
     /**
      * 先获取全部文件夹，再根据puuid获取对应的文件夹，再递归寻找每个文件夹的子文件夹
      */
@@ -199,8 +199,9 @@ export function useNote() {
 
   function getUnfiledNotesCount() {
     return db.value.note
-      .where('[type+puuid+isdeleted]')
-      .equals(['note', '', 0])
+      .where('type')
+      .equals('note')
+      .and(item => item.puuid === null && item.isdeleted !== 1)
       .count()
   }
 

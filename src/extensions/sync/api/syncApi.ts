@@ -5,7 +5,7 @@ import { login as apiLogin, request } from '@/api'
 export { apiLogin as login }
 
 // 获取云端备忘录列表
-export function getCloudNodesByLastdotime(lastdotime: number) {
+export function getCloudNodesByLastdotime(lastdotime: string) {
   return request({ url: `/e/eapi/DtUserpage.php?aid=1&lastdotime=${lastdotime}` })
 }
 
@@ -63,7 +63,7 @@ export function updateCloudNote(note: Note) {
 }
 
 // 获取云端引用表
-export function getCloudFileRefsByLastdotime(lastdotime: number) {
+export function getCloudFileRefsByLastdotime(lastdotime: string) {
   return request({ url: `/e/eapi/DtUserpage.php?aid=2&lastdotime=${lastdotime}` })
 }
 
@@ -137,7 +137,7 @@ export function deleteCloudFile(id: number) {
 }
 
 // 获取附件列表
-export function getCloudFilesByLastdotime(lastdotime: number) {
+export function getCloudFilesByLastdotime(lastdotime: string) {
   return request({ url: `/e/eapi/DtUserpage.php?aid=3&lastdotime=${lastdotime}` })
 }
 

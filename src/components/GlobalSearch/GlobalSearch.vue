@@ -8,9 +8,9 @@ import { useNote } from '@/hooks/useNote'
 import { useGlobalSearch } from './useGlobalSearch'
 
 const props = withDefaults(defineProps<{
-  puuid?: string
+  puuid?: string | null
 }>(), {
-  puuid: '',
+  puuid: null,
 })
 
 const { showGlobalSearch, showGlobalSearchState } = useGlobalSearch()
@@ -46,7 +46,7 @@ function onCancel() {
 
 const debouncedSearch = useDebounceFn(async (searchText: string) => {
   if (searchText) {
-    const _notes = await searchNotesByPUuid(props.puuid, '全部', searchText)
+    const _notes = await searchNotesByPUuid(props.puuid || '', '全部', searchText)
     // 处理搜索结果
     state.notes = _notes
   }

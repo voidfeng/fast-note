@@ -85,7 +85,7 @@ export function useSupabaseSync() {
       // 获取本地和云端在指定时间之后修改的笔记
       const [supabaseNotes, localNotes] = await Promise.all([
         getUserNotes(), // 这里需要支持时间戳参数的版本
-        db.value.note.where('lastdotime').above(lastSyncTime).toArray(),
+        db.value.note.where('lastdotime').above(new Date(lastSyncTime).toISOString()).toArray(),
       ])
 
       console.log(`增量同步: 云端 ${supabaseNotes.length} 条，本地 ${localNotes.length} 条笔记需要处理`)
@@ -139,7 +139,7 @@ export function useSupabaseSync() {
       else {
         // 比较时间戳，最后写入获胜策略
         const supabaseTime = new Date(supabaseNote.lastdotime).getTime()
-        const localTime = localNote.lastdotime
+        const localTime = new Date(localNote.lastdotime).getTime()
 
         if (supabaseTime > localTime) {
           // 云端更新，需要更新本地
@@ -159,7 +159,7 @@ export function useSupabaseSync() {
       else {
         // 比较时间戳
         const supabaseTime = new Date(supabaseNote.lastdotime).getTime()
-        const localTime = localNote.lastdotime
+        const localTime = new Date(localNote.lastdotime).getTime()
 
         if (localTime > supabaseTime) {
           // 本地更新，需要上传
@@ -174,7 +174,7 @@ export function useSupabaseSync() {
 
     for (const note of allNotes) {
       if (note.isdeleted === 1) {
-        const deletionTime = note.lastdotime
+        const deletionTime = new Date(note.lastdotime).getTime()
         if (now - deletionTime > syncConfig.deletionGracePeriod) {
           operations.toHardDelete.push(note)
         }
@@ -449,7 +449,7 @@ export function useSupabaseSync() {
       else {
         // 比较时间戳
         const supabaseTime = new Date(supabaseNote.lastdotime).getTime()
-        const localTime = localNote.lastdotime
+        const localTime = new Date(localNote.lastdotime).getTime()
 
         if (supabaseTime > localTime) {
           // 云端更新，需要更新本地
@@ -469,7 +469,7 @@ export function useSupabaseSync() {
       else {
         // 比较时间戳
         const supabaseTime = new Date(supabaseNote.lastdotime).getTime()
-        const localTime = localNote.lastdotime
+        const localTime = new Date(localNote.lastdotime).getTime()
         console.log(supabaseTime, localTime)
         if (localTime > supabaseTime) {
           // 本地更新，需要上传
@@ -506,7 +506,7 @@ export function useSupabaseSync() {
       }
       else {
         const supabaseTime = new Date(supabaseFile.lastdotime).getTime()
-        const localTime = localFile.lastdotime
+        const localTime = new Date(localFile.lastdotime).getTime()
 
         if (supabaseTime > localTime) {
           toUpdate.push(supabaseFile)
@@ -523,7 +523,7 @@ export function useSupabaseSync() {
       }
       else {
         const supabaseTime = new Date(supabaseFile.lastdotime).getTime()
-        const localTime = localFile.lastdotime
+        const localTime = new Date(localFile.lastdotime).getTime()
 
         if (localTime > supabaseTime) {
           toUpload.push(localFile)
@@ -537,7 +537,7 @@ export function useSupabaseSync() {
 
     for (const file of allFiles) {
       if (file.isdeleted === 1) {
-        const deletionTime = file.lastdotime
+        const deletionTime = new Date(file.lastdotime).getTime()
         if (now - deletionTime > syncConfig.deletionGracePeriod) {
           toHardDelete.push(file)
         }
@@ -574,7 +574,7 @@ export function useSupabaseSync() {
       }
       else {
         const supabaseTime = new Date(supabaseRef.lastdotime).getTime()
-        const localTime = localRef.lastdotime
+        const localTime = new Date(localRef.lastdotime).getTime()
 
         if (supabaseTime > localTime) {
           toUpdate.push(supabaseRef)
@@ -592,7 +592,7 @@ export function useSupabaseSync() {
       }
       else {
         const supabaseTime = new Date(supabaseRef.lastdotime).getTime()
-        const localTime = localRef.lastdotime
+        const localTime = new Date(localRef.lastdotime).getTime()
         console.log(supabaseTime, localTime)
         if (localTime > supabaseTime) {
           toUpload.push(localRef)
@@ -710,11 +710,11 @@ export function useSupabaseSync() {
       uuid: supabaseNote.uuid,
       title: supabaseNote.title || '',
       smalltext: supabaseNote.smalltext || '',
-      newstime: supabaseNote.newstime ? new Date(supabaseNote.newstime).getTime() : Date.now(),
+      newstime: supabaseNote.newstime || new Date().toISOString(),
       newstext: supabaseNote.newstext || '',
       type: supabaseNote.type || 'note',
-      puuid: supabaseNote.puuid || '',
-      lastdotime: supabaseNote.lastdotime ? new Date(supabaseNote.lastdotime).getTime() : Date.now(),
+      puuid: supabaseNote.puuid || null,
+      lastdotime: supabaseNote.lastdotime || new Date().toISOString(),
       version: supabaseNote.version || 1,
       isdeleted: supabaseNote.isdeleted || 0,
       islocked: supabaseNote.islocked || 0,
@@ -726,7 +726,7 @@ export function useSupabaseSync() {
       hash: supabaseFile.hash,
       id: typeof supabaseFile.id === 'number' ? supabaseFile.id : (supabaseFile.id ? Number.parseInt(supabaseFile.id, 10) : 0),
       url: supabaseFile.url || '',
-      lastdotime: supabaseFile.lastdotime ? new Date(supabaseFile.lastdotime).getTime() : Date.now(),
+      lastdotime: supabaseFile.lastdotime || new Date().toISOString(),
       isdeleted: supabaseFile.isdeleted || 0,
       user_id: supabaseFile.user_id,
     }
@@ -737,7 +737,7 @@ export function useSupabaseSync() {
       id: supabaseFileRef.id,
       hash: supabaseFileRef.hash,
       refid: supabaseFileRef.refid,
-      lastdotime: supabaseFileRef.lastdotime ? new Date(supabaseFileRef.lastdotime).getTime() : Date.now(),
+      lastdotime: supabaseFileRef.lastdotime || new Date().toISOString(),
     }
   }
 
@@ -747,11 +747,11 @@ export function useSupabaseSync() {
       uuid: localNote.uuid,
       title: localNote.title,
       smalltext: localNote.smalltext,
-      newstime: new Date(localNote.newstime).toISOString(),
+      newstime: localNote.newstime,
       newstext: localNote.newstext,
       type: localNote.type,
-      puuid: localNote.puuid || null, // 确保空字符串转换为 null
-      lastdotime: new Date(localNote.lastdotime).toISOString(),
+      puuid: localNote.puuid,
+      lastdotime: localNote.lastdotime,
       version: localNote.version,
       isdeleted: localNote.isdeleted,
       islocked: localNote.islocked,
@@ -774,7 +774,7 @@ export function useSupabaseSync() {
       id: localFileRef.id,
       hash: localFileRef.hash,
       refid: localFileRef.refid,
-      lastdotime: new Date(localFileRef.lastdotime).toISOString(),
+      lastdotime: localFileRef.lastdotime,
     }
   }
 

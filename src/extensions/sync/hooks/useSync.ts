@@ -16,7 +16,7 @@ import {
   updateCloudNote,
 } from '../api/syncApi'
 
-const defaultLastdotime = getTime('2010/01/01 00:00:00')
+const defaultLastdotime = JSON.stringify(getTime('2010/01/01 00:00:00'))
 const lastdotime = ref(JSON.parse(localStorage.lastdotime || defaultLastdotime))
 const fileRefLastdotime = ref(JSON.parse(localStorage.fileRefLastdotime || defaultLastdotime))
 
@@ -98,8 +98,8 @@ export function useSync() {
     }
 
     const operations: SyncOperation[] = []
-    const now = Math.floor(Date.now() / 1000) // 当前秒级时间戳
-    const thirtyDaysInSeconds = 30 * 24 * 60 * 60 // 30天的秒数
+    const now = Date.now()
+    const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000 // 30天的毫秒数
 
     // 处理本地笔记
     for (const note of localNotes) {
@@ -108,7 +108,7 @@ export function useSync() {
       // 处理本地已删除的笔记
       if (note.isdeleted === 1) {
         // 如果删除时间超过30天
-        if (now - note.lastdotime > thirtyDaysInSeconds) {
+        if (now - new Date(note.lastdotime).getTime() > thirtyDaysInMs) {
           // 从本地删除
           operations.push({ note, action: 'deleteLocal' })
 
@@ -149,16 +149,16 @@ export function useSync() {
         }
       }
       else {
-        // 本地和云端都存在 - 比较版本号
-        const localLastdotime = note.lastdotime
-        const cloudLastdotime = cloudNote.lastdotime
+        // 本地和云端都存在 - 比较时间戳
+        const localTime = new Date(note.lastdotime).getTime()
+        const cloudTime = new Date(cloudNote.lastdotime).getTime()
 
-        if (localLastdotime > cloudLastdotime) {
+        if (localTime > cloudTime) {
           // 本地版本更新，上传到云端
           const noteToUpdate = { ...note, id: cloudNote.id }
           operations.push({ note: noteToUpdate, action: 'update' })
         }
-        else if (localLastdotime < cloudLastdotime) {
+        else if (localTime < cloudTime) {
           // 云端版本更新，下载到本地
           operations.push({ note: cloudNote, action: 'download' })
         }
@@ -172,7 +172,7 @@ export function useSync() {
       // 处理云端已删除的笔记
       if (note.isdeleted === 1) {
         // 如果删除时间超过30天且本地存在，从本地删除
-        if (now - note.lastdotime > thirtyDaysInSeconds) {
+        if (now - new Date(note.lastdotime).getTime() > thirtyDaysInMs) {
           if (localNote) {
             operations.push({ note, action: 'deleteLocal' })
           }
@@ -214,7 +214,7 @@ export function useSync() {
     }
 
     // 按照lastdotime顺序排序所有操作
-    operations.sort((a, b) => a.note.lastdotime - b.note.lastdotime)
+    operations.sort((a, b) => new Date(a.note.lastdotime).getTime() - new Date(b.note.lastdotime).getTime())
     // 统计同步结果
     let uploadedCount = 0
     let downloadedCount = 0
@@ -254,7 +254,7 @@ export function useSync() {
         }
 
         // 每成功同步一条记录，就更新lastdotime
-        if (note.lastdotime > lastdotime.value) {
+        if (new Date(note.lastdotime).getTime() > new Date(lastdotime.value).getTime()) {
           lastdotime.value = note.lastdotime
           localStorage.lastdotime = JSON.stringify(note.lastdotime)
         }
@@ -318,7 +318,7 @@ export function useSync() {
           uploadCount++
         }
         // 如果云端存在此引用，比较lastdotime
-        else if (localRef.lastdotime > cloudRef.lastdotime) {
+        else if (new Date(localRef.lastdotime).getTime() > new Date(cloudRef.lastdotime).getTime()) {
           await updateCloudFileRef(localRef)
           uploadCount++
         }
@@ -333,12 +333,12 @@ export function useSync() {
       }
       else {
         // 本地和云端都存在，比较lastdotime
-        if (localRef.lastdotime > cloudRef.lastdotime) {
+        if (new Date(localRef.lastdotime).getTime() > new Date(cloudRef.lastdotime).getTime()) {
           // 本地版本更新，上传到云端
           await updateCloudFileRef({ ...localRef, id: cloudRef.id })
           uploadCount++
         }
-        else if (localRef.lastdotime < cloudRef.lastdotime) {
+        else if (new Date(localRef.lastdotime).getTime() < new Date(cloudRef.lastdotime).getTime()) {
           // 云端版本更新，更新本地
           await updateFileRef(cloudRef)
           downloadCount++
@@ -361,7 +361,7 @@ export function useSync() {
     // 3. 检查是否有引用为0的文件，如果为0则标记删除
     // 获取所有本地文件引用的hash列表
     const uniqueHashes = new Set([...localFileRefs.map(ref => ref.hash)])
-    const thirtyDaysAgo = getTime() - (30 * 24 * 60 * 60) // 30天前的时间戳
+    const thirtyDaysAgo = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString() // 30天前的ISO字符串
 
     for (const hash of uniqueHashes) {
       const refCount = await getRefCount(hash)
@@ -374,12 +374,12 @@ export function useSync() {
           const _now = getTime()
           const fileLastdotime = file.lastdotime
 
-          if (!file.isdeleted || fileLastdotime > thirtyDaysAgo) {
+          if (!file.isdeleted || new Date(fileLastdotime).getTime() > new Date(thirtyDaysAgo).getTime()) {
             // 标记为删除状态，但不实际删除
             // 注意: 这里需要实现file表的更新方法
             await updateFile({ ...file, isdeleted: 1, lastdotime: _now })
           }
-          else if (file.isdeleted && fileLastdotime <= thirtyDaysAgo) {
+          else if (file.isdeleted && new Date(fileLastdotime).getTime() <= new Date(thirtyDaysAgo).getTime()) {
             // 如果已经是删除状态且超过30天，则真正删除文件
             await deleteFile(hash)
             await deleteCloudFile(file.id!)

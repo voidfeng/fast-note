@@ -95,7 +95,7 @@ const config = ref<IConfig>({
   deleteNow: {
     label: '永久删除',
     handler: async () => {
-      note.value!.lastdotime = 0
+      note.value!.lastdotime = new Date(0).toISOString()
       await updateNote(note.value!.uuid, toRaw(note.value))
       emit('refresh')
       dismiss()

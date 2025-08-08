@@ -23,7 +23,7 @@ export class NoteService {
       return {
         title: APP_CONFIG.DEFAULT_FOLDER_NAME,
         type: NOTE_TYPES.FOLDER as 'folder',
-        puuid: '',
+        puuid: null,
         uuid: 'allnotes',
       } as Note
     }
@@ -39,10 +39,10 @@ export class NoteService {
       uuid: nanoid(12),
       title: data.title || '无标题',
       smalltext: data.smalltext || '',
-      newstime: time,
+      newstime: time, // newstime 也使用 ISO 8601 格式
       newstext: data.newstext || '',
       type: (data.type || NOTE_TYPES.NOTE) as 'note' | 'folder',
-      puuid: data.puuid || '',
+      puuid: data.puuid || null,
       lastdotime: time,
       version: 1,
       isdeleted: DELETE_STATUS.ACTIVE,
@@ -130,8 +130,8 @@ export class NoteService {
    * 获取已删除的笔记
    */
   async getDeletedNotes(): Promise<Note[]> {
-    const retentionDays = DB_CONFIG.DELETED_RETENTION_DAYS * 24 * 60 * 60
-    const cutoffTime = getTime() - retentionDays
+    const retentionDays = DB_CONFIG.DELETED_RETENTION_DAYS * 24 * 60 * 60 * 1000
+    const cutoffTime = new Date(Date.now() - retentionDays).toISOString()
     return this.db.value.note
       .where('isdeleted')
       .equals(DELETE_STATUS.DELETED)

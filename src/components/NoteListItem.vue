@@ -118,7 +118,7 @@ function onClick() {
         </span>
       </h2>
       <p class="text-gray-400! text-elipsis!">
-        {{ dayjs(data.newstime * 1000).calendar(null, calendarConfig) }}&nbsp;&nbsp;
+        {{ dayjs(data.newstime).calendar(null, calendarConfig) }}&nbsp;&nbsp;
         {{ data.smalltext }}
       </p>
       <p v-if="showParentFolder" class="text-gray-400!">

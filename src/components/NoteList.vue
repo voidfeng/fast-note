@@ -88,7 +88,7 @@ defineExpose({
           uuid: 'allnotes',
           title: '全部备忘录',
           type: 'folder',
-          puuid: '',
+          puuid: null,
           noteCount: allNotesCount,
         } as Note"
         :class="{ active: noteUuid === 'allnotes' }"
@@ -101,7 +101,7 @@ defineExpose({
           uuid: 'unfilednotes',
           title: '备忘录',
           type: 'folder',
-          puuid: '',
+          puuid: null,
           noteCount: unfiledNotesCount,
         } as Note"
         :class="{ active: noteUuid === 'allnotes' }"
@@ -124,7 +124,7 @@ defineExpose({
           uuid: 'deleted',
           title: '最近删除',
           type: 'folder',
-          puuid: '',
+          puuid: null,
           noteCount: deletedNoteCount,
         } as Note"
         :class="{ active: noteUuid === 'deleted' }"
