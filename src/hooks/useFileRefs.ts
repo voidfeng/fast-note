@@ -51,6 +51,11 @@ export function useFileRefs() {
     return db.value?.file_refs.where('lastdotime').aboveOrEqual(lastdotime).toArray()
   }
 
+  // 根据id删除文件引用
+  function deleteFileRef(id: string) {
+    return db.value?.file_refs.delete(id)
+  }
+
   return {
     addFileRef,
     updateFileRef,
@@ -61,5 +66,6 @@ export function useFileRefs() {
     getFileRefByHashAndRefid,
     getRefCount,
     getFileRefsByLastdotime,
+    deleteFileRef,
   }
 }
