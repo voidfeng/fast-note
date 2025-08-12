@@ -70,6 +70,7 @@ export function useSupabaseSync() {
     }
     catch (error) {
       console.error('Supabase同步失败', error)
+      throw error // 重新抛出错误，停止同步
     }
     finally {
       syncing.value = false
@@ -259,7 +260,7 @@ export function useSupabaseSync() {
       }
       catch (error) {
         console.error(`Supabase同步操作失败 (${action}):`, error)
-        // 继续处理下一条记录
+        throw error // 停止同步，不再继续处理后续记录
       }
     }
 
