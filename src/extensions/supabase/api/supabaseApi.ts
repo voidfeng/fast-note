@@ -20,21 +20,21 @@ export async function addSupabaseNote(note: Note) {
   const { data, error } = await supabase
     .from('note')
     .insert(note)
-    .select('id')
+    .select('uuid')
     .single()
 
   if (error) {
     throw new Error(`添加Supabase笔记失败: ${error.message}`)
   }
 
-  return data.id
+  return data.uuid
 }
 
 export async function updateSupabaseNote(note: Note) {
   const { error } = await supabase
     .from('note')
     .update(note)
-    .eq('id', note.id)
+    .eq('uuid', note.uuid)
 
   if (error) {
     throw new Error(`更新Supabase笔记失败: ${error.message}`)

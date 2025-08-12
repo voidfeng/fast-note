@@ -117,7 +117,7 @@ export function useSupabaseSync() {
 
           // 如果云端有此笔记，请求云端删除API接口
           if (cloudNote) {
-            const noteToUpdate = { ...note, id: cloudNote.id }
+            const noteToUpdate = { ...note }
             operations.push({ note: noteToUpdate, action: 'delete' })
           }
           continue
@@ -135,7 +135,7 @@ export function useSupabaseSync() {
         const cloudVersion = cloudNote.version || 0
 
         if (localVersion > cloudVersion) {
-          const noteToUpdate = { ...note, id: cloudNote.id }
+          const noteToUpdate = { ...note }
           operations.push({ note: noteToUpdate, action: 'update' })
         }
         continue
@@ -143,13 +143,8 @@ export function useSupabaseSync() {
 
       // 处理未删除的笔记（原有逻辑）
       if (!cloudNote) {
-        // 本地存在但云端为变更 - 更新或新增到云端
-        if (note.id) {
-          operations.push({ note, action: 'update' })
-        }
-        else {
-          operations.push({ note, action: 'upload' })
-        }
+        // 本地存在但云端不存在 - 上传到云端
+        operations.push({ note, action: 'upload' })
       }
       else {
         // 本地和云端都存在 - 比较时间戳
@@ -158,7 +153,7 @@ export function useSupabaseSync() {
 
         if (localTime > cloudTime) {
           // 本地版本更新，上传到云端
-          const noteToUpdate = { ...note, id: cloudNote.id }
+          const noteToUpdate = { ...note }
           operations.push({ note: noteToUpdate, action: 'update' })
         }
         else if (localTime < cloudTime) {
@@ -227,8 +222,8 @@ export function useSupabaseSync() {
     for (const { note, action } of operations) {
       try {
         if (action === 'upload') {
-          const id = await addSupabaseNote(note)
-          note.id = Number.parseInt(id as string)
+          const uuid = await addSupabaseNote(note)
+          // note.uuid 已经存在，不需要重新赋值
           await updateNote(note.uuid, note)
           uploadedCount++
         }
@@ -385,7 +380,9 @@ export function useSupabaseSync() {
           else if (file.isdeleted && new Date(fileLastdotime).getTime() <= new Date(thirtyDaysAgo).getTime()) {
             // 如果已经是删除状态且超过30天，则真正删除文件
             await deleteFile(hash)
-            await deleteSupabaseFile(file.id!)
+            if (file.id) {
+              await deleteSupabaseFile(file.id)
+            }
             deleteCount++
           }
         }
@@ -412,9 +409,11 @@ export function useSupabaseSync() {
         try {
           for (const file of localFiles || []) {
             file.id = await addSupabaseFile(file)
-            const cloudFile = await getSupabaseFile(file.id!)
-            file.url = cloudFile.d.url
-            await updateFile(file)
+            if (file.id) {
+              const cloudFile = await getSupabaseFile(file.id)
+              file.url = cloudFile.d.url
+              await updateFile(file)
+            }
             // 先获取引用表的相关引用，再更新备忘中的hash
             const fileRefs = await getFilesRefByHash(file.hash!)
             for (const ref of fileRefs || []) {
