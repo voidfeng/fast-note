@@ -223,13 +223,11 @@ export function useSupabaseSync() {
     for (const { note, action } of operations) {
       try {
         if (action === 'upload') {
-          const uuid = await addSupabaseNote(note)
-          // note.uuid 已经存在，不需要重新赋值
-          await updateNote(note.uuid, note)
+          await updateSupabaseNote(note)
           uploadedCount++
         }
         else if (action === 'update') {
-          await updateSupabaseNote(note)
+          await updateNote(note.uuid, note)
           uploadedCount++
         }
         else if (action === 'download') {
