@@ -63,8 +63,8 @@ export function useSupabaseSync() {
     try {
       await syncNote()
       // 已做了删除云端附件处理，同步文件无需处理
-      await syncFileRefs()
       await syncFile()
+      await syncFileRefs()
 
       triggerSyncedCallbacks()
     }
@@ -407,9 +407,9 @@ export function useSupabaseSync() {
       getLocalFiles().then(async (localFiles) => {
         try {
           for (const file of localFiles || []) {
-            file.id = await addSupabaseFile(file)
-            if (file.id) {
-              const cloudFile = await getSupabaseFile(file.id)
+            file.hash = await addSupabaseFile(file as any)
+            if (file.hash) {
+              const cloudFile = await getSupabaseFile(file.hash)
               file.url = cloudFile.d.url
               await updateFile(file)
             }
