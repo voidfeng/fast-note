@@ -101,28 +101,19 @@ export async function addSupabaseFile(file: TypedFile & { file: File }) {
   const { data, error } = await supabase
     .from('file')
     .insert({
+      hash: file.hash,
       path: uploadResult.path,
       name: file.file.name,
       size: file.file.size,
       type: file.file.type,
-      hash: file.hash,
+      user_id: currentUser.value!.id,
+      lastdotime: new Date().toISOString(),
+      isdeleted: 0,
     })
-    .select('id')
+    .select('hash')
     .single()
 
-  if (error) {
-    // 如果数据库插入失败，删除已上传的文件
-    const { deleteFilesFromStorage } = await import('../utils/fileStorage')
-    await deleteFilesFromStorage(currentUser.value!.id, [{
-      hash: file.hash,
-      mimeType: file.file.type,
-      fileName: file.file.name,
-    }])
-
-    throw new Error(`添加Supabase文件失败: ${error.message}`)
-  }
-
-  return data.id
+  return uploadResult.path
 }
 
 export async function getSupabaseFile(hash: string) {

@@ -401,29 +401,13 @@ export function useSupabaseSync() {
 
   // 上传本地保存的附件
   async function syncFile() {
-    const { updateFile, getLocalFiles } = useFiles()
-    const { getFilesRefByHash } = useFileRefs()
+    const { getLocalFiles } = useFiles()
     return new Promise((resolve, reject) => {
       getLocalFiles().then(async (localFiles) => {
         try {
           for (const file of localFiles || []) {
-            file.hash = await addSupabaseFile(file as any)
-            if (file.hash) {
-              const cloudFile = await getSupabaseFile(file.hash)
-              file.url = cloudFile.d.url
-              await updateFile(file)
-            }
-            // 先获取引用表的相关引用，再更新备忘中的hash
-            const fileRefs = await getFilesRefByHash(file.hash!)
-            for (const ref of fileRefs || []) {
-              // 获取备忘录，更新newstext
-              const note = await getNote(ref.refid)
-              if (note) {
-                const newNote = { ...note, newstext: note.newstext.replace(new RegExp(`${file.hash}`, 'g'), file.url!), lastdotime: getTime() }
-                await updateNote(note.uuid, newNote)
-                await updateSupabaseNote(newNote)
-              }
-            }
+            await addSupabaseFile(file as any)
+            // TODO: 上传完成后，更新本地path和lastdotime
           }
         }
         catch (error) {
