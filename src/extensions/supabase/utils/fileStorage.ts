@@ -99,7 +99,7 @@ export function generateStoragePath(userId: string, hash: string, mimeType: stri
   const extension = getFileExtension(mimeType, fileName)
 
   // 路径格式: userId/YYYY-MM/hash.extension
-  return `${userId}/${dateDir}/${hash}.${extension}`
+  return `/${userId}/${dateDir}/${hash}.${extension}`
 }
 
 /**
@@ -137,6 +137,7 @@ export async function uploadFileToStorage(
       }
     }
 
+    console.log('上传文件至Supabase Storage')
     // 上传文件
     const { error } = await supabase.storage
       .from(BUCKET_NAME)
@@ -158,14 +159,22 @@ export async function uploadFileToStorage(
       throw error
     }
 
-    // 获取文件URL
-    const { data: urlData } = supabase.storage
+    console.log('获取文件URL')
+
+    // 获取文件URL（使用签名URL，因为这是非公共bucket）
+    const { data: urlData, error: urlError } = await supabase.storage
       .from(BUCKET_NAME)
-      .getPublicUrl(path)
+      .createSignedUrl(path, 60 * 60 * 24) // 24小时有效期
+
+    if (urlError) {
+      throw urlError
+    }
+
+    console.log('签名url', urlData)
 
     return {
       success: true,
-      url: urlData.publicUrl,
+      url: urlData.signedUrl,
     }
   }
   catch (error) {

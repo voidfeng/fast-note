@@ -146,7 +146,7 @@ export function useNote() {
   }
 
   function getNotesByLastdotime(lastdotime: string) {
-    return db.value.note.where('lastdotime').aboveOrEqual(lastdotime).toArray()
+    return db.value.note.where('lastdotime').above(lastdotime).toArray()
   }
 
   async function getFolderTreeByPUuid(puuid: string | null = null) {
