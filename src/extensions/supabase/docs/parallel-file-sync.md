@@ -35,14 +35,14 @@ export async function uploadFileToStorage(
   file: File,
   userId: string,
   hash: string
-): Promise<{ success: boolean, url?: string, error?: string }>
+): Promise<{ success: boolean, path?: string, error?: string }>
 
 // 批量文件上传（并行）
 export async function uploadFilesToStorage(
   files: TypedFile[],
   userId: string,
   onProgress?: (completed: number, total: number) => void
-): Promise<Map<string, { success: boolean, url?: string, error?: string }>>
+): Promise<Map<string, { success: boolean, path?: string, error?: string }>>
 ```
 
 特点：

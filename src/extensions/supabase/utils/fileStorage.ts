@@ -113,7 +113,7 @@ export async function uploadFileToStorage(
   file: File,
   userId: string,
   hash: string,
-): Promise<{ success: boolean, url?: string, error?: string }> {
+): Promise<{ success: boolean, path?: string, error?: string }> {
   try {
     const path = generateStoragePath(userId, hash, file.type, file.name)
 
@@ -125,15 +125,11 @@ export async function uploadFileToStorage(
         search: hash,
       })
 
-    // 如果文件已存在，直接返回URL
+    // 如果文件已存在，直接返回path
     if (existingFile && existingFile.length > 0) {
-      const { data: urlData } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(path)
-
       return {
         success: true,
-        url: urlData.publicUrl,
+        path,
       }
     }
 
@@ -146,35 +142,18 @@ export async function uploadFileToStorage(
     if (error) {
       // 如果是文件已存在的错误，不算失败
       if (error.message.includes('already exists')) {
-        const { data: urlData } = supabase.storage
-          .from(BUCKET_NAME)
-          .getPublicUrl(path)
-
         return {
           success: true,
-          url: urlData.publicUrl,
+          path,
         }
       }
 
       throw error
     }
 
-    console.log('获取文件URL')
-
-    // 获取文件URL（使用签名URL，因为这是非公共bucket）
-    const { data: urlData, error: urlError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .createSignedUrl(path, 60 * 60 * 24) // 24小时有效期
-
-    if (urlError) {
-      throw urlError
-    }
-
-    console.log('签名url', urlData)
-
     return {
       success: true,
-      url: urlData.signedUrl,
+      path,
     }
   }
   catch (error) {
@@ -197,8 +176,8 @@ export async function uploadFilesToStorage(
   files: TypedFile[],
   userId: string,
   onProgress?: (completed: number, total: number) => void,
-): Promise<Map<string, { success: boolean, url?: string, error?: string }>> {
-  const results = new Map<string, { success: boolean, url?: string, error?: string }>()
+): Promise<Map<string, { success: boolean, path?: string, error?: string }>> {
+  const results = new Map<string, { success: boolean, path?: string, error?: string }>()
   let completed = 0
 
   // 并行上传所有文件

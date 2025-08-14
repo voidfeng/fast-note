@@ -230,7 +230,7 @@ export function useSupabaseData() {
             const { file, ...metadata } = fileData
             allMetadata.push({
               ...metadata,
-              url: result.url,
+              path: result.path,
               user_id: currentUser.value!.id, // 添加 user_id，使用非空断言
             })
           }
@@ -386,7 +386,7 @@ export function useSupabaseData() {
           const { file: fileObj, ...metadata } = file
           successfulFiles.push({
             ...metadata,
-            url: uploadResult.url,
+            path: uploadResult.path,
             user_id: currentUser.value.id,
           })
         }

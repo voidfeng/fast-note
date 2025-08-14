@@ -101,7 +101,8 @@ export async function addSupabaseFile(file: TypedFile & { file: File }) {
   const { data, error } = await supabase
     .from('file')
     .insert({
-      url: uploadResult.url,
+      path: uploadResult.path,
+      name: file.file.name,
       size: file.file.size,
       type: file.file.type,
       hash: file.hash,
