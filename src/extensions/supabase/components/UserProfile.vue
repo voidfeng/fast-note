@@ -383,8 +383,8 @@ onMounted(async () => {
                 <IonLabel>
                   <h3>{{ file.id || '未命名文件' }}</h3>
                   <p>Hash: {{ file.hash.substring(0, 20) }}...</p>
-                  <p v-if="file.url">
-                    <a :href="file.url" target="_blank">查看文件</a>
+                  <p v-if="file.path">
+                    <a :href="file.path" target="_blank">查看文件</a>
                   </p>
                   <p><small>{{ formatDate(file.lastdotime) }}</small></p>
                 </IonLabel>

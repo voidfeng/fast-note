@@ -81,10 +81,10 @@ async function loadExtension(id: string): Promise<boolean> {
     let module
 
     // 根据扩展ID动态导入对应模块
-    if (id === 'sync') {
-      module = await import('../extensions/sync')
-    }
-    else if (id === 'supabase') {
+    // if (id === 'sync') {
+    //   module = await import('../extensions/sync')
+    // }
+    if (id === 'supabase') {
       module = await import('../extensions/supabase')
     }
     else {

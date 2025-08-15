@@ -87,8 +87,8 @@ export function useEditor(uuid: string) {
       const fileUrl = URL.createObjectURL(fileObj.file)
       return { url: fileUrl, type: fileType }
     }
-    else if (fileObj.url) {
-      return { url: fileObj.url, type: 'unknown' }
+    else if (fileObj.path) {
+      return { url: fileObj.path, type: 'unknown' }
     }
 
     throw new Error('文件格式不支持')
@@ -107,7 +107,7 @@ export function useEditor(uuid: string) {
       const existFileRef = await getFileRefByHashAndRefid(hash, uuid)
 
       if (existFile) {
-        editor.value.commands.setFileUpload({ url: existFile?.url || hash })
+        editor.value.commands.setFileUpload({ url: existFile?.path || hash })
       }
       else {
         await addFile({
