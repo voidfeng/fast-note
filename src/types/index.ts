@@ -31,7 +31,7 @@ export interface NoteDetail extends Note {
 // 文件类型
 export interface TypedFile {
   localId?: string
-  url?: string
+  path?: string
   file?: File
   hash: string
   id?: number

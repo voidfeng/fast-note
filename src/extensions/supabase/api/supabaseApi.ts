@@ -68,6 +68,10 @@ export async function addSupabaseFileRef(fileRef: FileRef) {
     .single()
 
   if (error) {
+    console.log(error)
+    if (error.message.includes('duplicate key value violates unique constraint')) {
+      return true
+    }
     throw new Error(`添加Supabase文件引用失败: ${error.message}`)
   }
 
@@ -116,9 +120,23 @@ export async function addSupabaseFile(file: TypedFile & { file: File }) {
   return uploadResult.path
 }
 
+export async function getSupabaseFilesByLastdotime(lastdotime: string) {
+  const { data, error } = await supabase
+    .from('file')
+    .select('*')
+    .gt('lastdotime', lastdotime)
+    .order('lastdotime', { ascending: true })
+
+  if (error) {
+    throw new Error(`获取Supabase文件失败: ${error.message}`)
+  }
+
+  return { d: data || [] }
+}
+
 export async function getSupabaseFile(hash: string) {
   const { data, error } = await supabase
-    .from('files')
+    .from('file')
     .select('*')
     .eq('hash', hash)
     .single()

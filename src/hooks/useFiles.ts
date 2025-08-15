@@ -76,6 +76,10 @@ export function useFiles() {
     return db.value?.file.where('id').equals(0).toArray()
   }
 
+  function getFilesByLastdotime(lastdotime: string) {
+    return db.value?.file.where('lastdotime').above(lastdotime).toArray()
+  }
+
   return {
     addFile,
     getFile,
@@ -86,5 +90,6 @@ export function useFiles() {
     deleteFileByNoteId,
     updateFile,
     getLocalFiles,
+    getFilesByLastdotime,
   }
 }

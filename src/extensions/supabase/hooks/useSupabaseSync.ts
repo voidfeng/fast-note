@@ -1,4 +1,4 @@
-import type { FileRef, Note } from '@/types'
+import type { FileRef, Note, TypedFile } from '@/types'
 import { ref } from 'vue'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
@@ -11,6 +11,7 @@ import {
   deleteSupabaseFile,
   getSupabaseFile,
   getSupabaseFileRefsByLastdotime,
+  getSupabaseFilesByLastdotime,
   getSupabaseNodesByLastdotime,
   updateSupabaseFileRef,
   updateSupabaseNote,
@@ -18,6 +19,7 @@ import {
 
 const defaultLastdotime = JSON.stringify(getTime('2010/01/01 00:00:00'))
 const lastdotime = ref(JSON.parse(localStorage.supabaseLastdotime || defaultLastdotime))
+const fileLastdotime = ref(JSON.parse(localStorage.supabaseFileLastdotime || defaultLastdotime))
 const fileRefLastdotime = ref(JSON.parse(localStorage.supabaseFileRefLastdotime || defaultLastdotime))
 
 const syncing = ref(false)
@@ -309,9 +311,10 @@ export function useSupabaseSync() {
       if (localRef.isdeleted === 1) {
         // 如果云端不存在此引用，需要上传
         if (!cloudRef) {
-          const id = await addSupabaseFileRef(localRef)
-          localRef.id = Number.parseInt(id as string)
-          await updateFileRef(localRef)
+          // const id =
+          await addSupabaseFileRef(localRef)
+          // localRef.id = Number.parseInt(id as string)
+          // await updateFileRef(localRef)
           uploadCount++
         }
         // 如果云端存在此引用，比较lastdotime
@@ -399,26 +402,201 @@ export function useSupabaseSync() {
     })
   }
 
-  // 上传本地保存的附件
+  // 同步文件
   async function syncFile() {
-    const { getLocalFiles } = useFiles()
-    return new Promise((resolve, reject) => {
-      getLocalFiles().then(async (localFiles) => {
-        try {
-          for (const file of localFiles || []) {
-            await addSupabaseFile(file as any)
-            // TODO: 上传完成后，更新本地path和lastdotime
+    const { getFilesByLastdotime, getFileByHash, updateFile, deleteFile, addFile } = useFiles()
+
+    console.log('开始同步文件，fileLastdotime:', fileLastdotime.value)
+
+    // 获取本地变更数据
+    const localFiles = await getFilesByLastdotime(fileLastdotime.value)
+    console.log('本地文件变更:', localFiles)
+
+    // 获取云端变更数据
+    const cloudFiles = await getSupabaseFilesByLastdotime(fileLastdotime.value)
+    console.log('云端文件变更:', cloudFiles)
+
+    // 创建hash映射以便快速查找
+    const localFilesMap = new Map(localFiles?.map(file => [file.hash, file]) || [])
+    const cloudFilesMap = new Map((cloudFiles.d as TypedFile[]).map(file => [file.hash, file]))
+
+    // 准备需要处理的操作列表
+    interface FileSyncOperation {
+      file: TypedFile
+      action: 'upload' | 'update' | 'download' | 'delete' | 'deleteLocal'
+    }
+
+    const operations: FileSyncOperation[] = []
+    const now = Date.now()
+    const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000 // 30天的毫秒数
+
+    // 处理本地文件
+    for (const file of localFiles || []) {
+      const cloudFile = cloudFilesMap.get(file.hash)
+
+      // 处理本地已删除的文件
+      if (file.isdeleted === 1) {
+        // 如果删除时间超过30天
+        if (now - new Date(file.lastdotime).getTime() > thirtyDaysInMs) {
+          // 从本地删除
+          operations.push({ file, action: 'deleteLocal' })
+
+          // 如果云端有此文件，请求云端删除
+          if (cloudFile && cloudFile.id) {
+            operations.push({ file, action: 'delete' })
           }
+          continue
         }
-        catch (error) {
-          console.error('上传本地保存的附件到Supabase失败', error)
-          reject(error)
+
+        // 如果删除时间在30天内
+        // 如果云端不存在此文件，上传删除状态到云端
+        if (!cloudFile) {
+          // 注意：这里需要实现上传删除状态的逻辑
+          continue
         }
-        finally {
-          resolve(true)
+
+        // 如果本地版本更新，上传删除状态到云端
+        const localTime = new Date(file.lastdotime).getTime()
+        const cloudTime = new Date(cloudFile.lastdotime).getTime()
+
+        if (localTime > cloudTime) {
+          operations.push({ file, action: 'update' })
         }
-      })
+        continue
+      }
+
+      // 处理未删除的文件
+      if (!cloudFile) {
+        // 本地存在但云端不存在 - 上传到云端
+        operations.push({ file, action: 'upload' })
+      }
+      else {
+        // 本地和云端都存在 - 比较时间戳
+        const localTime = new Date(file.lastdotime).getTime()
+        const cloudTime = new Date(cloudFile.lastdotime).getTime()
+
+        if (localTime > cloudTime) {
+          // 本地版本更新，上传到云端
+          operations.push({ file, action: 'update' })
+        }
+        else if (localTime < cloudTime) {
+          // 云端版本更新，下载到本地
+          operations.push({ file: cloudFile, action: 'download' })
+        }
+      }
+    }
+
+    // 处理云端文件
+    for (const file of cloudFiles.d as TypedFile[]) {
+      const localFile = localFilesMap.get(file.hash)
+
+      // 处理云端已删除的文件
+      if (file.isdeleted === 1) {
+        // 如果删除时间超过30天且本地存在，从本地删除
+        if (now - new Date(file.lastdotime).getTime() > thirtyDaysInMs) {
+          if (localFile) {
+            operations.push({ file, action: 'deleteLocal' })
+          }
+          continue
+        }
+
+        // 如果本地不存在且删除时间在30天内，下载到本地
+        if (!localFile) {
+          operations.push({ file, action: 'download' })
+          continue
+        }
+
+        // 如果本地存在，比较时间戳
+        const localTime = new Date(localFile.lastdotime).getTime()
+        const cloudTime = new Date(file.lastdotime).getTime()
+
+        if (cloudTime > localTime) {
+          // 云端版本更新，更新本地数据
+          operations.push({ file, action: 'download' })
+        }
+        continue
+      }
+
+      // 处理未删除的文件
+      if (!localFile) {
+        // 云端存在但本地不存在 - 下载到本地
+        operations.push({ file, action: 'download' })
+      }
+    }
+
+    // 按照lastdotime顺序排序所有操作
+    operations.sort((a, b) => new Date(a.file.lastdotime).getTime() - new Date(b.file.lastdotime).getTime())
+
+    // 统计同步结果
+    let uploadedCount = 0
+    let downloadedCount = 0
+    let deletedCount = 0
+
+    // 按顺序执行所有同步操作
+    for (const { file, action } of operations) {
+      try {
+        if (action === 'upload') {
+          // 对于本地文件，需要上传到云端存储
+          if (file.id === 0) {
+            // 这是本地文件，需要上传
+            const uploadedPath = await addSupabaseFile(file as any)
+            const updatedFile: TypedFile = {
+              ...file,
+              path: uploadedPath,
+              id: 1, // 标记为已上传
+            }
+            await updateFile(updatedFile)
+          }
+          uploadedCount++
+        }
+        else if (action === 'update') {
+          // 更新云端文件信息
+          uploadedCount++
+        }
+        else if (action === 'download') {
+          const localFile = await getFileByHash(file.hash)
+          if (localFile) {
+            await updateFile(file)
+          }
+          else {
+            await addFile(file)
+          }
+          downloadedCount++
+        }
+        else if (action === 'deleteLocal') {
+          await deleteFile(file.hash)
+          deletedCount++
+        }
+        else if (action === 'delete') {
+          if (file.id) {
+            await deleteSupabaseFile(file.id)
+          }
+          deletedCount++
+        }
+
+        // 每成功同步一条记录，就更新fileLastdotime
+        if (new Date(file.lastdotime).getTime() > new Date(fileLastdotime.value).getTime()) {
+          fileLastdotime.value = file.lastdotime
+          localStorage.supabaseFileLastdotime = JSON.stringify(file.lastdotime)
+        }
+      }
+      catch (error) {
+        console.error(`文件同步操作失败 (${action}):`, error)
+        throw error // 停止同步，不再继续处理后续记录
+      }
+    }
+
+    console.log('文件同步完成', {
+      uploaded: uploadedCount,
+      downloaded: downloadedCount,
+      deleted: deletedCount,
     })
+
+    return {
+      uploaded: uploadedCount,
+      downloaded: downloadedCount,
+      deleted: deletedCount,
+    }
   }
 
   // 同步状态对象
