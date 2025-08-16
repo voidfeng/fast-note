@@ -2,7 +2,9 @@ import type { RouteRecordRaw } from 'vue-router'
 import { routeManager } from '@/router/routeManager'
 import LoginPage from './components/LoginPage.vue'
 import UserProfile from './components/UserProfile.vue'
-import { useSupabaseAuth } from './hooks/useSupabaseAuth'
+import { useAuth } from './hooks/useAuth'
+import { useData } from './hooks/useData'
+import { useSync } from './hooks/useSync'
 
 // 定义扩展路由
 const supabaseRoutes: RouteRecordRaw[] = [
@@ -16,22 +18,28 @@ const supabaseRoutes: RouteRecordRaw[] = [
     name: 'AuthLogin',
     component: LoginPage,
   },
-  // {
-  //   path: '/supabase/otp-test',
-  //   name: 'SupabaseOTPTest',
-  //   component: OTPLoginTest,
-  // },
 ]
 
 // 导出 Supabase 扩展的所有组件和钩子函数
 export {
   LoginPage,
+  useAuth,
+  useData,
   UserProfile,
-  useSupabaseAuth,
+  useSync,
 }
 
 // 默认导出
 export default {
+  // 组件导出，供 ExtensionRenderer 使用
+  LoginPage,
+  UserProfile,
+
+  // Hook 导出
+  useAuth,
+  useData,
+  useSync,
+
   // 安装扩展
   install(app: any) {
     console.log('安装 Supabase 用户认证扩展')

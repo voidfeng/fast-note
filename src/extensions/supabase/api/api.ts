@@ -1,7 +1,7 @@
 import type { FileRef, Note, TypedFile } from '@/types'
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth'
+import { useAuth } from '../hooks/useAuth'
 import { uploadFileToStorage } from '../utils/fileStorage'
-import { supabase } from './supabaseClient'
+import { supabase } from './client'
 
 // 笔记相关 API
 export async function getSupabaseNodesByLastdotime(lastdotime: string) {
@@ -93,7 +93,7 @@ export async function updateSupabaseFileRef(fileRef: FileRef) {
 
 // 文件相关 API
 export async function addSupabaseFile(file: TypedFile & { file: File }) {
-  const { currentUser } = useSupabaseAuth()
+  const { currentUser } = useAuth()
 
   // 上传文件到存储
   const uploadResult = await uploadFileToStorage(file.file, currentUser.value!.id, file.hash)

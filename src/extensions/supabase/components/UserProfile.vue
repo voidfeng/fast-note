@@ -38,15 +38,15 @@ import {
 } from 'ionicons/icons'
 import { computed, onMounted, ref } from 'vue'
 import { useDexie } from '@/hooks/useDexie'
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth'
-import { useSupabaseData } from '../hooks/useSupabaseData'
-import { useSupabaseSync } from '../hooks/useSupabaseSync'
+import { useAuth } from '../hooks/useAuth'
+import { useData } from '../hooks/useData'
+import { useSync } from '../hooks/useSync'
 
 const router = useIonRouter()
 const { init: initDexie } = useDexie()
-const { currentUser, logout, isLoggedIn } = useSupabaseAuth()
-const { getUserNotes, getUserFiles, getUserFileRefs } = useSupabaseData()
-const { syncStatus, bidirectionalSync, getLocalDataStats, clearLocalData } = useSupabaseSync()
+const { currentUser, logout, isLoggedIn } = useAuth()
+const { getUserNotes, getUserFiles, getUserFileRefs } = useData()
+const { syncStatus, bidirectionalSync, getLocalDataStats, clearLocalData } = useSync()
 
 // 弹窗控制
 const isModalOpen = ref(false)

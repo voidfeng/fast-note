@@ -1,10 +1,14 @@
 import type { FileRef, Note, TypedFile } from '@/types'
-import { supabase } from '../api/supabaseClient'
+import { supabase } from '../api/client'
 import { uploadFilesToStorage } from '../utils/fileStorage'
-import { useSupabaseAuth } from './useSupabaseAuth'
+import { useAuth } from './useAuth'
 
-export function useSupabaseData() {
-  const { currentUser } = useSupabaseAuth()
+/**
+ * 数据操作 Hook
+ * 提供笔记、文件、文件引用的 CRUD 操作
+ */
+export function useData() {
+  const { currentUser } = useAuth()
   // 获取用户的笔记数据 - 支持增量同步
   async function getUserNotes(lastSyncTime?: number): Promise<Note[]> {
     try {

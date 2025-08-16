@@ -1,6 +1,6 @@
 import type { Session, User } from '@supabase/supabase-js'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { authApi } from '../api/supabaseClient'
+import { authApi } from '../api/client'
 
 // 用户信息接口
 interface UserInfo {
@@ -16,7 +16,7 @@ const currentUser = ref<User | null>(null)
 const currentSession = ref<Session | null>(null)
 const isLoading = ref(true)
 
-export function useSupabaseAuth() {
+export function useAuth() {
   // 计算属性
   const isLoggedIn = computed(() => !!currentUser.value)
   const userInfo = computed<UserInfo | null>(() => {

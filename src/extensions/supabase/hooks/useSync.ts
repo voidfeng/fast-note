@@ -15,7 +15,7 @@ import {
   getSupabaseNodesByLastdotime,
   updateSupabaseFileRef,
   updateSupabaseNote,
-} from '../api/supabaseApi'
+} from '../api/api'
 
 const defaultLastdotime = JSON.stringify(getTime('2010/01/01 00:00:00'))
 const lastdotime = ref(JSON.parse(localStorage.supabaseLastdotime || defaultLastdotime))
@@ -26,7 +26,7 @@ const syncing = ref(false)
 // 存储同步成功的回调函数
 const syncSyncedCallbacks: Array<(result?: any) => void> = []
 
-export function useSupabaseSync() {
+export function useSync() {
   const { getNotesByLastdotime, getNote, addNote, deleteNote, updateNote } = useNote()
 
   // 注册同步成功的回调函数

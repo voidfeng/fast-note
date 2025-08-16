@@ -18,11 +18,11 @@ import {
 } from '@ionic/vue'
 import { ref } from 'vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth'
+import { useAuth } from '../hooks/useAuth'
 
 const router = useIonRouter()
 const { isDesktop } = useDeviceType()
-const { login, register, resetPassword, sendEmailOTP, loginWithEmailOTP } = useSupabaseAuth()
+const { login, register, resetPassword, sendEmailOTP, loginWithEmailOTP } = useAuth()
 
 const isRegisterMode = ref(false)
 const isOTPMode = ref(false) // 验证码登录模式

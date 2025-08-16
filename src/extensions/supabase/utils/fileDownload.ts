@@ -1,4 +1,4 @@
-import { supabase } from '../api/supabaseClient'
+import { supabase } from '../api/client'
 
 /**
  * 从 Supabase 私有存储桶下载文件

@@ -1,5 +1,5 @@
 import type { TypedFile } from '@/types'
-import { supabase } from '../api/supabaseClient'
+import { supabase } from '../api/client'
 
 // Storage bucket 名称
 const BUCKET_NAME = 'note-private-files'
