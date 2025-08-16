@@ -38,14 +38,6 @@ import { LoginPage } from '@/extensions/supabase'
 </template>
 ```
 
-### OTPLoginTest.vue
-
-验证码登录功能的测试页面，用于验证邮箱验证码登录是否正常工作。
-
-#### 访问路径
-
-- `/supabase/otp-test`
-
 ### UserProfile.vue
 
 用户信息展示组件。
@@ -109,7 +101,6 @@ else {
 
 - `/supabase/login` - 登录页面
 - `/auth/login` - 登录页面（别名）
-- `/supabase/otp-test` - 验证码登录测试页面
 
 ## 环境配置
 

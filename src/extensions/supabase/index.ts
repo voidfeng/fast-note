@@ -1,7 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { routeManager } from '@/router/routeManager'
 import LoginPage from './components/LoginPage.vue'
-import OTPLoginTest from './components/OTPLoginTest.vue'
 import UserProfile from './components/UserProfile.vue'
 import { useSupabaseAuth } from './hooks/useSupabaseAuth'
 
@@ -17,17 +16,16 @@ const supabaseRoutes: RouteRecordRaw[] = [
     name: 'AuthLogin',
     component: LoginPage,
   },
-  {
-    path: '/supabase/otp-test',
-    name: 'SupabaseOTPTest',
-    component: OTPLoginTest,
-  },
+  // {
+  //   path: '/supabase/otp-test',
+  //   name: 'SupabaseOTPTest',
+  //   component: OTPLoginTest,
+  // },
 ]
 
 // 导出 Supabase 扩展的所有组件和钩子函数
 export {
   LoginPage,
-  OTPLoginTest,
   UserProfile,
   useSupabaseAuth,
 }

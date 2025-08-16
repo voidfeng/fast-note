@@ -11,13 +11,6 @@ const state = reactive<ExtensionState>({
 // 可用扩展的元数据
 const availableExtensions = [
   {
-    id: 'sync',
-    name: '数据同步',
-    description: '在设备间同步您的笔记和文件',
-    icon: 'cloud-upload-outline',
-    path: '/src/extensions/sync', // 扩展的路径
-  },
-  {
     id: 'supabase',
     name: 'Supabase 用户认证',
     description: '基于 Supabase 的用户登录、注册和认证管理',
@@ -81,9 +74,6 @@ async function loadExtension(id: string): Promise<boolean> {
     let module
 
     // 根据扩展ID动态导入对应模块
-    // if (id === 'sync') {
-    //   module = await import('../extensions/sync')
-    // }
     if (id === 'supabase') {
       module = await import('../extensions/supabase')
     }
