@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { NodeViewWrapper } from '@tiptap/vue-3'
 import { computed, onMounted, ref, watch } from 'vue'
+import { useFiles } from '@/hooks/useFiles'
 
 interface Extension {
   name: string
@@ -209,15 +210,32 @@ async function loadFileWithExtension(url: string) {
   hasError.value = false
   imageUrl.value = url // 默认使用原始URL
 
+  const { getFileByHash } = useFiles()
+
+  // 优先从 indexedDB 获取文件
+  try {
+    const fileData = await getFileByHash(url)
+    if (fileData && fileData.file instanceof File) {
+      // 如果获取到 File 对象，直接创建 blob URL
+      const blobUrl = URL.createObjectURL(fileData.file)
+      imageUrl.value = blobUrl
+      fileTypeName.value = fileData.file.type || '' // 使用 File 的 MIME 类型
+      isLoading.value = false
+      return
+    }
+  }
+  catch (indexedDBError) {
+    console.warn('从 indexedDB 获取文件失败:', indexedDBError)
+  }
+
+  // 如果 indexedDB 中没有找到文件，使用扩展的 loadFile 方法
   const loadFile = fileUploadExtension.value?.options?.loadFile
 
   if (loadFile) {
-    // 使用扩展的 loadFile 方法
     try {
       const result = await loadFile(url)
       if (result && 'url' in result) {
         imageUrl.value = result.url
-
         fileTypeName.value = result.type || '' // 存储文件类型
       }
     }

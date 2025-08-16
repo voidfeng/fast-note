@@ -18,10 +18,65 @@ import { getTime } from '@/utils/date'
  * 分离编辑器逻辑，提高可复用性和可测试性
  */
 export function useEditor(uuid: string) {
-  const { addFile, getFileByHash, getFileByUrl } = useFiles()
+  const { addFile, getFileByHash } = useFiles()
   const { addFileRef, getFileRefByHashAndRefid } = useFileRefs()
 
   const editor = ref<Editor | null>(null)
+
+  /**
+   * 从supabase中加载文件
+   * 1. 通过hash查询indexedDB中的文件获取属性path
+   * 2. 通过path从note-private-files私有存储桶下载文件
+   * 3. 返回文件的blob URL
+   */
+  async function loadFileFromSupabase(hash: string) {
+    try {
+      // 1. 从 indexedDB 获取文件信息
+      const fileData = await getFileByHash(hash)
+
+      if (!fileData) {
+        console.warn(`文件未找到: ${hash}`)
+        return { url: hash, type: '' }
+      }
+
+      // 如果有 path 属性，使用 Supabase 扩展下载文件
+      if (fileData.path) {
+        try {
+          // 动态导入 Supabase 文件下载工具
+          const { downloadFileFromSupabase } = await import('@/extensions/supabase/utils/fileDownload')
+
+          // 使用 Supabase 扩展下载文件
+          const result = await downloadFileFromSupabase(fileData.path)
+
+          return {
+            url: result.url,
+            type: result.type || fileData.file?.type || '',
+          }
+        }
+        catch (downloadError) {
+          console.error('从 Supabase 下载文件失败:', downloadError)
+          // 下载失败时回退到使用 path 作为 URL
+          return {
+            url: fileData.path,
+            type: fileData.file?.type || '',
+          }
+        }
+      }
+
+      // 默认返回 hash 作为 URL
+      return {
+        url: hash,
+        type: '',
+      }
+    }
+    catch (error) {
+      console.error('加载文件失败:', error)
+      return {
+        url: hash,
+        type: '',
+      }
+    }
+  }
 
   /**
    * 初始化编辑器
@@ -42,8 +97,8 @@ export function useEditor(uuid: string) {
         TaskItem,
         TableKit,
         FileUpload.configure({
-          async loadFile(url: string) {
-            return await loadFileFromStorage(url)
+          async loadFile(hash: string) {
+            return await loadFileFromSupabase(hash)
           },
           onImageLoaded(url: string, width: number, height: number) {
             console.log('图片加载完成', url, width, height)
@@ -61,37 +116,6 @@ export function useEditor(uuid: string) {
       onBlur: options.onBlur,
       onFocus: options.onFocus,
     })
-  }
-
-  /**
-   * 从存储中加载文件
-   */
-  async function loadFileFromStorage(url: string) {
-    let fileObj
-
-    // 判断是否为SHA256哈希
-    if (/^[a-f0-9]{64}$/i.test(url)) {
-      fileObj = await getFileByHash(url)
-    }
-    else {
-      fileObj = await getFileByUrl(url)
-    }
-
-    if (!fileObj) {
-      console.warn('文件不存在:', url)
-      throw new Error('文件不存在')
-    }
-
-    if (fileObj.file) {
-      const fileType = fileObj.file.type || 'unknown'
-      const fileUrl = URL.createObjectURL(fileObj.file)
-      return { url: fileUrl, type: fileType }
-    }
-    else if (fileObj.path) {
-      return { url: fileObj.path, type: 'unknown' }
-    }
-
-    throw new Error('文件格式不支持')
   }
 
   /**
