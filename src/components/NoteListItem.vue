@@ -50,17 +50,30 @@ const routerLink = computed(() => {
     /**
      * 文件夹跳转逻辑
      * 1. isDesktop 不跳转
-     * 1. 首页到文件夹: /f/ + id
-     * 2. 文件夹到文件夹: 当前路径 + id
+     * 2. 首页到文件夹: /f/ + id
+     * 3. 用户公开页面到文件夹: /:userId/f/ + id
+     * 4. 文件夹到文件夹: 当前路径 + id
      */
     const isHome = route.path === '/home'
+    const isUserHome = route.params.userId && route.path === `/${route.params.userId}`
+
     if (isHome) {
       return `/f/${props.data.uuid}`
+    }
+    else if (isUserHome) {
+      return `/${route.params.userId}/f/${props.data.uuid}`
     }
     else {
       return `${route.path}/${props.data.uuid}`
     }
   }
+
+  // 笔记跳转逻辑
+  const isUserContext = route.params.userId
+  if (isUserContext) {
+    return `/${route.params.userId}/n/${props.data.uuid}`
+  }
+
   return `/n/${props.data.uuid}`
 })
 
