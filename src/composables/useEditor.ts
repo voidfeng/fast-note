@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js'
 import { Color } from '@tiptap/extension-color'
 import { ListItem, TaskItem, TaskList } from '@tiptap/extension-list'
 import { TableKit } from '@tiptap/extension-table'
@@ -38,14 +39,24 @@ export function useEditor(uuid: string) {
 
       if (isUserContext) {
         // 访问其他用户的备忘录，使用签名URL
-        // const fileData = await a()
-        // const { createSignedUrlForFile } = await import('@/extensions/supabase/utils/fileDownload')
-        // const result = await createSignedUrlForFile(fileData.path)
+        const pathParts = currentPath.split('/')
+        const noteUuid = pathParts[pathParts.length - 1]
 
-        // return {
-        //   url: result.url,
-        //   type: result.type || '',
-        // }
+        const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY)
+        const { data: response, error } = await supabase.functions.invoke('get-sign-file', {
+          body: { note_uuid: noteUuid, hash },
+        })
+
+        console.log(response, error)
+
+        const fileData = await response.json()
+        const { createSignedUrlForFile } = await import('@/extensions/supabase/utils/fileDownload')
+        const result = await createSignedUrlForFile(fileData.path)
+
+        return {
+          url: result.url,
+          type: result.type || '',
+        }
       }
       else {
         // 访问自己的备忘录，直接下载文件
@@ -98,7 +109,7 @@ export function useEditor(uuid: string) {
             return await loadFileFromSupabase(hash)
           },
           onImageLoaded(url: string, width: number, height: number) {
-            console.log('图片加载完成', url, width, height)
+            console.warn('图片加载完成', url, width, height)
           },
         }),
         GlobalDragHandle.configure({
