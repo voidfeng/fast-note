@@ -53,6 +53,60 @@ export async function downloadFileFromSupabase(
 }
 
 /**
+ * 创建文件的签名URL（用于访问其他用户的文件）
+ * @param path 文件路径
+ * @param bucketName 存储桶名称，默认为 'note-private-files'
+ * @param expiresIn 过期时间（秒），默认1小时
+ * @returns 返回包含签名URL和文件类型的对象
+ */
+export async function createSignedUrlForFile(
+  path: string,
+  bucketName: string = 'note-private-files',
+  expiresIn: number = 3600,
+): Promise<{ url: string, type: string }> {
+  try {
+    // 创建签名URL
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .createSignedUrl(path, expiresIn)
+
+    if (error) {
+      console.error('创建签名URL失败:', error)
+      throw error
+    }
+
+    if (!data?.signedUrl) {
+      throw new Error('签名URL创建失败')
+    }
+
+    // 从路径推断文件类型
+    const extension = path.split('.').pop()?.toLowerCase() || ''
+    const mimeTypes: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+      pdf: 'application/pdf',
+      txt: 'text/plain',
+      json: 'application/json',
+      mp3: 'audio/mpeg',
+      mp4: 'video/mp4',
+    }
+
+    return {
+      url: data.signedUrl,
+      type: mimeTypes[extension] || 'application/octet-stream',
+    }
+  }
+  catch (error) {
+    console.error('创建签名URL失败:', error)
+    throw error
+  }
+}
+
+/**
  * 检查用户是否已登录
  */
 export async function isUserAuthenticated(): Promise<boolean> {

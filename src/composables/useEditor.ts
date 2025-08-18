@@ -26,47 +26,44 @@ export function useEditor(uuid: string) {
   /**
    * 从supabase中加载文件
    * 1. 通过hash查询indexedDB中的文件获取属性path
-   * 2. 通过path从note-private-files私有存储桶下载文件
-   * 3. 返回文件的blob URL
+   * 2. 根据当前路由判断是否需要使用签名URL
+   * 3. 返回文件的blob URL或签名URL
    */
   async function loadFileFromSupabase(hash: string) {
     try {
-      // 1. 从 indexedDB 获取文件信息
-      const fileData = await getFileByHash(hash)
+      // 检查当前路由是否为其他用户的备忘录
+      // 路由格式: /:userId/n/:noteId
+      const currentPath = window.location.pathname
+      const isUserContext = /^\/[^/]+\/n\/[^/]+$/.test(currentPath)
 
-      if (!fileData) {
-        console.warn(`文件未找到: ${hash}`)
-        return { url: hash, type: '' }
+      if (isUserContext) {
+        // 访问其他用户的备忘录，使用签名URL
+        // const fileData = await a()
+        // const { createSignedUrlForFile } = await import('@/extensions/supabase/utils/fileDownload')
+        // const result = await createSignedUrlForFile(fileData.path)
+
+        // return {
+        //   url: result.url,
+        //   type: result.type || '',
+        // }
       }
+      else {
+        // 访问自己的备忘录，直接下载文件
 
-      // 如果有 path 属性，使用 Supabase 扩展下载文件
-      if (fileData.path) {
-        try {
-          // 动态导入 Supabase 文件下载工具
-          const { downloadFileFromSupabase } = await import('@/extensions/supabase/utils/fileDownload')
+        // 1. 从 indexedDB 获取文件信息
+        const fileData = await getFileByHash(hash)
 
-          // 使用 Supabase 扩展下载文件
-          const result = await downloadFileFromSupabase(fileData.path)
-
-          return {
-            url: result.url,
-            type: result.type || fileData.file?.type || '',
-          }
+        if (!fileData?.path) {
+          console.warn(`文件未找到: ${hash}`)
+          return { url: hash, type: '' }
         }
-        catch (downloadError) {
-          console.error('从 Supabase 下载文件失败:', downloadError)
-          // 下载失败时回退到使用 path 作为 URL
-          return {
-            url: fileData.path,
-            type: fileData.file?.type || '',
-          }
-        }
-      }
+        const { downloadFileFromSupabase } = await import('@/extensions/supabase/utils/fileDownload')
+        const result = await downloadFileFromSupabase(fileData.path)
 
-      // 默认返回 hash 作为 URL
-      return {
-        url: hash,
-        type: '',
+        return {
+          url: result.url,
+          type: result.type || fileData.file?.type || '',
+        }
       }
     }
     catch (error) {
