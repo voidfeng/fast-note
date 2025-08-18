@@ -21,7 +21,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
-import { getUserPublicFolders } from '../extensions/supabase/api/noteSharing'
+import { getUserPublicFolderContents, getUserPublicFolders } from '../extensions/supabase/api/noteSharing'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
@@ -46,14 +46,58 @@ const state = reactive({
   noteUuid: '',
 })
 
-// 计算属性：按最后修改时间排序的文件夹列表
-const sortedFolders = computed(() =>
-  publicFolders.value.toSorted((a: Note, b: Note) => {
-    const timeA = new Date(a.lastdotime || a.newstime || '').getTime()
-    const timeB = new Date(b.lastdotime || b.newstime || '').getTime()
-    return timeB - timeA
-  }),
-)
+// 构建树形结构的文件夹列表
+const treeStructure = computed(() => {
+  if (!publicFolders.value.length)
+    return []
+
+  // 创建一个 Map 来存储所有节点
+  const nodeMap = new Map<string, Note & { children?: Note[] }>()
+
+  // 首先将所有文件夹添加到 Map 中
+  publicFolders.value.forEach((folder) => {
+    nodeMap.set(folder.uuid, { ...folder, children: [] })
+  })
+
+  // 构建树形结构
+  const rootNodes: (Note & { children?: Note[] })[] = []
+
+  publicFolders.value.forEach((folder) => {
+    const node = nodeMap.get(folder.uuid)!
+
+    if (!folder.puuid) {
+      // 根节点
+      rootNodes.push(node)
+    }
+    else {
+      // 子节点
+      const parent = nodeMap.get(folder.puuid)
+      if (parent) {
+        parent.children!.push(node)
+      }
+      else {
+        // 如果找不到父节点，当作根节点处理
+        rootNodes.push(node)
+      }
+    }
+  })
+
+  // 递归排序函数
+  function sortNodes(nodes: (Note & { children?: Note[] })[]): (Note & { children?: Note[] })[] {
+    return nodes
+      .sort((a, b) => {
+        const timeA = new Date(a.lastdotime || a.newstime || '').getTime()
+        const timeB = new Date(b.lastdotime || b.newstime || '').getTime()
+        return timeB - timeA
+      })
+      .map(node => ({
+        ...node,
+        children: node.children && node.children.length > 0 ? sortNodes(node.children) : undefined,
+      }))
+  }
+
+  return sortNodes(rootNodes)
+})
 
 // 初始化数据
 async function init() {
@@ -69,20 +113,24 @@ async function init() {
 
     // 获取用户的公开文件夹
     const folders = await getUserPublicFolders(userId.value)
-    publicFolders.value = folders
+
+    // 为每个文件夹计算内容数量
+    const foldersWithCount = await Promise.all(
+      folders.map(async (folder) => {
+        const contents = await getUserPublicFolderContents(userId.value, folder.uuid)
+        return {
+          ...folder,
+          noteCount: contents.length,
+        }
+      }),
+    )
+
+    publicFolders.value = foldersWithCount
 
     // 设置用户信息
-    if (folders.length > 0) {
-      userInfo.value = {
-        id: userId.value,
-        name: `用户 ${userId.value.substring(0, 8)}...`,
-      }
-    }
-    else {
-      userInfo.value = {
-        id: userId.value,
-        name: `用户 ${userId.value.substring(0, 8)}...`,
-      }
+    userInfo.value = {
+      id: userId.value,
+      name: `用户 ${userId.value.substring(0, 8)}...`,
     }
   }
   catch (err) {
@@ -149,10 +197,10 @@ onMounted(() => {
       </div>
 
       <div v-else>
-        <!-- 使用NoteList组件显示文件夹列表 -->
+        <!-- 使用NoteList组件显示树形文件夹列表 -->
         <NoteList
           :note-uuid="state.folderUuid"
-          :data-list="sortedFolders"
+          :data-list="treeStructure"
           :presenting-element="presentingElement"
           :disabled-route="isDesktop"
           @refresh="init"

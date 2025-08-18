@@ -147,6 +147,70 @@ export async function shareNote(request: {
 }
 
 /**
+ * 获取用户公开文件夹的内容
+ */
+export async function getUserPublicFolderContents(userId: string, folderId: string): Promise<Note[]> {
+  try {
+    const { data, error } = await supabase
+      .from('note')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('puuid', folderId)
+      .eq('isdeleted', 0)
+      .order('type', { ascending: false }) // 文件夹在前
+      .order('lastdotime', { ascending: false })
+
+    if (error) {
+      console.error('获取用户公开文件夹内容失败:', error)
+      return []
+    }
+
+    // 过滤结果：文件夹不需要检查 is_public，但笔记需要检查
+    const filteredData = (data as Note[]).filter((item) => {
+      if (item.type === 'folder') {
+        return true // 文件夹不需要检查 is_public
+      }
+      else {
+        return item.is_public === true // 笔记需要检查 is_public
+      }
+    })
+
+    return filteredData
+  }
+  catch (error) {
+    console.error('获取用户公开文件夹内容异常:', error)
+    return []
+  }
+}
+
+/**
+ * 获取用户公开文件夹信息
+ */
+export async function getUserPublicFolder(userId: string, folderId: string): Promise<Note | null> {
+  try {
+    const { data, error } = await supabase
+      .from('note')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('uuid', folderId)
+      .eq('type', 'folder')
+      .eq('isdeleted', 0)
+      .single()
+
+    if (error || !data) {
+      console.error('获取用户公开文件夹信息失败:', error)
+      return null
+    }
+
+    return data as Note
+  }
+  catch (error) {
+    console.error('获取用户公开文件夹信息异常:', error)
+    return null
+  }
+}
+
+/**
  * 复制分享链接到剪贴板
  */
 export async function copyShareLink(noteId: string): Promise<boolean> {

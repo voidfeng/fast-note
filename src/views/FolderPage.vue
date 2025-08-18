@@ -21,6 +21,7 @@ import { nanoid } from 'nanoid'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
+import { getUserPublicFolder, getUserPublicFolderContents } from '@/extensions/supabase/api/noteSharing'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
@@ -70,6 +71,9 @@ const folderId = computed(() => {
   return lastId[lastId.length - 1]
 })
 
+const userId = computed(() => route.params.userId as string)
+const isUserContext = computed(() => !!userId.value)
+
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
   {
@@ -110,11 +114,16 @@ const defaultHref = computed(() => {
    * 返回上一级逻辑：当前url去掉最后一个id
    * 例如:  /f/12/13 返回 /f/12
    * 例如2: /f/12  返回 /home
+   * 用户上下文: /:userId/f/12 返回 /:userId
    */
   const path = route.path
   const lastId = path.split('/').pop()
   const newPath = path.replace(`/${lastId}`, '')
-  if (isTopFolder.value) {
+
+  if (isUserContext.value && isTopFolder.value) {
+    return `/${userId.value}`
+  }
+  else if (isTopFolder.value) {
     return '/home'
   }
   return newPath
@@ -129,7 +138,7 @@ watch(
   { immediate: true },
 )
 
-function init() {
+async function init() {
   let uuid
   if (isDesktop.value)
     uuid = props.currentFolder
@@ -137,21 +146,44 @@ function init() {
     uuid = folderId.value
   if (!uuid)
     return
-  getNote(uuid).then((res) => {
-    if (res)
-      data.value = res
-  })
 
-  getNotesByPUuid(uuid).then(async (res) => {
-    dataList.value = res
-    if (data.value.uuid === 'allnotes') {
-      /**
-       * 获取备忘录所属的分类名称
-       * 1. 获取所有分类
-       * 2. 找到当前备忘录所属的分类
-       * 3. 将分类名称赋值给当前备忘录
-       */
-      getAllFolders().then((folders) => {
+  try {
+    if (isUserContext.value) {
+      // 用户公开文件夹上下文
+      const folderInfo = await getUserPublicFolder(userId.value, uuid)
+      if (folderInfo) {
+        data.value = folderInfo
+      }
+
+      const contents = await getUserPublicFolderContents(userId.value, uuid)
+      dataList.value = contents
+
+      // 计算文件夹下的备忘录数量
+      for (let i = 0; i < dataList.value.length; i++) {
+        const item = dataList.value[i]
+        if (item.type === 'folder') {
+          const folderContents = await getUserPublicFolderContents(userId.value, item.uuid!)
+          item.noteCount = folderContents.length
+        }
+      }
+    }
+    else {
+      // 当前用户的文件夹上下文
+      const res = await getNote(uuid)
+      if (res)
+        data.value = res
+
+      const res2 = await getNotesByPUuid(uuid)
+      dataList.value = res2
+
+      if (data.value.uuid === 'allnotes') {
+        /**
+         * 获取备忘录所属的分类名称
+         * 1. 获取所有分类
+         * 2. 找到当前备忘录所属的分类
+         * 3. 将分类名称赋值给当前备忘录
+         */
+        const folders = await getAllFolders()
         // 将文件夹数组转换为 Map，以 uuid 为键
         const folderMap = new Map(folders.map(folder => [folder.uuid, folder]))
 
@@ -170,17 +202,20 @@ function init() {
             note.folderName = '无文件夹'
           }
         })
-      })
-    }
-    else {
-      for (let i = 0; i < dataList.value.length; i++) {
-        // 计算文件夹下的备忘录数量
-        const item = dataList.value[i]
-        const count = await getNoteCountByUuid(item.uuid!)
-        item.noteCount = count
+      }
+      else {
+        for (let i = 0; i < dataList.value.length; i++) {
+          // 计算文件夹下的备忘录数量
+          const item = dataList.value[i]
+          const count = await getNoteCountByUuid(item.uuid!)
+          item.noteCount = count
+        }
       }
     }
-  })
+  }
+  catch (error) {
+    console.error('初始化文件夹数据失败:', error)
+  }
 }
 
 onIonViewWillEnter(() => {
@@ -222,7 +257,7 @@ onIonViewDidEnter(() => {
     </IonContent>
     <IonFooter v-if="!isDesktop">
       <IonToolbar>
-        <IonButtons v-if="data.uuid !== 'allnotes'" slot="start">
+        <IonButtons v-if="data.uuid !== 'allnotes' && !isUserContext" slot="start">
           <IonButton id="add-folder2">
             <IonIcon :icon="addOutline" />
           </IonButton>
@@ -231,7 +266,7 @@ onIonViewDidEnter(() => {
           {{ folders.length > 0 ? `${folders.length}个文件夹 ·` : '' }}
           {{ notes.length > 0 ? `${notes.length}个备忘录` : '无备忘录' }}
         </IonTitle>
-        <IonButtons v-if="data.uuid !== 'allnotes'" slot="end">
+        <IonButtons v-if="data.uuid !== 'allnotes' && !isUserContext" slot="end">
           <IonButton :router-link="`/n/0?puuid=${folderId}`" router-direction="forward">
             <IonIcon :icon="createOutline" />
           </IonButton>

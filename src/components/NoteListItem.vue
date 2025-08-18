@@ -55,7 +55,7 @@ const routerLink = computed(() => {
      * 4. 文件夹到文件夹: 当前路径 + id
      */
     const isHome = route.path === '/home'
-    const isUserHome = route.params.userId && route.path === `/${route.params.userId}`
+    const isUserHome = route.params.userId && (route.name === 'UserHome' || route.path === `/${route.params.userId}`)
 
     if (isHome) {
       return `/f/${props.data.uuid}`

@@ -10,6 +10,7 @@ import NoteMore from '@/components/NoteMore.vue'
 import TableFormatModal from '@/components/TableFormatModal.vue'
 import TextFormatModal from '@/components/TextFormatModal.vue'
 import YYEditor from '@/components/YYEditor.vue'
+import { getPublicNote } from '@/extensions/supabase/api/noteSharing'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
@@ -51,9 +52,11 @@ const state = reactive({
   isAuth: false,
 })
 
-const uuidFromRoute = computed(() => route.params.uuid as string)
+const uuidFromRoute = computed(() => route.params.uuid as string || route.params.noteId as string)
 const uuidFromSource = computed(() => props.noteUuid || uuidFromRoute.value)
 const isNewNote = computed(() => uuidFromSource.value === '0')
+const userId = computed(() => route.params.userId as string)
+const isUserContext = computed(() => !!userId.value)
 
 watch(isNewNote, (isNew) => {
   if (isNew && !newNoteId.value)
@@ -222,20 +225,39 @@ async function syncAttachments(uuid: string, content: string) {
 }
 
 async function init(uuid: string) {
-  data.value = await getNote(uuid)
-  if (data.value) {
-    if (data.value.isdeleted === 1)
-      editorRef.value?.setEditable(false)
-
-    if (data.value?.islocked === 1) {
-      if (authState.isRegistered)
-        state.isAuth = await verify()
-      else
-        state.isAuth = await register()
+  try {
+    if (isUserContext.value) {
+      // 获取用户公开笔记
+      data.value = await getPublicNote(uuid)
+      if (data.value) {
+        // 公开笔记始终为只读模式
+        editorRef.value?.setEditable(false)
+        nextTick(() => {
+          editorRef.value?.setContent(data.value.newstext)
+        })
+      }
     }
-    nextTick(() => {
-      editorRef.value?.setContent(data.value.newstext)
-    })
+    else {
+      // 获取当前用户的笔记
+      data.value = await getNote(uuid)
+      if (data.value) {
+        if (data.value.isdeleted === 1)
+          editorRef.value?.setEditable(false)
+
+        if (data.value?.islocked === 1) {
+          if (authState.isRegistered)
+            state.isAuth = await verify()
+          else
+            state.isAuth = await register()
+        }
+        nextTick(() => {
+          editorRef.value?.setContent(data.value.newstext)
+        })
+      }
+    }
+  }
+  catch (error) {
+    console.error('初始化笔记失败:', error)
   }
 }
 
@@ -288,7 +310,7 @@ onIonViewWillLeave(() => {
         <IonButtons slot="start">
           <IonBackButton :text="getBackButtonText()" default-href="/" />
         </IonButtons>
-        <IonButtons slot="end">
+        <IonButtons v-if="!isUserContext" slot="end">
           <IonButton @click="state.showNoteMore = true">
             <IonIcon :icon="ellipsisHorizontalCircleOutline" />
           </IonButton>
@@ -323,7 +345,7 @@ onIonViewWillLeave(() => {
       </div> -->
     </IonContent>
     <!-- <IonFooter v-if="keyboardHeight > 0" style="overscroll-behavior: none;"> -->
-    <IonFooter>
+    <IonFooter v-if="!isUserContext">
       <IonToolbar class="note-detail__toolbar">
         <div class="flex justify-evenly items-center select-none">
           <IonButton
@@ -372,9 +394,9 @@ onIonViewWillLeave(() => {
         </div>
       </IonToolbar>
     </IonFooter>
-    <NoteMore v-model:is-open="state.showNoteMore" />
-    <TableFormatModal v-model:is-open="state.showTableFormat" :editor="((editorRef?.editor || {}) as Editor)" />
-    <TextFormatModal v-model:is-open="state.showFormat" :editor="((editorRef?.editor || {}) as Editor)" />
+    <NoteMore v-if="!isUserContext" v-model:is-open="state.showNoteMore" />
+    <TableFormatModal v-if="!isUserContext" v-model:is-open="state.showTableFormat" :editor="((editorRef?.editor || {}) as Editor)" />
+    <TextFormatModal v-if="!isUserContext" v-model:is-open="state.showFormat" :editor="((editorRef?.editor || {}) as Editor)" />
   </IonPage>
 </template>
 

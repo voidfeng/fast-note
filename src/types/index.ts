@@ -16,6 +16,7 @@ export interface Note {
   version: number
   isdeleted: 0 | 1
   islocked: 0 | 1
+  is_public?: boolean
   noteCount?: number
   children?: Note[]
   folderName?: string
