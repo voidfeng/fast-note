@@ -8,6 +8,12 @@ const state = reactive<ExtensionState>({
   loadedExtensions: {}, // 存储已加载的扩展模块
 })
 
+// 用于防止重复初始化的 Promise
+let initPromise: Promise<void> | null = null
+
+// 用于防止重复加载扩展的 Promise Map
+const loadingPromises = new Map<string, Promise<boolean>>()
+
 // 可用扩展的元数据
 const availableExtensions = [
   {
@@ -20,88 +26,138 @@ const availableExtensions = [
 ]
 
 // 初始化内置扩展
-async function initExtensions() {
-  if (state.initialized)
+async function initExtensions(): Promise<void> {
+  // 如果已经初始化，直接返回
+  if (state.initialized) {
+    console.log('扩展系统已经初始化，跳过重复初始化')
     return
-
-  // 添加所有可用扩展的元数据
-  state.extensions = availableExtensions.map(ext => ({
-    ...ext,
-    enabled: false, // 默认禁用
-  }))
-
-  // 从本地存储加载扩展状态
-  const savedExtensions = localStorage.getItem('app_extensions')
-  if (savedExtensions) {
-    try {
-      const parsed = JSON.parse(savedExtensions)
-      // 合并保存的状态和默认状态
-      state.extensions = state.extensions.map((ext) => {
-        const savedExt = parsed.find((se: Extension) => se.id === ext.id)
-        return savedExt ? { ...ext, enabled: savedExt.enabled } : ext
-      })
-
-      // 加载已启用的扩展
-      for (const ext of state.extensions) {
-        if (ext.enabled) {
-          await loadExtension(ext.id)
-        }
-      }
-    }
-    catch (e) {
-      console.error('加载扩展状态失败:', e)
-    }
   }
 
-  state.initialized = true
+  // 如果正在初始化，等待初始化完成
+  if (initPromise) {
+    console.log('扩展系统正在初始化，等待完成...')
+    return initPromise
+  }
+
+  // 创建初始化 Promise
+  initPromise = (async () => {
+    try {
+      console.log('开始初始化扩展系统')
+
+      // 添加所有可用扩展的元数据
+      state.extensions = availableExtensions.map(ext => ({
+        ...ext,
+        enabled: false, // 默认禁用
+      }))
+
+      // 从本地存储加载扩展状态
+      const savedExtensions = localStorage.getItem('app_extensions')
+      if (savedExtensions) {
+        try {
+          const parsed = JSON.parse(savedExtensions)
+          // 合并保存的状态和默认状态
+          state.extensions = state.extensions.map((ext) => {
+            const savedExt = parsed.find((se: Extension) => se.id === ext.id)
+            return savedExt ? { ...ext, enabled: savedExt.enabled } : ext
+          })
+
+          console.log('已加载扩展配置:', state.extensions.filter(ext => ext.enabled).map(ext => ext.id))
+
+          // 加载已启用的扩展
+          for (const ext of state.extensions) {
+            if (ext.enabled) {
+              await loadExtension(ext.id)
+            }
+          }
+        }
+        catch (e) {
+          console.error('加载扩展状态失败:', e)
+        }
+      }
+
+      state.initialized = true
+      console.log('扩展系统初始化完成')
+    }
+    finally {
+      // 清除 Promise 引用和标记
+      initPromise = null
+      isInitializing = false
+    }
+  })()
+
+  return initPromise
 }
 
 // 动态加载扩展
 async function loadExtension(id: string): Promise<boolean> {
-  try {
-    // 如果扩展已经加载，直接返回
-    if (state.loadedExtensions[id]) {
-      return true
-    }
-
-    const extension = state.extensions.find(ext => ext.id === id)
-    if (!extension) {
-      console.error(`扩展 ${id} 不存在`)
-      return false
-    }
-
-    // 动态导入扩展模块
-    let module
-
-    // 根据扩展ID动态导入对应模块
-    if (id === 'supabase') {
-      module = await import('../extensions/supabase')
-    }
-    else {
-      console.error(`未知的扩展ID: ${id}`)
-      return false
-    }
-
-    // 如果扩展有安装方法，则调用它
-    if (module.default && typeof module.default.install === 'function') {
-      const app = (window as any).__VUE_APP__
-      if (app) {
-        module.default.install(app)
-      }
-      else {
-        console.warn(`无法安装扩展 ${id}，应用实例不可用`)
-      }
-    }
-
-    // 存储已加载的扩展模块
-    state.loadedExtensions[id] = module
-    console.log(`扩展 ${id} 已加载`)
+  // 如果扩展已经加载，直接返回
+  if (state.loadedExtensions[id]) {
+    console.log(`扩展 ${id} 已经加载，跳过重复加载`)
     return true
   }
-  catch (error) {
-    console.error(`加载扩展 ${id} 失败:`, error)
-    return false
+
+  // 如果正在加载，等待加载完成
+  if (loadingPromises.has(id)) {
+    console.log(`扩展 ${id} 正在加载，等待完成...`)
+    return loadingPromises.get(id)!
   }
+
+  // 创建加载 Promise
+  const loadPromise = (async (): Promise<boolean> => {
+    try {
+      const extension = state.extensions.find(ext => ext.id === id)
+      if (!extension) {
+        console.error(`扩展 ${id} 不存在`)
+        return false
+      }
+
+      console.log(`开始加载扩展 ${id}`)
+
+      // 动态导入扩展模块
+      let module
+
+      // 根据扩展ID动态导入对应模块
+      if (id === 'supabase') {
+        module = await import('../extensions/supabase')
+      }
+      else {
+        console.error(`未知的扩展ID: ${id}`)
+        return false
+      }
+
+      // 先存储模块，避免重复加载
+      state.loadedExtensions[id] = module
+
+      // 如果扩展有安装方法，则调用它
+      if (module.default && typeof module.default.install === 'function') {
+        const app = (window as any).__VUE_APP__
+        if (app) {
+          module.default.install(app)
+        }
+        else {
+          console.warn(`无法安装扩展 ${id}，应用实例不可用`)
+        }
+      }
+
+      console.log(`扩展 ${id} 已加载`)
+      return true
+    }
+    catch (error) {
+      console.error(`加载扩展 ${id} 失败:`, error)
+      // 如果加载失败，清除已存储的模块
+      delete state.loadedExtensions[id]
+      return false
+    }
+    finally {
+      // 清除加载 Promise
+      loadingPromises.delete(id)
+    }
+  })()
+
+  // 存储加载 Promise
+  loadingPromises.set(id, loadPromise)
+
+  return loadPromise
 }
 
 // 卸载扩展
@@ -123,7 +179,7 @@ function unloadExtension(id: string): boolean {
 
     // 从已加载扩展中移除
     delete state.loadedExtensions[id]
-    console.log(`扩展 ${id} 已卸载`)
+
     return true
   }
   return false
@@ -137,10 +193,16 @@ function saveExtensionState() {
 // 监听扩展状态变化并保存
 watch(() => [...state.extensions], saveExtensionState, { deep: true })
 
+// 全局标记，防止多次调用
+let isInitializing = false
+
 export function useExtensions() {
-  // 确保扩展已初始化
-  if (!state.initialized)
-    initExtensions()
+  // 确保扩展已初始化（只初始化一次）
+  if (!state.initialized && !isInitializing) {
+    isInitializing = true
+    // 异步初始化，但不等待完成，让组件可以立即获取到函数
+    initExtensions().catch(console.error)
+  }
 
   // 获取所有扩展
   const getAllExtensions = () => state.extensions

@@ -37,6 +37,11 @@ async function loadExtensionComponent() {
     return
   }
 
+  // 如果组件已经加载且扩展已加载，直接返回
+  if (componentInstance.value && isExtensionLoaded(props.extensionId)) {
+    return
+  }
+
   if (!isExtensionLoaded(props.extensionId)) {
     try {
       loading.value = true
@@ -45,7 +50,7 @@ async function loadExtensionComponent() {
     }
     catch (err) {
       error.value = err instanceof Error ? err.message : '加载扩展失败'
-      console.error(`加载扩展 ${props.extensionId} 失败:`, err)
+      console.error(`ExtensionRenderer: 加载扩展 ${props.extensionId} 失败:`, err)
       return
     }
     finally {
@@ -85,7 +90,7 @@ async function loadExtensionComponent() {
 
   // 如果仍然找不到组件，记录错误
   if (!component) {
-    console.error(`在模块中找不到组件 ${props.componentName}，可用组件:`, Object.keys(module), module.default ? Object.keys(module.default) : '无默认导出')
+    console.error(`ExtensionRenderer: 在模块中找不到组件 ${props.componentName}，可用组件:`, Object.keys(module), module.default ? Object.keys(module.default) : '无默认导出')
     error.value = `组件 ${props.componentName} 不存在`
     return
   }
@@ -96,11 +101,7 @@ async function loadExtensionComponent() {
 // 监听扩展状态变化
 watch(() => extensionEnabled.value, loadExtensionComponent, { immediate: true })
 
-onMounted(() => {
-  if (extensionEnabled.value && !componentInstance.value) {
-    loadExtensionComponent()
-  }
-})
+// 移除 onMounted 中的重复调用，因为 watch 已经有 immediate: true
 </script>
 
 <template>

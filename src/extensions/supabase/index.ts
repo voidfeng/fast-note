@@ -29,6 +29,9 @@ export {
   useSync,
 }
 
+// 标记扩展是否已安装
+let isInstalled = false
+
 // 默认导出
 export default {
   // 组件导出，供 ExtensionRenderer 使用
@@ -42,14 +45,25 @@ export default {
 
   // 安装扩展
   install(app: any) {
+    // 检查是否已经安装，避免重复安装
+    if (isInstalled) {
+      console.log('Supabase 扩展已经安装，跳过重复安装')
+      return
+    }
+
     console.log('安装 Supabase 用户认证扩展')
 
     // 注册全局组件
     app.component('SupabaseLoginPage', LoginPage)
     app.component('SupabaseUserProfile', UserProfile)
 
-    // 动态注册路由
-    routeManager.registerExtensionRoutes('supabase', supabaseRoutes)
+    // 动态注册路由（只有在路由未注册时才注册）
+    if (!routeManager.hasExtensionRoutes('supabase')) {
+      routeManager.registerExtensionRoutes('supabase', supabaseRoutes)
+    }
+
+    // 标记为已安装
+    isInstalled = true
   },
 
   // 卸载扩展
@@ -58,5 +72,8 @@ export default {
 
     // 移除动态注册的路由
     routeManager.unregisterExtensionRoutes('supabase')
+
+    // 标记为未安装
+    isInstalled = false
   },
 }
