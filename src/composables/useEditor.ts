@@ -43,19 +43,13 @@ export function useEditor(uuid: string) {
         const noteUuid = pathParts[pathParts.length - 1]
 
         const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY)
-        const { data: response, error } = await supabase.functions.invoke('get-sign-file', {
+        const { data: response, error: _error } = await supabase.functions.invoke('get-sign-file', {
           body: { note_uuid: noteUuid, hash },
         })
 
-        console.log(response, error)
-
-        const fileData = await response.json()
-        const { createSignedUrlForFile } = await import('@/extensions/supabase/utils/fileDownload')
-        const result = await createSignedUrlForFile(fileData.path)
-
         return {
-          url: result.url,
-          type: result.type || '',
+          url: response.signedUrl,
+          type: response.type,
         }
       }
       else {

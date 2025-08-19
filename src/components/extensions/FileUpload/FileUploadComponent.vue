@@ -42,14 +42,6 @@ const fileUploadExtension = computed<Extension | undefined>(() => {
   )
 })
 
-const isImage = computed(() => {
-  const url = nodeProps.value.url
-  if (!url)
-    return false
-  const extension = url.split('.').pop()?.toLowerCase()
-  return extension?.match(/(jpg|jpeg|png|gif|webp)$/i)
-})
-
 // 检查URL是否为SHA256哈希值格式
 const isSha256Hash = computed(() => {
   const url = nodeProps.value.url
@@ -65,6 +57,13 @@ const imageUrl = ref('')
 const isLoading = ref(true)
 const hasError = ref(false)
 const fileTypeName = ref('') // 存储从loadFile返回的文件类型
+
+const isImage = computed(() => {
+  const url = nodeProps.value.url
+  if (!url)
+    return false
+  return fileTypeName.value.match(/(jpg|jpeg|png|gif|webp)$/i)
+})
 
 const fileType = computed(() => {
   // 如果有从服务器返回的文件类型，优先使用
