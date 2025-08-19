@@ -1,3 +1,4 @@
+import { getMimeTypeByExtension } from '@/utils/mimeTypes'
 import { supabase } from '../api/client'
 
 /**
@@ -81,23 +82,11 @@ export async function createSignedUrlForFile(
 
     // 从路径推断文件类型
     const extension = path.split('.').pop()?.toLowerCase() || ''
-    const mimeTypes: Record<string, string> = {
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      png: 'image/png',
-      gif: 'image/gif',
-      webp: 'image/webp',
-      svg: 'image/svg+xml',
-      pdf: 'application/pdf',
-      txt: 'text/plain',
-      json: 'application/json',
-      mp3: 'audio/mpeg',
-      mp4: 'video/mp4',
-    }
+    const mimeType = getMimeTypeByExtension(extension) || 'application/octet-stream'
 
     return {
       url: data.signedUrl,
-      type: mimeTypes[extension] || 'application/octet-stream',
+      type: mimeType,
     }
   }
   catch (error) {
