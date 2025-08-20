@@ -1,7 +1,11 @@
 <script lang="ts" setup>
 import { EditorContent } from '@tiptap/vue-3'
-import { onMounted } from 'vue'
+// 导入 PhotoSwipe 5.x 版本
+import PhotoSwipe from 'photoswipe'
+import PhotoSwipeLightbox from 'photoswipe/lightbox'
+import { onMounted, onUnmounted, provide, ref } from 'vue'
 import { useEditor } from '@/composables/useEditor'
+import 'photoswipe/style.css'
 
 const props = defineProps<{
   uuid: string
@@ -21,12 +25,89 @@ const {
   setInputMode,
 } = useEditor(props.uuid)
 
+// PhotoSwipe 相关
+const lightbox = ref<any>(null)
+
+// 初始化PhotoSwipe
+function initPhotoSwipe() {
+  try {
+    lightbox.value = new PhotoSwipeLightbox({
+      gallery: '#pswp-gallery',
+      children: 'a',
+      pswpModule: PhotoSwipe,
+      showHideAnimationType: 'fade',
+      closeOnVerticalDrag: true,
+      // 添加中文界面文本
+      arrowPrevTitle: '上一张',
+      arrowNextTitle: '下一张',
+      closeTitle: '关闭',
+      zoomTitle: '缩放',
+    })
+    lightbox.value.init()
+  }
+  catch (error) {
+    console.error('初始化 PhotoSwipe 失败:', error)
+  }
+}
+
+// 打开PhotoSwipe预览
+function openPhotoSwipe(imageUrl: string, width: number, height: number) {
+  try {
+    // 移除可能存在的旧画廊元素
+    const oldGallery = document.getElementById('pswp-gallery')
+    if (oldGallery) {
+      document.body.removeChild(oldGallery)
+    }
+
+    // 动态创建一个包含当前图片的画廊
+    const galleryElement = document.createElement('div')
+    galleryElement.id = 'pswp-gallery'
+    galleryElement.style.display = 'none'
+    document.body.appendChild(galleryElement)
+
+    const linkElement = document.createElement('a')
+    linkElement.href = imageUrl
+    linkElement.dataset.pswpWidth = width.toString()
+    linkElement.dataset.pswpHeight = height.toString()
+    galleryElement.appendChild(linkElement)
+
+    // 初始化并打开
+    initPhotoSwipe()
+    lightbox.value.loadAndOpen(0)
+  }
+  catch (error) {
+    console.error('打开图片预览失败:', error)
+  }
+}
+
+// 通过 provide 向子组件提供预览功能
+provide('openPhotoSwipe', openPhotoSwipe)
+
 // 组件挂载时初始化编辑器
 onMounted(() => {
   initEditor({
     onFocus: () => emit('focus'),
     onBlur: () => emit('blur'),
   })
+})
+
+// 组件卸载时清理资源
+onUnmounted(() => {
+  try {
+    if (lightbox.value) {
+      lightbox.value.destroy()
+      lightbox.value = null
+    }
+
+    // 移除临时创建的画廊元素
+    const galleryElement = document.getElementById('pswp-gallery')
+    if (galleryElement) {
+      document.body.removeChild(galleryElement)
+    }
+  }
+  catch (error) {
+    console.error('清理 PhotoSwipe 资源失败:', error)
+  }
 })
 
 /**

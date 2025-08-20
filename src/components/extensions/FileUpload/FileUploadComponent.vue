@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { NodeViewWrapper } from '@tiptap/vue-3'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useFiles } from '@/hooks/useFiles'
 
 interface Extension {
@@ -65,6 +65,10 @@ const imageUrl = ref('')
 const isLoading = ref(true)
 const hasError = ref(false)
 const fileTypeName = ref('') // 存储从loadFile返回的文件类型
+const naturalSize = ref({ width: 0, height: 0 })
+
+// 注入父组件提供的预览功能
+const openPhotoSwipe = inject<(imageUrl: string, width: number, height: number) => void>('openPhotoSwipe')
 
 const fileType = computed(() => {
   // 如果有从服务器返回的文件类型，优先使用
@@ -156,6 +160,12 @@ function onImageLoad(event: Event) {
   const naturalWidth = img.naturalWidth
   const naturalHeight = img.naturalHeight
   const aspectRatio = naturalWidth / naturalHeight
+
+  // 保存图片原始尺寸，用于PhotoSwipe
+  naturalSize.value = {
+    width: naturalWidth,
+    height: naturalHeight,
+  }
 
   // 1. 高度等比例缩放到DEFAULT_SIZE，检查宽度
   let height = DEFAULT_SIZE
@@ -270,6 +280,16 @@ const wrapperStyle = computed(() => {
   return containerSize.value
 })
 
+// 打开PhotoSwipe预览
+function handleImageClick() {
+  // 只有图片类型才能预览
+  if (!isPictureType.value || hasError.value || isLoading.value || !openPhotoSwipe)
+    return
+
+  // 调用父组件提供的预览功能
+  openPhotoSwipe(imageUrl.value, naturalSize.value.width, naturalSize.value.height)
+}
+
 // 组件挂载时加载文件
 onMounted(() => {
   // 加载文件
@@ -300,8 +320,10 @@ onMounted(() => {
           ref="imageRef"
           :src="imageUrl"
           :alt="fileType"
+          class="cursor-pointer"
           @load="onImageLoad"
           @error="onImageError"
+          @click="handleImageClick"
         >
       </div>
       <div v-else class="file-preview">
@@ -311,7 +333,7 @@ onMounted(() => {
   </NodeViewWrapper>
 </template>
 
-<style scoped>
+<style>
 .file-upload-wrapper {
   padding: 0;
   padding: 4px;
@@ -383,5 +405,13 @@ onMounted(() => {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 鼠标悬停在图片上时显示可点击状态 */
+.image-preview img {
+  cursor: pointer;
+}
+.image-preview img:hover {
+  opacity: 0.9;
 }
 </style>
