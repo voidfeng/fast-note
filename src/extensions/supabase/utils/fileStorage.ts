@@ -1,58 +1,9 @@
 import type { TypedFile } from '@/types'
+import { getFileExtension as getExtensionFromFilename, getMimeTypeByExtension } from '@/utils/mimeTypes'
 import { supabase } from '../api/client'
 
 // Storage bucket 名称
 const BUCKET_NAME = 'note-private-files'
-
-// MIME 类型到文件扩展名的映射
-const mimeToExtension: Record<string, string> = {
-  // 图片类型
-  'image/jpeg': 'jpg',
-  'image/jpg': 'jpg',
-  'image/png': 'png',
-  'image/gif': 'gif',
-  'image/webp': 'webp',
-  'image/svg+xml': 'svg',
-  'image/bmp': 'bmp',
-  'image/tiff': 'tiff',
-
-  // 文档类型
-  'application/pdf': 'pdf',
-  'application/msword': 'doc',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-  'application/vnd.ms-excel': 'xls',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
-  'application/vnd.ms-powerpoint': 'ppt',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
-
-  // 文本类型
-  'text/plain': 'txt',
-  'text/html': 'html',
-  'text/css': 'css',
-  'text/javascript': 'js',
-  'application/json': 'json',
-  'text/xml': 'xml',
-  'text/csv': 'csv',
-
-  // 音频类型
-  'audio/mpeg': 'mp3',
-  'audio/wav': 'wav',
-  'audio/ogg': 'ogg',
-  'audio/mp4': 'm4a',
-
-  // 视频类型
-  'video/mp4': 'mp4',
-  'video/mpeg': 'mpeg',
-  'video/quicktime': 'mov',
-  'video/x-msvideo': 'avi',
-  'video/webm': 'webm',
-
-  // 压缩文件
-  'application/zip': 'zip',
-  'application/x-rar-compressed': 'rar',
-  'application/x-7z-compressed': '7z',
-  'application/gzip': 'gz',
-}
 
 /**
  * 获取文件扩展名
@@ -62,16 +13,20 @@ const mimeToExtension: Record<string, string> = {
  */
 function getFileExtension(mimeType: string, fileName?: string): string {
   // 首先尝试从 MIME 类型获取扩展名
-  const extension = mimeToExtension[mimeType]
-  if (extension) {
-    return extension
+  // 遍历常用扩展名找到对应的扩展名
+  const commonExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'tiff', 'tif', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'rtf', 'txt', 'csv', 'mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 'zip', 'rar', 'tar', 'gz', '7z', 'json', 'xml', 'html', 'css', 'js', 'psd']
+
+  for (const ext of commonExtensions) {
+    if (getMimeTypeByExtension(ext) === mimeType) {
+      return ext
+    }
   }
 
   // 如果 MIME 类型未找到，尝试从文件名获取扩展名
   if (fileName) {
-    const lastDotIndex = fileName.lastIndexOf('.')
-    if (lastDotIndex > 0) {
-      return fileName.substring(lastDotIndex + 1).toLowerCase()
+    const extension = getExtensionFromFilename(fileName)
+    if (extension) {
+      return extension
     }
   }
 

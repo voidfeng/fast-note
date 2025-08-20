@@ -2,6 +2,7 @@
 import { NodeViewWrapper } from '@tiptap/vue-3'
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useFiles } from '@/hooks/useFiles'
+import { FileCategory, getFileCategoryByMimeType, getFileIcon, isImageFile } from '@/utils/mimeTypes'
 
 interface Extension {
   name: string
@@ -42,14 +43,6 @@ const fileUploadExtension = computed<Extension | undefined>(() => {
   )
 })
 
-const isImage = computed(() => {
-  const url = nodeProps.value.url
-  if (!url)
-    return false
-  const extension = url.split('.').pop()?.toLowerCase()
-  return extension?.match(/(jpg|jpeg|png|gif|webp)$/i)
-})
-
 // 检查URL是否为SHA256哈希值格式
 const isSha256Hash = computed(() => {
   const url = nodeProps.value.url
@@ -70,69 +63,32 @@ const naturalSize = ref({ width: 0, height: 0 })
 // 注入父组件提供的预览功能
 const openPhotoSwipe = inject<(imageUrl: string, width: number, height: number) => void>('openPhotoSwipe')
 
-const fileType = computed(() => {
-  // 如果有从服务器返回的文件类型，优先使用
+const isImage = computed(() => {
+  const url = nodeProps.value.url
+  if (!url)
+    return false
+
+  // 如果有MIME类型，使用工具函数检查
   if (fileTypeName.value) {
-  // MIME类型映射
-    const mimeTypeMap: Record<string, string> = {
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'excel', // xlsx
-      'application/vnd.ms-excel': 'excel', // xls
-      'application/illustrator': 'ai',
-      'audio/mpeg': 'audio', // mp3
-      'audio/wav': 'audio',
-      'application/msword': 'doc', // doc
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'doc', // docx
-      'application/pdf': 'pdf',
-      'application/vnd.ms-powerpoint': 'ppt', // ppt
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'ppt', // pptx
-      'image/vnd.adobe.photoshop': 'psd',
-      'application/rtf': 'rtf',
-      'text/plain': 'txt',
-      'video/mp4': 'video',
-      'video/x-msvideo': 'video', // avi
-      'video/quicktime': 'video', // mov
-      'application/zip': 'zip',
-      'application/x-rar-compressed': 'zip', // rar
-      'application/x-7z-compressed': 'zip', // 7z
-      'image/jpeg': 'picture',
-      'image/png': 'picture',
-      'image/gif': 'picture',
-      'image/webp': 'picture',
-    }
-    return mimeTypeMap[fileTypeName.value] || 'unknown'
+    return getFileCategoryByMimeType(fileTypeName.value) === FileCategory.IMAGE
   }
 
-  if (isImage.value)
-    return 'picture'
+  // 否则根据URL检查
+  return isImageFile(url)
+})
 
+const fileType = computed(() => {
+  // 如果有从服务器返回的文件类型，使用工具函数获取图标
+  if (fileTypeName.value) {
+    return getFileIcon({ type: fileTypeName.value } as File)
+  }
+
+  // 否则根据URL获取图标
   const url = nodeProps.value.url
   if (!url)
     return 'unknown'
-  const extension = url.split('.').pop()?.toLowerCase()
 
-  const typeMap: Record<string, string> = {
-    'xlsx': 'excel',
-    'xls': 'excel',
-    'ai': 'ai',
-    'mp3': 'audio',
-    'wav': 'audio',
-    'doc': 'doc',
-    'docx': 'doc',
-    'pdf': 'pdf',
-    'ppt': 'ppt',
-    'pptx': 'ppt',
-    'psd': 'psd',
-    'rtf': 'rtf',
-    'txt': 'txt',
-    'mp4': 'video',
-    'avi': 'video',
-    'mov': 'video',
-    'zip': 'zip',
-    'rar': 'zip',
-    '7z': 'zip',
-  }
-
-  return typeMap[extension || ''] || 'unknown'
+  return getFileIcon(url)
 })
 
 // 从fileType派生是否是图片
