@@ -21,7 +21,9 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
-import { getUserPublicFolderContents, getUserPublicFolders } from '../extensions/supabase/api/noteSharing'
+import { globalUserCache } from '@/hooks/useUserCache'
+import { useUserPublicNotes } from '@/hooks/useUserPublicNotes'
+import { getUserByUsername, getUserPublicFolderContentsByUsername, getUserPublicFoldersByUsername } from '../extensions/supabase/api/userApi'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
@@ -30,7 +32,10 @@ const router = useRouter()
 const { isDesktop } = useDeviceType()
 
 // 获取路由参数
-const userId = computed(() => route.params.userId as string)
+const username = computed(() => route.params.username as string)
+
+// 初始化用户公开笔记存储
+const userPublicNotes = useUserPublicNotes(username.value)
 
 // 页面状态
 const loading = ref(true)
@@ -99,10 +104,35 @@ const treeStructure = computed(() => {
   return sortNodes(rootNodes)
 })
 
+// 从远程获取数据
+async function fetchRemoteData() {
+  // 先获取用户信息（只调用一次）
+  const user = await getUserByUsername(username.value)
+  if (!user) {
+    throw new Error('用户不存在')
+  }
+
+  // 获取用户的公开文件夹（传入用户ID避免重复查询）
+  const folders = await getUserPublicFoldersByUsername(username.value, user.id)
+
+  // 为每个文件夹计算内容数量（传入用户ID避免重复查询）
+  const foldersWithCount = await Promise.all(
+    folders.map(async (folder) => {
+      const contents = await getUserPublicFolderContentsByUsername(username.value, folder.uuid, user.id)
+      return {
+        ...folder,
+        noteCount: contents.length,
+      }
+    }),
+  )
+
+  return { user, foldersWithCount }
+}
+
 // 初始化数据
-async function init() {
-  if (!userId.value) {
-    error.value = '无效的用户ID'
+async function init(forceRefresh = false) {
+  if (!username.value) {
+    error.value = '无效的用户名'
     loading.value = false
     return
   }
@@ -111,30 +141,67 @@ async function init() {
     loading.value = true
     error.value = ''
 
-    // 获取用户的公开文件夹
-    const folders = await getUserPublicFolders(userId.value)
+    // 初始化用户公开笔记存储
+    await userPublicNotes.init()
 
-    // 为每个文件夹计算内容数量
-    const foldersWithCount = await Promise.all(
-      folders.map(async (folder) => {
-        const contents = await getUserPublicFolderContents(userId.value, folder.uuid)
-        return {
-          ...folder,
-          noteCount: contents.length,
+    let shouldFetchRemote = forceRefresh
+
+    if (!forceRefresh) {
+      // 检查是否需要更新数据
+      shouldFetchRemote = await userPublicNotes.shouldUpdate()
+    }
+
+    if (shouldFetchRemote) {
+      // 从远程获取数据
+      const { user, foldersWithCount } = await fetchRemoteData()
+
+      // 保存到本地数据库
+      await userPublicNotes.saveFolders(foldersWithCount)
+      await userPublicNotes.saveLastUpdateTime(new Date().toISOString())
+
+      // 保存用户信息到本地数据库
+      const userInfoData = {
+        id: user.id,
+        username: user.username,
+        name: user.username || `用户 ${user.username}`,
+      }
+      await userPublicNotes.saveUserInfo(userInfoData)
+
+      publicFolders.value = foldersWithCount
+      userInfo.value = userInfoData
+    }
+    else {
+      // 从本地数据库获取数据
+      const localFolders = await userPublicNotes.getLocalFolders()
+      const localUserInfo = await userPublicNotes.getUserInfo()
+
+      publicFolders.value = localFolders
+
+      // 优先从全局缓存获取用户信息
+      const cachedUser = await globalUserCache.getUserFromCache(username.value)
+      if (cachedUser) {
+        userInfo.value = {
+          id: cachedUser.id,
+          name: cachedUser.name || cachedUser.username || `用户 ${cachedUser.username}`,
         }
-      }),
-    )
-
-    publicFolders.value = foldersWithCount
-
-    // 设置用户信息
-    userInfo.value = {
-      id: userId.value,
-      name: `用户 ${userId.value.substring(0, 8)}...`,
+      }
+      else {
+        // 如果缓存中没有用户信息，需要获取一次
+        const user = await getUserByUsername(username.value)
+        if (user) {
+          const userInfoData = {
+            id: user.id,
+            username: user.username,
+            name: user.username || `用户 ${user.username}`,
+          }
+          await globalUserCache.saveUserToCache(username.value, userInfoData)
+          userInfo.value = userInfoData
+        }
+      }
     }
   }
   catch (err) {
-    error.value = '加载用户数据失败'
+    error.value = err instanceof Error ? err.message : '加载用户数据失败'
     console.error('加载用户数据失败:', err)
   }
   finally {
@@ -144,7 +211,7 @@ async function init() {
 
 // 刷新数据
 async function refresh(ev: CustomEvent) {
-  await init()
+  await init(true) // 强制刷新，从远程获取数据
   ev.detail.complete()
 }
 

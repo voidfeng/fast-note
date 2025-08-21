@@ -51,17 +51,17 @@ const routerLink = computed(() => {
      * 文件夹跳转逻辑
      * 1. isDesktop 不跳转
      * 2. 首页到文件夹: /f/ + id
-     * 3. 用户公开页面到文件夹: /:userId/f/ + id
+     * 3. 用户公开页面到文件夹: /:username/f/ + id
      * 4. 文件夹到文件夹: 当前路径 + id
      */
     const isHome = route.path === '/home'
-    const isUserHome = route.params.userId && (route.name === 'UserHome' || route.path === `/${route.params.userId}`)
+    const isUserHome = route.params.username && (route.name === 'UserHome' || route.path === `/${route.params.username}`)
 
     if (isHome) {
       return `/f/${props.data.uuid}`
     }
     else if (isUserHome) {
-      return `/${route.params.userId}/f/${props.data.uuid}`
+      return `/${route.params.username}/f/${props.data.uuid}`
     }
     else {
       return `${route.path}/${props.data.uuid}`
@@ -69,9 +69,9 @@ const routerLink = computed(() => {
   }
 
   // 笔记跳转逻辑
-  const isUserContext = route.params.userId
+  const isUserContext = route.params.username
   if (isUserContext) {
-    return `/${route.params.userId}/n/${props.data.uuid}`
+    return `/${route.params.username}/n/${props.data.uuid}`
   }
 
   return `/n/${props.data.uuid}`

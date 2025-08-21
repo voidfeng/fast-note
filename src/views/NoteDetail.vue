@@ -10,7 +10,7 @@ import NoteMore from '@/components/NoteMore.vue'
 import TableFormatModal from '@/components/TableFormatModal.vue'
 import TextFormatModal from '@/components/TextFormatModal.vue'
 import YYEditor from '@/components/YYEditor.vue'
-import { getPublicNote } from '@/extensions/supabase/api/noteSharing'
+import { getPublicNoteByUsername, getUserByUsername } from '@/extensions/supabase/api/userApi'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
@@ -44,6 +44,7 @@ const fileInputRef = ref()
 const imageInputRef = ref()
 const data = ref()
 const newNoteId = ref<string | null>(null)
+const cachedUserId = ref<string | null>(null)
 
 const state = reactive({
   showFormat: false,
@@ -55,8 +56,8 @@ const state = reactive({
 const uuidFromRoute = computed(() => route.params.uuid as string || route.params.noteId as string)
 const uuidFromSource = computed(() => props.noteUuid || uuidFromRoute.value)
 const isNewNote = computed(() => uuidFromSource.value === '0')
-const userId = computed(() => route.params.userId as string)
-const isUserContext = computed(() => !!userId.value)
+const username = computed(() => route.params.username as string)
+const isUserContext = computed(() => !!username.value)
 
 watch(isNewNote, (isNew) => {
   if (isNew && !newNoteId.value)
@@ -228,7 +229,7 @@ async function init(uuid: string) {
   try {
     if (isUserContext.value) {
       // 获取用户公开笔记
-      data.value = await getPublicNote(uuid)
+      data.value = await getPublicNoteByUsername(username.value, uuid)
       if (data.value) {
         // 公开笔记始终为只读模式
         editorRef.value?.setEditable(false)

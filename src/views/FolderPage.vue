@@ -21,10 +21,11 @@ import { nanoid } from 'nanoid'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
-import { getUserPublicFolder, getUserPublicFolderContents } from '@/extensions/supabase/api/noteSharing'
+import { getUserByUsername, getUserPublicFolderByUsername, getUserPublicFolderContentsByUsername } from '@/extensions/supabase/api/userApi'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
+import { globalUserCache } from '@/hooks/useUserCache'
 import { getTime } from '@/utils/date'
 
 const props = withDefaults(
@@ -71,8 +72,8 @@ const folderId = computed(() => {
   return lastId[lastId.length - 1]
 })
 
-const userId = computed(() => route.params.userId as string)
-const isUserContext = computed(() => !!userId.value)
+const username = computed(() => route.params.username as string)
+const isUserContext = computed(() => !!username.value)
 
 const addButtons: AlertButton[] = [
   { text: '取消', role: 'cancel' },
@@ -114,14 +115,14 @@ const defaultHref = computed(() => {
    * 返回上一级逻辑：当前url去掉最后一个id
    * 例如:  /f/12/13 返回 /f/12
    * 例如2: /f/12  返回 /home
-   * 用户上下文: /:userId/f/12 返回 /:userId
+   * 用户上下文: /:username/f/12 返回 /:username
    */
   const path = route.path
   const lastId = path.split('/').pop()
   const newPath = path.replace(`/${lastId}`, '')
 
   if (isUserContext.value && isTopFolder.value) {
-    return `/${userId.value}`
+    return `/${username.value}`
   }
   else if (isTopFolder.value) {
     return '/home'
@@ -150,19 +151,34 @@ async function init() {
   try {
     if (isUserContext.value) {
       // 用户公开文件夹上下文
-      const folderInfo = await getUserPublicFolder(userId.value, uuid)
+      // 从全局缓存获取用户信息
+      let cachedUser = await globalUserCache.getUserFromCache(username.value)
+
+      if (!cachedUser) {
+        const user = await getUserByUsername(username.value)
+        if (user) {
+          cachedUser = {
+            id: user.id,
+            username: user.username,
+            name: user.username || `用户 ${user.username}`,
+          }
+          await globalUserCache.saveUserToCache(username.value, cachedUser)
+        }
+      }
+
+      const folderInfo = await getUserPublicFolderByUsername(username.value, uuid, cachedUser?.id)
       if (folderInfo) {
         data.value = folderInfo
       }
 
-      const contents = await getUserPublicFolderContents(userId.value, uuid)
+      const contents = await getUserPublicFolderContentsByUsername(username.value, uuid, cachedUser?.id)
       dataList.value = contents
 
       // 计算文件夹下的备忘录数量
       for (let i = 0; i < dataList.value.length; i++) {
         const item = dataList.value[i]
         if (item.type === 'folder') {
-          const folderContents = await getUserPublicFolderContents(userId.value, item.uuid!)
+          const folderContents = await getUserPublicFolderContentsByUsername(username.value, item.uuid!, cachedUser?.id)
           item.noteCount = folderContents.length
         }
       }

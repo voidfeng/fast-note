@@ -129,9 +129,19 @@ export async function shareNote(request: {
       }
     }
 
-    const shareUrl = request.isPublic
-      ? `${window.location.origin}/${userId}/n/${request.noteId}`
-      : undefined
+    // 获取用户的 username 来生成分享链接
+    let shareUrl: string | undefined
+    if (request.isPublic) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', userId)
+        .single()
+
+      if (profileData?.username) {
+        shareUrl = `${window.location.origin}/${profileData.username}/n/${request.noteId}`
+      }
+    }
 
     return {
       success: true,
@@ -219,9 +229,18 @@ export async function copyShareLink(noteId: string): Promise<boolean> {
     const userId = userData.user?.id
 
     if (userId) {
-      const shareUrl = `${window.location.origin}/${userId}/n/${noteId}`
-      await navigator.clipboard.writeText(shareUrl)
-      return true
+      // 获取用户的 username 来生成分享链接
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', userId)
+        .single()
+
+      if (profileData?.username) {
+        const shareUrl = `${window.location.origin}/${profileData.username}/n/${noteId}`
+        await navigator.clipboard.writeText(shareUrl)
+        return true
+      }
     }
     return false
   }
