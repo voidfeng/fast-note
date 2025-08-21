@@ -75,6 +75,15 @@ export const FileUpload = Node.create<FileUploadOptions>({
   },
 
   addNodeView() {
-    return VueNodeViewRenderer(FileUploadComponent as any)
+    return VueNodeViewRenderer(FileUploadComponent as any, {
+      // 阻止点击时聚焦编辑器
+      stopEvent: ({ event }) => {
+        // 阻止所有点击事件冒泡到编辑器
+        if (event.type === 'mousedown' || event.type === 'click') {
+          return true
+        }
+        return false
+      },
+    })
   },
 })

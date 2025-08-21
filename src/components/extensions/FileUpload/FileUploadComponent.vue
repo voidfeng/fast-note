@@ -237,13 +237,27 @@ const wrapperStyle = computed(() => {
 })
 
 // 打开PhotoSwipe预览
-function handleImageClick() {
+function handleImageClick(event: Event) {
+  // 阻止事件冒泡，防止聚焦编辑器
+  event.preventDefault()
+  event.stopPropagation()
+
   // 只有图片类型才能预览
   if (!isPictureType.value || hasError.value || isLoading.value || !openPhotoSwipe)
     return
 
   // 调用父组件提供的预览功能
   openPhotoSwipe(imageUrl.value, naturalSize.value.width, naturalSize.value.height)
+}
+
+// 处理非图片文件的点击事件
+function handleFileClick(event: Event) {
+  // 阻止事件冒泡，防止聚焦编辑器
+  event.preventDefault()
+  event.stopPropagation()
+
+  // 这里可以添加非图片文件的处理逻辑，比如弹出菜单
+  console.log('点击了非图片文件:', nodeProps.value.url)
 }
 
 // 组件挂载时加载文件
@@ -282,7 +296,7 @@ onMounted(() => {
           @click="handleImageClick"
         >
       </div>
-      <div v-else class="file-preview">
+      <div v-else class="file-preview" @click="handleFileClick">
         <img :src="fileTypeIcon" :alt="fileType">
       </div>
     </div>
