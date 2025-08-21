@@ -4,6 +4,7 @@ import LoginPage from './components/LoginPage.vue'
 import UserProfile from './components/UserProfile.vue'
 import { useAuth } from './hooks/useAuth'
 import { useData } from './hooks/useData'
+import { useProfile } from './hooks/useProfile'
 import { useSync } from './hooks/useSync'
 
 // 定义扩展路由
@@ -25,6 +26,7 @@ export {
   LoginPage,
   useAuth,
   useData,
+  useProfile,
   UserProfile,
   useSync,
 }

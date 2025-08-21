@@ -41,6 +41,7 @@ import { useDexie } from '@/hooks/useDexie'
 import { useAuth } from '../hooks/useAuth'
 import { useData } from '../hooks/useData'
 import { useSync } from '../hooks/useSync'
+import ProfileCard from './ProfileCard.vue'
 
 const router = useIonRouter()
 const { init: initDexie } = useDexie()
@@ -211,35 +212,8 @@ onMounted(async () => {
       </IonHeader>
 
       <IonContent>
-        <!-- 用户基本信息 -->
-        <IonCard>
-          <IonCardHeader>
-            <IonCardTitle>
-              <IonIcon :icon="personCircleOutline" />
-              基本信息
-            </IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <IonItem>
-              <IonLabel>
-                <h3>邮箱</h3>
-                <p>{{ currentUser?.email || '未知' }}</p>
-              </IonLabel>
-            </IonItem>
-            <IonItem>
-              <IonLabel>
-                <h3>用户ID</h3>
-                <p>{{ currentUser?.id || '未知' }}</p>
-              </IonLabel>
-            </IonItem>
-            <IonItem>
-              <IonLabel>
-                <h3>注册时间</h3>
-                <p>{{ formatDate(currentUser?.created_at) }}</p>
-              </IonLabel>
-            </IonItem>
-          </IonCardContent>
-        </IonCard>
+        <!-- 用户个人信息管理 -->
+        <ProfileCard />
 
         <!-- 数据统计 -->
         <IonCard>

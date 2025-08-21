@@ -44,6 +44,100 @@ import { LoginPage } from '@/extensions/supabase'
 
 ## API 说明
 
+### useProfile Hook
+
+用户信息管理 Hook，提供完整的用户 profiles 数据管理功能。
+
+#### 功能特性
+
+- 自动获取和缓存用户 profiles 数据
+- localStorage 本地缓存（30分钟过期）
+- 用户名唯一性检查
+- 头像和用户名更新
+- 响应式状态管理
+- 登录状态监听，自动初始化和清理
+
+#### 使用方法
+
+```typescript
+import { useProfile } from '@/extensions/supabase'
+
+const {
+  profile, // 用户 profile 数据
+  isLoadingProfile, // 加载状态
+  profileError, // 错误信息
+  hasProfile, // 是否有 profile
+  hasUsername, // 是否有用户名
+  displayName, // 显示名称
+  fetchProfile, // 获取 profile
+  updateProfile, // 更新 profile
+  checkUsernameAvailable, // 检查用户名可用性
+  clearProfileCache, // 清除缓存
+} = useProfile()
+```
+
+#### 主要方法
+
+##### fetchProfile(forceRefresh?: boolean)
+
+获取用户 profile 数据
+
+```typescript
+// 从缓存或服务器获取
+await fetchProfile()
+
+// 强制从服务器刷新
+await fetchProfile(true)
+```
+
+##### updateProfile(updates)
+
+更新用户 profile 信息
+
+```typescript
+// 更新用户名
+await updateProfile({ username: '新用户名' })
+
+// 更新头像
+await updateProfile({ avatar_url: 'https://example.com/avatar.jpg' })
+
+// 同时更新多个字段
+await updateProfile({
+  username: '新用户名',
+  avatar_url: 'https://example.com/avatar.jpg'
+})
+```
+
+##### checkUsernameAvailable(username: string)
+
+检查用户名是否可用
+
+```typescript
+const isAvailable = await checkUsernameAvailable('myusername')
+if (isAvailable) {
+  console.log('用户名可用')
+}
+else {
+  console.log('用户名已被使用')
+}
+```
+
+#### 状态属性
+
+- `profile` - 用户 profile 数据对象
+- `isLoadingProfile` - 是否正在加载
+- `profileError` - 错误信息
+- `hasProfile` - 是否有 profile 数据
+- `hasUsername` - 是否已设置用户名
+- `displayName` - 显示名称（用户名或邮箱前缀）
+
+#### 缓存机制
+
+- 自动缓存到 localStorage，过期时间 30 分钟
+- 登录后自动从缓存加载，然后从服务器更新
+- 登出时自动清除缓存
+- 支持手动清除缓存
+
 ### useSupabaseAuth Hook
 
 #### 新增方法
