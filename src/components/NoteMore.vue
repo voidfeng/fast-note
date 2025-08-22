@@ -5,6 +5,7 @@ import { lockClosed, lockOpen, shareOutline, trashOutline } from 'ionicons/icons
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import IconTextButton from '@/components/IconTextButton.vue'
+import { useDexie } from '@/hooks/useDexie'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
@@ -23,6 +24,7 @@ const { updateNote, getNote } = useNote()
 const { getFileRefsByRefid, updateFileRef, getFilesRefByHash } = useFileRefs()
 const { updateFile, getFile } = useFiles()
 const { state, register, verify } = useWebAuthn()
+const { db } = useDexie()
 
 const modalRef = ref()
 const note = ref<Note | undefined>(undefined)
@@ -34,19 +36,105 @@ async function onWillPresent() {
   }
 }
 
+// 获取所有子级笔记（递归）
+async function getAllChildrenNotes(noteUuid: string): Promise<Note[]> {
+  const children = await db.value.note
+    .where('puuid')
+    .equals(noteUuid)
+    .and((item: Note) => item.isdeleted !== 1)
+    .toArray()
+
+  let allChildren: Note[] = [...children]
+
+  for (const child of children) {
+    if (child.uuid) {
+      const grandChildren = await getAllChildrenNotes(child.uuid)
+      allChildren = [...allChildren, ...grandChildren]
+    }
+  }
+
+  return allChildren
+}
+
+// 获取父级笔记
+async function getParentNote(puuid: string | null): Promise<Note | null> {
+  if (!puuid)
+    return null
+  return await db.value.note.where('uuid').equals(puuid).first() || null
+}
+
+// 递归获取所有父级笔记
+async function getAllParentNotes(currentNote: Note): Promise<Note[]> {
+  const parents: Note[] = []
+  let current = currentNote
+
+  while (current.puuid) {
+    const parent = await getParentNote(current.puuid)
+    if (parent) {
+      parents.push(parent)
+      current = parent
+    }
+    else {
+      break
+    }
+  }
+
+  return parents
+}
+
 async function onShare() {
   if (!note.value?.uuid)
     return
 
   try {
     const now = getTime()
-    // 切换分享状态
     const isPublic = !note.value.is_public
-    note.value.is_public = isPublic
-    note.value.lastdotime = now
 
-    // 只更新本地 IndexedDB 数据
-    await updateNote(note.value.uuid, { ...note.value })
+    if (isPublic) {
+      // 启用分享：遍历父级，把全部父级的is_public改为true
+      note.value.is_public = true
+      note.value.lastdotime = now
+      await updateNote(note.value.uuid, { ...note.value })
+
+      // 获取所有父级并设置为公开
+      const parents = await getAllParentNotes(note.value)
+      for (const parent of parents) {
+        if (!parent.is_public) {
+          await updateNote(parent.uuid!, {
+            ...parent,
+            is_public: true,
+            lastdotime: now,
+          })
+        }
+      }
+    }
+    else {
+      // 取消分享：先把当前note的is_public改为false
+      note.value.is_public = false
+      note.value.lastdotime = now
+      await updateNote(note.value.uuid, { ...note.value })
+
+      // 遍历父级，检查父级的全部子级、孙级是否有is_public为true
+      const parents = await getAllParentNotes(note.value)
+      for (const parent of parents) {
+        if (parent.is_public) {
+          // 获取该父级的所有子级和孙级
+          const allChildren = await getAllChildrenNotes(parent.uuid!)
+
+          // 检查是否还有公开的子级
+          const hasPublicChildren = allChildren.some(child => child.is_public)
+
+          if (!hasPublicChildren) {
+            // 如果没有公开的子级，则将父级设为私有
+            await updateNote(parent.uuid!, {
+              ...parent,
+              is_public: false,
+              lastdotime: now,
+            })
+          }
+        }
+      }
+    }
 
     // 显示操作结果提示
     const toast = await toastController.create({
