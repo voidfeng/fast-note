@@ -89,6 +89,10 @@ const addButtons: AlertButton[] = [
         puuid: folderId.value || null,
         uuid: nanoid(12),
         version: 1,
+        newstext: '',
+        isdeleted: 0,
+        islocked: 0,
+        subcount: 0,
       })
       init()
     },

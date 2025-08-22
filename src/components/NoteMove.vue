@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits(['refresh'])
 
-const { getFolderTreeByPUuid, getNote, updateNote } = useNote()
+const { getFolderTreeByPUuid, getNote, updateNote, updateParentFolderSubcount } = useNote()
 
 const modalRef = ref()
 const noteListRef = ref()
@@ -48,24 +48,23 @@ function findFoldersWithChildren(notes: Note[]): string[] {
  * @param targetUuid
  * @returns Note[]
  */
-function filterNotesByUuid(notes: Note[], targetUuid: string): Note[] {
-  return notes.filter((note) => {
-    if (note.uuid === targetUuid) {
-      return false
-    }
+// function filterNotesByUuid(notes: Note[], targetUuid: string): Note[] {
+//   return notes.filter((note) => {
+//     if (note.uuid === targetUuid) {
+//       return false
+//     }
 
-    if (note.children && note.children.length > 0) {
-      note.children = filterNotesByUuid(note.children, targetUuid)
-    }
+//     if (note.children && note.children.length > 0) {
+//       note.children = filterNotesByUuid(note.children, targetUuid)
+//     }
 
-    return true
-  })
-}
+//     return true
+//   })
+// }
 
 watch(() => props.isOpen, (val) => {
   if (val) {
-    getFolderTreeByPUuid().then((res) => {
-      const filteredData = filterNotesByUuid(res, props.uuid)
+    getFolderTreeByPUuid().then(() => {
       dataList.value = [{
         uuid: '',
         title: '根目录',
@@ -79,6 +78,7 @@ watch(() => props.isOpen, (val) => {
         smalltext: '',
         newstime: getTime(),
         newstext: '',
+        subcount: 0,
       }]
       noteListRef.value.setExpandedItems(findFoldersWithChildren(dataList.value))
       getNote(props.uuid).then((res) => {
@@ -91,9 +91,16 @@ watch(() => props.isOpen, (val) => {
 })
 
 async function onSelected(uuid: string) {
+  const preNote = Object.assign({}, currentNote.value)
   currentNote.value!.puuid = uuid || null
   currentNote.value!.lastdotime = getTime()
   await updateNote(currentNote.value!.uuid, toRaw(currentNote.value!))
+  if (preNote.puuid) {
+    updateParentFolderSubcount(preNote)
+  }
+  if (currentNote.value!.puuid) {
+    updateParentFolderSubcount(currentNote.value!)
+  }
   dismiss()
   emit('refresh')
 }

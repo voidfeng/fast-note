@@ -20,7 +20,7 @@ const emit = defineEmits(['update:isOpen'])
 
 const route = useRoute()
 const router = useIonRouter()
-const { updateNote, getNote } = useNote()
+const { updateNote, getNote, updateParentFolderSubcount } = useNote()
 const { getFileRefsByRefid, updateFileRef, getFilesRefByHash } = useFileRefs()
 const { updateFile, getFile } = useFiles()
 const { state, register, verify } = useWebAuthn()
@@ -206,6 +206,7 @@ async function onDelete() {
         }
       }
     }
+    updateParentFolderSubcount(note)
     router.back()
     emit('update:isOpen', false)
   }

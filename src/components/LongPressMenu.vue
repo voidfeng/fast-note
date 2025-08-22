@@ -22,7 +22,7 @@ const props = withDefaults(defineProps <{
 
 const emit = defineEmits(['refresh'])
 
-const { getNote, updateNote, getNotesByPUuid } = useNote()
+const { getNote, updateNote, getNotesByPUuid, updateParentFolderSubcount } = useNote()
 
 const modal = ref()
 const note = ref<Note>()
@@ -73,6 +73,7 @@ const config = ref<IConfig>({
                 note.isdeleted = 1
                 await updateNote(note.uuid, note)
               }
+              updateParentFolderSubcount(note.value!)
               emit('refresh')
               dismiss()
             },
@@ -88,6 +89,7 @@ const config = ref<IConfig>({
     handler: async () => {
       note.value!.isdeleted = 0
       await updateNote(note.value!.uuid, toRaw(note.value))
+      updateParentFolderSubcount(note.value!)
       emit('refresh')
       dismiss()
     },

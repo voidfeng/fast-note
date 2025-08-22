@@ -166,7 +166,7 @@ async function handleNoteSaving() {
         subcount: 0,
       }
       await addNote(newNote)
-      updateParentFolderSubcount(uuid)
+      updateParentFolderSubcount(newNote)
       data.value = newNote
     }
   }

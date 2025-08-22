@@ -134,7 +134,7 @@ async function init() {
   else if (treeData && treeData.length > 0) {
     dataList.value = treeData
     // 直接使用 subcount，无需计算
-    allNotesCount.value = unfiledNotesCount.value
+    allNotesCount.value = dataList.value.reduce((acc, cur) => acc + cur.subcount!, 0) + unfiledNotesCount.value
   }
 
   // 获取已删除的备忘录
