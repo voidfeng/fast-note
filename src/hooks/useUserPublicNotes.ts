@@ -1,7 +1,5 @@
-import type { Metadata, UserInfo } from './useDexie'
+import type { UserInfo } from './useDexie'
 import type { Note } from '@/types'
-import Dexie from 'dexie'
-import { ref } from 'vue'
 import { useDexie } from './useDexie'
 
 export function useUserPublicNotes(username: string) {
@@ -11,8 +9,6 @@ export function useUserPublicNotes(username: string) {
     await initDexie()
     // 动态创建用户专用的公开笔记表
     await createUserPublicNotesTable()
-    // 清理旧的用户特定数据库
-    await cleanupOldUserDatabase()
   }
 
   // 动态创建用户专用的公开笔记表
@@ -56,20 +52,6 @@ export function useUserPublicNotes(username: string) {
     }
     catch (error) {
       console.warn(`创建用户表 ${tableName} 时出现错误:`, error)
-    }
-  }
-
-  // 清理旧的用户特定数据库
-  async function cleanupOldUserDatabase() {
-    try {
-      const oldDbName = `user_public_notes_${username}`
-      // 删除旧的用户特定数据库
-      await Dexie.delete(oldDbName)
-      console.log(`已清理旧数据库: ${oldDbName}`)
-    }
-    catch (error) {
-      // 如果数据库不存在或删除失败，忽略错误
-      console.debug('清理旧数据库时出现错误（可忽略）:', error)
     }
   }
 

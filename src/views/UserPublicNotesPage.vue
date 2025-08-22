@@ -5,7 +5,6 @@ import {
   IonButton,
   IonButtons,
   IonContent,
-  IonFooter,
   IonHeader,
   IonIcon,
   IonPage,
@@ -18,7 +17,7 @@ import {
 } from '@ionic/vue'
 import { alertCircleOutline, folderOutline } from 'ionicons/icons'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { globalUserCache } from '@/hooks/useUserCache'
@@ -28,7 +27,6 @@ import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
 const route = useRoute()
-const router = useRouter()
 const { isDesktop } = useDeviceType()
 
 // 获取路由参数
@@ -183,7 +181,6 @@ async function init(forceRefresh = false) {
     else {
       // 从本地数据库获取数据
       const localFolders = await userPublicNotes.getLocalFolders()
-      const localUserInfo = await userPublicNotes.getUserInfo()
 
       publicFolders.value = localFolders
 
