@@ -41,7 +41,7 @@ export function useNote() {
       })
   }
 
-  async function addNote(note: any) {
+  async function addNote(note: Note) {
     const { data, error } = await withErrorHandling(
       () => noteService.createNote(note),
       ErrorType.DATABASE,
@@ -159,30 +159,18 @@ export function useNote() {
     if (folders && folders.length > 0) {
       // 递归寻找每个文件夹的子文件夹
       const buildFolderTree = async (currentFolder: Note, allFolders: Note[]): Promise<Note> => {
-        // 使用复合索引直接查询，避免加载数据到内存
-        const directNoteCount = await db.value.note
-          .where('[type+puuid+isdeleted]')
-          .equals(['note', currentFolder.uuid, 0])
-          .count()
-
         const children = allFolders.filter(item => item.puuid === currentFolder.uuid)
 
-        // 计算子文件夹中的笔记数量
-        let childrenNoteCount = 0
         if (children.length > 0) {
           currentFolder.children = []
           // 递归处理每个子文件夹
           for (const child of children) {
             const processedChild = await buildFolderTree(child, allFolders)
             currentFolder.children.push(processedChild)
-            // 累加子文件夹中的笔记数量
-            childrenNoteCount += processedChild.noteCount || 0
           }
         }
 
-        // 当前文件夹总笔记数 = 直接包含的笔记 + 子文件夹中的所有笔记
-        currentFolder.noteCount = directNoteCount + childrenNoteCount
-
+        // 直接使用数据库中的 subcount，无需计算
         return currentFolder
       }
 
@@ -237,6 +225,37 @@ export function useNote() {
     return allMatchedNotes
   }
 
+  async function updateParentFolderSubcount(noteUuid: string) {
+    // 根据 note 的 uuid 获取笔记信息
+    const note = await db.value.note.where('uuid').equals(noteUuid).first()
+    if (!note || !note.puuid) {
+      return // 如果没有父级，直接返回
+    }
+
+    let currentPuuid: string | null = note.puuid
+
+    // 递归更新所有父级文件夹的 noteCount
+    while (currentPuuid) {
+      // 获取当前父级文件夹
+      const parentFolder: Note | undefined = await db.value.note.where('uuid').equals(currentPuuid).first()
+      if (!parentFolder || parentFolder.type !== 'folder') {
+        break
+      }
+
+      // 计算当前文件夹下的笔记数量（递归计算）
+      const noteCount = await getNoteCountByUuid(currentPuuid)
+
+      // 更新父级文件夹的 subcount 和 lastdotime
+      await db.value.note.where('uuid').equals(currentPuuid).modify({
+        subcount: noteCount,
+        lastdotime: getTime(),
+      })
+
+      // 继续向上查找父级
+      currentPuuid = parentFolder.puuid
+    }
+  }
+
   onUnmounted(() => {
     privateNoteUpdateArr.forEach((fn) => {
       onNoteUpdateArr.splice(onNoteUpdateArr.indexOf(fn), 1)
@@ -262,5 +281,6 @@ export function useNote() {
     getAllFolders,
     getFolderTreeByPUuid,
     getUnfiledNotesCount,
+    updateParentFolderSubcount,
   }
 }

@@ -89,11 +89,14 @@ const addButtons: AlertButton[] = [
       await addNote({
         title: d.newFolderName,
         newstime: getTime(),
+        newstext: '',
         lastdotime: isoTime,
         type: 'folder',
         puuid: null,
         uuid: nanoid(12),
-        version: 1,
+        subcount: 0,
+        isdeleted: 0,
+        islocked: 0,
       })
       init()
     },
@@ -130,12 +133,8 @@ async function init() {
   }
   else if (treeData && treeData.length > 0) {
     dataList.value = treeData
-    // 计算所有笔记总数
-    let notesCount = 0
-    for (const folder of treeData) {
-      notesCount += folder.noteCount || 0
-    }
-    allNotesCount.value = notesCount + unfiledNotesCount.value
+    // 直接使用 subcount，无需计算
+    allNotesCount.value = unfiledNotesCount.value
   }
 
   // 获取已删除的备忘录

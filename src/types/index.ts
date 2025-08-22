@@ -7,17 +7,17 @@ export interface Note {
   id?: number
   uuid: string
   title: string
-  smalltext: string
+  smalltext?: string
   newstime: string
   newstext: string
   type: string
   puuid: string | null
   lastdotime: string
-  version: number
-  isdeleted: 0 | 1
-  islocked: 0 | 1
+  version?: number
+  isdeleted: number
+  islocked: number
   is_public?: boolean
-  noteCount?: number
+  subcount: number
   children?: Note[]
   folderName?: string
   user_id?: string

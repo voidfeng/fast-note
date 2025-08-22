@@ -89,7 +89,7 @@ defineExpose({
           title: '全部备忘录',
           type: 'folder',
           puuid: null,
-          noteCount: allNotesCount,
+          subcount: allNotesCount,
         } as Note"
         :class="{ active: noteUuid === 'allnotes' }"
         :disabled-route
@@ -102,7 +102,7 @@ defineExpose({
           title: '备忘录',
           type: 'folder',
           puuid: null,
-          noteCount: unfiledNotesCount,
+          subcount: unfiledNotesCount,
         } as Note"
         :class="{ active: noteUuid === 'allnotes' }"
         :disabled-route
@@ -125,7 +125,7 @@ defineExpose({
           title: '最近删除',
           type: 'folder',
           puuid: null,
-          noteCount: deletedNoteCount,
+          subcount: deletedNoteCount,
         } as Note"
         :class="{ active: noteUuid === 'deleted' }"
         :disabled-route

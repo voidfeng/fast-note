@@ -40,7 +40,7 @@ const props = withDefaults(
 defineEmits(['selected'])
 
 const route = useRoute()
-const { addNote, getNote, getAllFolders, getNotesByPUuid, getNoteCountByUuid } = useNote()
+const { addNote, getNote, getAllFolders, getNotesByPUuid } = useNote()
 const { isDesktop } = useDeviceType()
 
 const longPressMenuOpen = ref(false)
@@ -174,14 +174,7 @@ async function init() {
       const contents = await getUserPublicFolderContentsByUsername(username.value, uuid, cachedUser?.id)
       dataList.value = contents
 
-      // 计算文件夹下的备忘录数量
-      for (let i = 0; i < dataList.value.length; i++) {
-        const item = dataList.value[i]
-        if (item.type === 'folder') {
-          const folderContents = await getUserPublicFolderContentsByUsername(username.value, item.uuid!, cachedUser?.id)
-          item.noteCount = folderContents.length
-        }
-      }
+      // 直接使用数据库中的 subcount，无需计算
     }
     else {
       // 当前用户的文件夹上下文
@@ -218,14 +211,6 @@ async function init() {
             note.folderName = '无文件夹'
           }
         })
-      }
-      else {
-        for (let i = 0; i < dataList.value.length; i++) {
-          // 计算文件夹下的备忘录数量
-          const item = dataList.value[i]
-          const count = await getNoteCountByUuid(item.uuid!)
-          item.noteCount = count
-        }
       }
     }
   }

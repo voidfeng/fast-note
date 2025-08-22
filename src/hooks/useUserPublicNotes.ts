@@ -38,7 +38,7 @@ export function useUserPublicNotes(username: string) {
       }
 
       // 添加新的用户公开笔记表
-      currentStores[tableName] = '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted, noteCount'
+      currentStores[tableName] = '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted, subcount'
 
       // 关闭当前数据库连接
       db.value.close()
@@ -56,7 +56,7 @@ export function useUserPublicNotes(username: string) {
   }
 
   // 获取本地存储的文件夹数据
-  async function getLocalFolders(): Promise<(Note & { noteCount: number })[]> {
+  async function getLocalFolders(): Promise<(Note & { subcount: number })[]> {
     if (!db.value)
       await init()
 
@@ -66,7 +66,7 @@ export function useUserPublicNotes(username: string) {
   }
 
   // 保存文件夹数据到本地
-  async function saveFolders(folders: (Note & { noteCount: number })[]) {
+  async function saveFolders(folders: (Note & { subcount: number })[]) {
     if (!db.value)
       await init()
 

@@ -10,7 +10,7 @@ import NoteMore from '@/components/NoteMore.vue'
 import TableFormatModal from '@/components/TableFormatModal.vue'
 import TextFormatModal from '@/components/TextFormatModal.vue'
 import YYEditor from '@/components/YYEditor.vue'
-import { getPublicNoteByUsername, getUserByUsername } from '@/extensions/supabase/api/userApi'
+import { getPublicNoteByUsername } from '@/extensions/supabase/api/userApi'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
@@ -30,7 +30,7 @@ const props = withDefaults(
 
 const route = useRoute()
 const router = useRouter()
-const { addNote, getNote, updateNote, deleteNote } = useNote()
+const { addNote, getNote, updateNote, deleteNote, updateParentFolderSubcount } = useNote()
 const { getFileByUrl } = useFiles()
 const { getFileRefsByRefid, updateFileRef } = useFileRefs()
 const { isDesktop } = useDeviceType()
@@ -44,7 +44,6 @@ const fileInputRef = ref()
 const imageInputRef = ref()
 const data = ref()
 const newNoteId = ref<string | null>(null)
-const cachedUserId = ref<string | null>(null)
 
 const state = reactive({
   showFormat: false,
@@ -164,8 +163,10 @@ async function handleNoteSaving() {
         uuid,
         isdeleted: 0,
         islocked: 0,
+        subcount: 0,
       }
       await addNote(newNote)
+      updateParentFolderSubcount(uuid)
       data.value = newNote
     }
   }
@@ -291,9 +292,14 @@ function openTextFormatModal() {
 }
 
 onMounted(() => {
-  // On mobile, when creating a new note from route /n/0, update URL
-  if (isNewNote.value && !isDesktop.value)
-    window.history.replaceState(null, '', `/n/${newNoteId.value}`)
+  if (isNewNote.value && !isDesktop.value) {
+    if (route.query.puuid) {
+      window.history.replaceState(null, '', `/n/${newNoteId.value}?puuid=${route.query.puuid}`)
+    }
+    else {
+      window.history.replaceState(null, '', `/n/${newNoteId.value}`)
+    }
+  }
 })
 
 onIonViewWillLeave(() => {

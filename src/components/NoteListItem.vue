@@ -103,7 +103,7 @@ function onClick() {
         <h2 class="mb-0 line-height-[24px]">
           {{ data.title }}
           <span class="date">
-            <IonNote class="text-gray-400 text-base font-semibold">{{ data.noteCount }}</IonNote>
+            <IonNote class="text-gray-400 text-base font-semibold">{{ data.subcount }}</IonNote>
           </span>
         </h2>
       </IonLabel>

@@ -119,7 +119,7 @@ async function fetchRemoteData() {
       const contents = await getUserPublicFolderContentsByUsername(username.value, folder.uuid, user.id)
       return {
         ...folder,
-        noteCount: contents.length,
+        subcount: contents.length,
       }
     }),
   )
