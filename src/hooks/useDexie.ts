@@ -6,10 +6,28 @@ import { ref } from 'vue'
 // 重新导出类型，以便其他模块可以从这里导入
 export type { FileRef, Note, NoteDetail, TypedFile }
 
+// 用户信息接口
+export interface UserInfo {
+  id: string
+  username: string
+  name?: string
+}
+
+// 元数据接口
+export interface Metadata {
+  key: string
+  value: string
+}
+
 interface NoteDatabase extends Dexie {
   note: Dexie.Table<Note, string>
   file: Dexie.Table<TypedFile, string>
   file_refs: Dexie.Table<FileRef, string>
+  // 添加新表
+  userInfo: Dexie.Table<UserInfo, string>
+  metadata: Dexie.Table<Metadata, string>
+  // 动态添加的用户公开笔记表将在运行时创建
+  [key: string]: any
 }
 
 const db = ref<NoteDatabase>()
@@ -95,6 +113,15 @@ export function useDexie() {
           note.puuid = null
         }
       })
+    })
+
+    // 版本 5: 添加 userInfo 和 metadata 表
+    db.value.version(5).stores({
+      note: '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted',
+      file: '&hash, id, url, lastdotime',
+      file_refs: '[hash+refid], hash, refid, lastdotime',
+      userInfo: '&id, username, name',
+      metadata: '&key, value',
     })
   }
 

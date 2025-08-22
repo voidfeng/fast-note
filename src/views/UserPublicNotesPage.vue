@@ -147,8 +147,15 @@ async function init(forceRefresh = false) {
     let shouldFetchRemote = forceRefresh
 
     if (!forceRefresh) {
-      // 检查是否需要更新数据
-      shouldFetchRemote = await userPublicNotes.shouldUpdate()
+      // 检查本地是否有数据，如果没有则强制从远程获取
+      const localFolders = await userPublicNotes.getLocalFolders()
+      if (localFolders.length === 0) {
+        shouldFetchRemote = true
+      }
+      else {
+        // 检查是否需要更新数据
+        shouldFetchRemote = await userPublicNotes.shouldUpdate()
+      }
     }
 
     if (shouldFetchRemote) {
@@ -166,6 +173,9 @@ async function init(forceRefresh = false) {
         name: user.username || `用户 ${user.username}`,
       }
       await userPublicNotes.saveUserInfo(userInfoData)
+
+      // 同时更新全局用户缓存
+      await globalUserCache.saveUserToCache(username.value, userInfoData)
 
       publicFolders.value = foldersWithCount
       userInfo.value = userInfoData

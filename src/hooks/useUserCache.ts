@@ -1,11 +1,9 @@
+import type { UserInfo } from './useDexie'
 import { ref } from 'vue'
 import { useUserPublicNotes } from './useUserPublicNotes'
 
-interface CachedUser {
-  id: string
-  username: string
-  name?: string
-}
+// 使用 UserInfo 类型作为 CachedUser
+type CachedUser = UserInfo
 
 // 全局用户缓存
 const userCache = new Map<string, CachedUser>()
@@ -43,19 +41,14 @@ export function useUserCache() {
       return memoryCache
     }
 
-    // 从 IndexedDB 获取
+    // 从统一的 IndexedDB 获取
     const userPublicNotes = useUserPublicNotes(username)
     await userPublicNotes.init()
     const localUserInfo = await userPublicNotes.getUserInfo()
 
     if (localUserInfo) {
-      const cachedUser: CachedUser = {
-        id: localUserInfo.id,
-        username: localUserInfo.username,
-        name: localUserInfo.name,
-      }
-      setCachedUser(username, cachedUser)
-      return cachedUser
+      setCachedUser(username, localUserInfo)
+      return localUserInfo
     }
 
     return null

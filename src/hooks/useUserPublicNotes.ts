@@ -1,54 +1,86 @@
+import type { Metadata, UserInfo } from './useDexie'
 import type { Note } from '@/types'
 import Dexie from 'dexie'
 import { ref } from 'vue'
-
-interface UserInfo {
-  id: string
-  username: string
-  name?: string
-}
-
-interface UserPublicNotesDatabase extends Dexie {
-  folders: Dexie.Table<Note & { noteCount: number }, string>
-  metadata: Dexie.Table<{ key: string, value: string }, string>
-  userInfo: Dexie.Table<UserInfo, string>
-}
-
-const dbCache = new Map<string, UserPublicNotesDatabase>()
+import { useDexie } from './useDexie'
 
 export function useUserPublicNotes(username: string) {
-  const db = ref<UserPublicNotesDatabase>()
+  const { db, init: initDexie } = useDexie()
 
   async function init() {
-    // 检查缓存中是否已有该用户的数据库实例
-    if (dbCache.has(username)) {
-      db.value = dbCache.get(username)!
+    await initDexie()
+    // 动态创建用户专用的公开笔记表
+    await createUserPublicNotesTable()
+    // 清理旧的用户特定数据库
+    await cleanupOldUserDatabase()
+  }
+
+  // 动态创建用户专用的公开笔记表
+  async function createUserPublicNotesTable() {
+    if (!db.value)
+      return
+
+    const tableName = `public_notes_${username}`
+
+    // 检查表是否已存在
+    if (db.value.tables.some(table => table.name === tableName)) {
       return
     }
 
-    // 创建以用户名为名称的数据库
-    const dbName = `user_public_notes_${username}`
-    db.value = new Dexie(dbName) as UserPublicNotesDatabase
+    try {
+      // 获取当前数据库版本
+      const currentVersion = db.value.verno
+      const newVersion = currentVersion + 1
 
-    // 定义表结构
-    db.value.version(1).stores({
-      folders: '&uuid, title, newstime, lastdotime, type, puuid, noteCount',
-      metadata: '&key, value',
-      userInfo: '&id, username, name',
-    })
+      // 获取当前所有表的定义
+      const currentStores: { [key: string]: string } = {
+        note: '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted',
+        file: '&hash, id, url, lastdotime',
+        file_refs: '[hash+refid], hash, refid, lastdotime',
+        userInfo: '&id, username, name',
+        metadata: '&key, value',
+      }
 
-    // 等待数据库打开
-    await db.value.open()
+      // 添加新的用户公开笔记表
+      currentStores[tableName] = '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted, noteCount'
 
-    // 缓存数据库实例
-    dbCache.set(username, db.value)
+      // 关闭当前数据库连接
+      db.value.close()
+
+      // 重新初始化数据库并添加新版本
+      await initDexie()
+      if (db.value) {
+        db.value.version(newVersion).stores(currentStores)
+        await db.value.open()
+      }
+    }
+    catch (error) {
+      console.warn(`创建用户表 ${tableName} 时出现错误:`, error)
+    }
+  }
+
+  // 清理旧的用户特定数据库
+  async function cleanupOldUserDatabase() {
+    try {
+      const oldDbName = `user_public_notes_${username}`
+      // 删除旧的用户特定数据库
+      await Dexie.delete(oldDbName)
+      console.log(`已清理旧数据库: ${oldDbName}`)
+    }
+    catch (error) {
+      // 如果数据库不存在或删除失败，忽略错误
+      console.debug('清理旧数据库时出现错误（可忽略）:', error)
+    }
   }
 
   // 获取本地存储的文件夹数据
   async function getLocalFolders(): Promise<(Note & { noteCount: number })[]> {
     if (!db.value)
       await init()
-    return await db.value!.folders.toArray()
+
+    const tableName = `public_notes_${username}`
+    const table = db.value!.table(tableName)
+    return await table.toArray()
   }
 
   // 保存文件夹数据到本地
@@ -56,10 +88,14 @@ export function useUserPublicNotes(username: string) {
     if (!db.value)
       await init()
 
+    const tableName = `public_notes_${username}`
+    const table = db.value!.table(tableName)
+
     // 清空现有数据并保存新数据
-    await db.value!.folders.clear()
+    await table.clear()
+
     if (folders.length > 0) {
-      await db.value!.folders.bulkAdd(folders)
+      await table.bulkAdd(folders)
     }
   }
 
@@ -68,7 +104,8 @@ export function useUserPublicNotes(username: string) {
     if (!db.value)
       await init()
 
-    const metadata = await db.value!.metadata.get('lastUpdateTime')
+    const metadataKey = `lastUpdateTime_${username}`
+    const metadata = await db.value!.metadata.get(metadataKey)
     return metadata?.value || null
   }
 
@@ -77,8 +114,9 @@ export function useUserPublicNotes(username: string) {
     if (!db.value)
       await init()
 
+    const metadataKey = `lastUpdateTime_${username}`
     await db.value!.metadata.put({
-      key: 'lastUpdateTime',
+      key: metadataKey,
       value: time,
     })
   }
@@ -102,7 +140,13 @@ export function useUserPublicNotes(username: string) {
     if (!db.value)
       await init()
 
-    await db.value!.userInfo.put(userInfo)
+    // 确保用户信息包含用户名
+    const userInfoWithUsername = {
+      ...userInfo,
+      username,
+    }
+
+    await db.value!.userInfo.put(userInfoWithUsername)
   }
 
   // 获取用户信息
@@ -111,8 +155,8 @@ export function useUserPublicNotes(username: string) {
       await init()
 
     try {
-      const users = await db.value!.userInfo.toArray()
-      return users.length > 0 ? users[0] : null
+      const user = await db.value!.userInfo.where({ username }).first()
+      return user || null
     }
     catch (error) {
       console.warn('获取用户信息失败:', error)
@@ -125,9 +169,14 @@ export function useUserPublicNotes(username: string) {
     if (!db.value)
       await init()
 
-    await db.value!.folders.clear()
-    await db.value!.metadata.clear()
-    await db.value!.userInfo.clear()
+    // 清空用户专用的公开笔记表
+    const tableName = `public_notes_${username}`
+    const table = db.value!.table(tableName)
+    await table.clear()
+
+    // 删除用户相关的元数据和用户信息
+    await db.value!.metadata.where({ key: `lastUpdateTime_${username}` }).delete()
+    await db.value!.userInfo.where({ username }).delete()
   }
 
   return {
