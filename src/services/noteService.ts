@@ -1,4 +1,4 @@
-import type { Note, NoteDetail } from '@/types'
+import type { Note } from '@/types'
 import { nanoid } from 'nanoid'
 import { APP_CONFIG, DB_CONFIG, DELETE_STATUS, NOTE_TYPES } from '@/constants'
 import { useDexie } from '@/hooks/useDexie'
@@ -49,7 +49,7 @@ export class NoteService {
       ...data,
       // 确保必需属性不被覆盖为 undefined
       islocked: data.islocked ?? 0,
-    }
+    } as Note
 
     await this.db.value.note.add(note)
     return note.uuid
@@ -121,7 +121,7 @@ export class NoteService {
         return item.isdeleted !== DELETE_STATUS.DELETED
           && (item.title.includes(keyword)
             || item.newstext.includes(keyword)
-            || item.smalltext.includes(keyword))
+            || item.smalltext!.includes(keyword))
       })
       .toArray()
   }
