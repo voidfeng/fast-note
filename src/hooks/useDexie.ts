@@ -32,6 +32,27 @@ interface NoteDatabase extends Dexie {
 
 const db = ref<NoteDatabase>()
 const onNoteUpdateArr: (() => void)[] = []
+let dbInitialized = false
+
+// 全局数据库初始化函数
+export async function initializeDatabase() {
+  if (!dbInitialized && !db.value) {
+    db.value = new Dexie('note') as NoteDatabase;
+    (window as any).db = db.value
+
+    // 定义表结构和索引，不再需要版本迁移
+    db.value.version(1).stores({
+      note: '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted, subcount',
+      file: '&hash, id, url, lastdotime',
+      file_refs: '[hash+refid], hash, refid, lastdotime',
+      userInfo: '&id, username, name',
+      metadata: '&key, value',
+    })
+
+    await db.value.open()
+    dbInitialized = true
+  }
+}
 
 // 辅助函数：将数字转换为布尔值
 export function toBool(value: boolean | 0 | 1 | undefined): boolean {
@@ -50,20 +71,6 @@ export function toNumber(value: boolean | 0 | 1 | undefined): 0 | 1 {
 export function useDexie() {
   const privateNoteUpdateArr: (() => void)[] = []
 
-  async function init() {
-    db.value = new Dexie('note') as NoteDatabase;
-    (window as any).db = db.value
-
-    // 定义表结构和索引，不再需要版本迁移
-    db.value.version(1).stores({
-      note: '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted, subcount',
-      file: '&hash, id, url, lastdotime',
-      file_refs: '[hash+refid], hash, refid, lastdotime',
-      userInfo: '&id, username, name',
-      metadata: '&key, value',
-    })
-  }
-
   function onNoteUpdate(fn: () => void) {
     onNoteUpdateArr.push(fn)
     privateNoteUpdateArr.push(fn)
@@ -71,7 +78,6 @@ export function useDexie() {
 
   return {
     db: db as Ref<NoteDatabase>,
-    init,
     onNoteUpdate,
   }
 }

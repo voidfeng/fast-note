@@ -2,7 +2,8 @@ import { IonicVue } from '@ionic/vue'
 // import VConsole from 'vconsole'
 import { createApp } from 'vue'
 import App from './App.vue'
-import { useDexie } from './hooks/useDexie'
+import { initializeDatabase } from './hooks/useDexie'
+import { initializeNotes } from './hooks/useNote'
 import router from './router'
 
 import 'core-js/stable/array/to-sorted'
@@ -42,8 +43,6 @@ import 'virtual:uno.css'
 
 // const _vConsole = new VConsole({ theme: 'dark' })
 
-const { init } = useDexie()
-
 const app = createApp(App)
   .use(IonicVue as any, {
     mode: 'ios',
@@ -53,6 +52,14 @@ const app = createApp(App)
 // 将Vue应用实例存储在全局对象中，以便扩展可以访问
 ;(window as any).__VUE_APP__ = app
 
-Promise.all([init(), router.isReady()]).then(() => {
+Promise.all([
+  router.isReady(),
+  initializeDatabase(),
+  initializeNotes(),
+]).then(() => {
+  app.mount('#app')
+}).catch((error) => {
+  console.error('应用初始化失败:', error)
+  // 即使初始化失败也要挂载应用，避免白屏
   app.mount('#app')
 })

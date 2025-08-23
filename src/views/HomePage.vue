@@ -122,11 +122,7 @@ async function init() {
     ErrorType.DATABASE,
   )
 
-  const { data: _unfiledNotesCount } = await withErrorHandling(
-    () => getUnfiledNotesCount(),
-    ErrorType.DATABASE,
-  )
-  unfiledNotesCount.value = _unfiledNotesCount!
+  unfiledNotesCount.value = getUnfiledNotesCount()
 
   if (treeError) {
     console.error('获取文件夹数据失败:', errorHandler.getUserFriendlyMessage(treeError))

@@ -1,9 +1,8 @@
 import type { Note } from '@/types'
 import { onUnmounted, ref } from 'vue'
-import { noteService } from '@/services/noteService'
 import { getTime } from '@/utils/date'
-import { errorHandler, ErrorType, withErrorHandling } from '@/utils/errorHandler'
 import { useDexie } from './useDexie'
+import { useRefDBSync } from './useRefDBSync'
 
 type UpdateFn = (item: Note) => void
 
@@ -12,21 +11,51 @@ let initializing = false
 let isInitialized = false
 const onNoteUpdateArr: UpdateFn[] = []
 
+// 全局同步实例
+let notesSync: ReturnType<typeof useRefDBSync<Note>> | null = null
+
+// 全局初始化函数
+export async function initializeNotes() {
+  if (!isInitialized && !initializing) {
+    initializing = true
+    try {
+      const { db } = useDexie()
+      const data = await db.value.note
+        .orderBy('newstime')
+        .toArray()
+      notes.value = data
+
+      // 初始化 useRefDBSync
+      notesSync = useRefDBSync({
+        data: notes,
+        table: db.value.note,
+        idField: 'uuid',
+        debounceMs: 300,
+      })
+
+      isInitialized = true
+    }
+    catch (error) {
+      console.error('Error initializing notes:', error)
+    }
+    finally {
+      initializing = false
+    }
+  }
+}
+
+// 导出同步控制函数
+export function getNotesSync() {
+  return notesSync
+}
+
 export function useNote() {
   const { db } = useDexie()
   const privateNoteUpdateArr: UpdateFn[] = []
-  if (!isInitialized && !initializing) {
-    initializing = true
-    fetchNotes().then(() => {
-      isInitialized = true
-      initializing = false
-    })
-  }
-
-  async function syncNote() {}
 
   function getFirstNote() {
-    return db.value.note.orderBy('newstime').first()
+    const sortedNotes = [...notes.value].sort((a, b) => a.newstime.localeCompare(b.newstime))
+    return sortedNotes[0] || null
   }
 
   function fetchNotes() {
@@ -41,87 +70,72 @@ export function useNote() {
       })
   }
 
-  async function addNote(note: Note) {
-    const { data, error } = await withErrorHandling(
-      () => noteService.createNote(note),
-      ErrorType.DATABASE,
-    )
-
-    if (error) {
-      console.error('添加笔记失败:', errorHandler.getUserFriendlyMessage(error))
-      throw error
+  function addNote(note: Note) {
+    // 确保有 lastdotime 字段用于同步检测
+    const noteWithTime = {
+      ...note,
+      lastdotime: note.lastdotime || getTime(),
     }
 
-    await fetchNotes()
-    return data
+    // 直接添加到 notes ref 变量
+    notes.value.push(noteWithTime)
+    // 按 newstime 重新排序
+    notes.value.sort((a, b) => a.newstime.localeCompare(b.newstime))
+    return noteWithTime
   }
 
-  async function getNote(uuid: string) {
-    const { data, error } = await withErrorHandling(
-      () => noteService.getNote(uuid),
-      ErrorType.DATABASE,
-    )
-
-    if (error) {
-      console.error('获取笔记失败:', errorHandler.getUserFriendlyMessage(error))
-      return null
-    }
-
-    return data
+  function getNote(uuid: string) {
+    // 直接从 notes ref 变量获取
+    const note = notes.value.find(n => n.uuid === uuid)
+    return note || null
   }
 
-  async function deleteNote(uuid: string) {
-    const { error } = await withErrorHandling(
-      () => noteService.deleteNote(uuid),
-      ErrorType.DATABASE,
-    )
-
-    if (error) {
-      console.error('删除笔记失败:', errorHandler.getUserFriendlyMessage(error))
-      throw error
+  function deleteNote(uuid: string) {
+    // 直接从 notes ref 变量删除
+    const index = notes.value.findIndex(n => n.uuid === uuid)
+    if (index > -1) {
+      notes.value.splice(index, 1)
     }
-
-    await fetchNotes()
   }
 
-  async function updateNote(uuid: string, updates: any) {
-    const { error } = await withErrorHandling(
-      () => noteService.updateNote(uuid, updates),
-      ErrorType.DATABASE,
-    )
-
-    if (error) {
-      console.error('更新笔记失败:', errorHandler.getUserFriendlyMessage(error))
-      throw error
+  function updateNote(uuid: string, updates: any) {
+    // 直接更新 notes ref 变量中的数据
+    const noteIndex = notes.value.findIndex(n => n.uuid === uuid)
+    if (noteIndex > -1) {
+      // 确保更新 lastdotime 用于同步检测
+      const updatedNote = {
+        ...notes.value[noteIndex],
+        ...updates,
+        lastdotime: updates.lastdotime || getTime(),
+      }
+      notes.value[noteIndex] = updatedNote
     }
-
-    await fetchNotes()
   }
 
   async function getAllFolders() {
-    return db.value.note.where('type').equals('folder').and(item => item.isdeleted !== 1).toArray()
+    return notes.value.filter(note => note.type === 'folder' && note.isdeleted !== 1)
   }
 
   async function getNotesByPUuid(puuid: string) {
     if (puuid === 'allnotes') {
-      return db.value.note.where('type').equals('note').and(item => item.isdeleted !== 1).toArray()
+      return notes.value.filter(note => note.type === 'note' && note.isdeleted !== 1)
     }
     else if (puuid === 'unfilednotes') {
-      return db.value.note.where('type').equals('note').and(item => item.puuid === null && item.isdeleted !== 1).toArray()
+      return notes.value.filter(note => note.type === 'note' && note.puuid === null && note.isdeleted !== 1)
     }
     else {
-      return db.value.note.where('puuid').equals(puuid).and(item => item.isdeleted !== 1).toArray()
+      return notes.value.filter(note => note.puuid === puuid && note.isdeleted !== 1)
     }
   }
 
   async function getDeletedNotes() {
     const thirtyDaysAgo = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString() // 30天前的ISO字符串
-    return db.value.note.where('isdeleted').equals(1).and(item => item.lastdotime >= thirtyDaysAgo).toArray()
+    return notes.value.filter(note => note.isdeleted === 1 && note.lastdotime >= thirtyDaysAgo)
   }
 
   async function getNoteCountByUuid(puuid: string) {
     // 获取当前 puuid 下的所有分类
-    const categories = await db.value.note.where('puuid').equals(puuid).and(item => item.isdeleted !== 1).toArray()
+    const categories = notes.value.filter(note => note.puuid === puuid && note.isdeleted !== 1)
 
     let count = 0
 
@@ -146,14 +160,14 @@ export function useNote() {
   }
 
   function getNotesByLastdotime(lastdotime: string) {
-    return db.value.note.where('lastdotime').above(lastdotime).toArray()
+    return notes.value.filter(note => note.lastdotime > lastdotime)
   }
 
   async function getFolderTreeByPUuid(puuid: string | null = null) {
     /**
      * 先获取全部文件夹，再根据puuid获取对应的文件夹，再递归寻找每个文件夹的子文件夹
      */
-    const allFolders = await db.value.note.where('type').equals('folder').and(item => item.isdeleted !== 1).toArray()
+    const allFolders = notes.value.filter(note => note.type === 'folder' && note.isdeleted !== 1)
     const folders = allFolders.filter(item => item.puuid === puuid)
 
     if (folders && folders.length > 0) {
@@ -186,32 +200,33 @@ export function useNote() {
   }
 
   function getUnfiledNotesCount() {
-    return db.value.note
-      .where('type')
-      .equals('note')
-      .and(item => item.puuid === null && item.isdeleted !== 1)
-      .count()
+    return notes.value.filter(note =>
+      note.type === 'note'
+      && note.puuid === null
+      && note.isdeleted !== 1,
+    ).length
   }
 
   async function searchNotesByPUuid(puuid: string, title: string, keyword: string) {
     // 搜索当前 puuid 下符合条件的笔记
-    const directNotes = await db.value.note
-      .where('[type+puuid+isdeleted]')
-      .equals(['note', puuid, 0])
-      .and((item) => {
-        if (item.newstext.includes(keyword)) {
-          item.folderName = title
-          return true
-        }
-        return false
-      })
-      .toArray()
+    const directNotes = notes.value
+      .filter(note =>
+        note.type === 'note'
+        && note.puuid === puuid
+        && note.isdeleted === 0
+        && note.newstext.includes(keyword),
+      )
+      .map(note => ({
+        ...note,
+        folderName: title,
+      }))
 
     // 获取当前 puuid 下的所有文件夹
-    const folders = await db.value.note
-      .where('[type+puuid+isdeleted]')
-      .equals(['folder', puuid, 0])
-      .toArray()
+    const folders = notes.value.filter(note =>
+      note.type === 'folder'
+      && note.puuid === puuid
+      && note.isdeleted === 0,
+    )
 
     // 递归搜索每个文件夹中的笔记
     let allMatchedNotes = [...directNotes]
@@ -240,7 +255,7 @@ export function useNote() {
     // 递归更新所有父级文件夹的 noteCount
     while (currentPuuid) {
       // 获取当前父级文件夹
-      const parentFolder: Note | undefined = await db.value.note.where('uuid').equals(currentPuuid).first()
+      const parentFolder: Note | undefined = notes.value.find(note => note.uuid === currentPuuid)
       if (!parentFolder || parentFolder.type !== 'folder') {
         break
       }
@@ -249,7 +264,7 @@ export function useNote() {
       const noteCount = await getNoteCountByUuid(currentPuuid)
 
       // 先获取当前文件夹信息，再更新父级文件夹的 subcount 和 lastdotime
-      const currentFolder = await db.value.note.where('uuid').equals(currentPuuid).first()
+      const currentFolder = notes.value.find(note => note.uuid === currentPuuid)
       if (currentFolder) {
         updateNote(currentPuuid, {
           subcount: noteCount,
@@ -271,7 +286,6 @@ export function useNote() {
   return {
     getFirstNote,
     notes,
-    syncNote,
     fetchNotes,
     addNote,
     getNote,
@@ -288,5 +302,7 @@ export function useNote() {
     getFolderTreeByPUuid,
     getUnfiledNotesCount,
     updateParentFolderSubcount,
+    // 同步相关
+    getNotesSync: () => notesSync,
   }
 }

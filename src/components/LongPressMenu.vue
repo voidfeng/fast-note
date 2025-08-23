@@ -25,7 +25,7 @@ const emit = defineEmits(['refresh'])
 const { getNote, updateNote, getNotesByPUuid, updateParentFolderSubcount } = useNote()
 
 const modal = ref()
-const note = ref<Note>()
+const note = ref<Note | null>(null)
 const showMove = ref(false)
 
 const dismiss = () => modal.value.$el.dismiss()
@@ -113,11 +113,7 @@ const config = ref<IConfig>({
 
 watch(() => props.uuid, () => {
   if (props.uuid) {
-    getNote(props.uuid).then((res) => {
-      if (res) {
-        note.value = res
-      }
-    })
+    note.value = getNote(props.uuid)
   }
 })
 </script>

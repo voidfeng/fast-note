@@ -36,15 +36,13 @@ import {
   syncOutline,
   trashOutline,
 } from 'ionicons/icons'
-import { computed, onMounted, ref } from 'vue'
-import { useDexie } from '@/hooks/useDexie'
+import { computed, ref } from 'vue'
 import { useAuth } from '../hooks/useAuth'
 import { useData } from '../hooks/useData'
 import { useSync } from '../hooks/useSync'
 import ProfileCard from './ProfileCard.vue'
 
 const router = useIonRouter()
-const { init: initDexie } = useDexie()
 const { currentUser, logout, isLoggedIn } = useAuth()
 const { getUserNotes, getUserFiles, getUserFileRefs } = useData()
 const { syncStatus, bidirectionalSync, getLocalDataStats, clearLocalData } = useSync()
@@ -179,11 +177,6 @@ function formatDate(dateString: string | number | undefined) {
     return '未知'
   return new Date(dateString).toLocaleString('zh-CN')
 }
-
-// 组件挂载时初始化数据库
-onMounted(async () => {
-  await initDexie()
-})
 </script>
 
 <template>

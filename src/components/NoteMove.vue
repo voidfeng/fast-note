@@ -18,7 +18,7 @@ const { getFolderTreeByPUuid, getNote, updateNote, updateParentFolderSubcount } 
 const modalRef = ref()
 const noteListRef = ref()
 
-const currentNote = ref<Note>()
+const currentNote = ref<Note | null>(null)
 const dataList = ref<Note[]>([])
 
 const dismiss = () => modalRef.value.$el.dismiss()
@@ -81,11 +81,7 @@ watch(() => props.isOpen, (val) => {
         subcount: 0,
       }]
       noteListRef.value.setExpandedItems(findFoldersWithChildren(dataList.value))
-      getNote(props.uuid).then((res) => {
-        if (res) {
-          currentNote.value = res
-        }
-      })
+      currentNote.value = getNote(props.uuid)
     })
   }
 })

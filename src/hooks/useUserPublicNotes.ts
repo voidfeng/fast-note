@@ -3,10 +3,9 @@ import type { Note } from '@/types'
 import { useDexie } from './useDexie'
 
 export function useUserPublicNotes(username: string) {
-  const { db, init: initDexie } = useDexie()
+  const { db } = useDexie()
 
   async function init() {
-    await initDexie()
     // 动态创建用户专用的公开笔记表
     await createUserPublicNotesTable()
   }
@@ -43,8 +42,7 @@ export function useUserPublicNotes(username: string) {
       // 关闭当前数据库连接
       db.value.close()
 
-      // 重新初始化数据库并添加新版本
-      await initDexie()
+      // 添加新版本
       if (db.value) {
         db.value.version(newVersion).stores(currentStores)
         await db.value.open()
