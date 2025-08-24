@@ -5,9 +5,16 @@ import { supabase } from './client'
 
 // 笔记相关 API
 export async function getSupabaseNodesByLastdotime(lastdotime: string) {
+  const { currentUser } = useAuth()
+
+  if (!currentUser.value) {
+    throw new Error('用户未登录')
+  }
+
   const { data, error } = await supabase
     .from('note')
     .select('*')
+    .eq('user_id', currentUser.value.id)
     .gt('lastdotime', lastdotime)
     .order('lastdotime', { ascending: true })
 
@@ -35,7 +42,7 @@ export async function addSupabaseNote(note: Note) {
 export async function updateSupabaseNote(note: Note) {
   const { error } = await supabase
     .from('note')
-    .update(note)
+    .upsert(note)
     .eq('uuid', note.uuid)
 
   if (error) {
