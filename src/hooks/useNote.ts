@@ -1,4 +1,4 @@
-import type { Note } from '@/types'
+import type { FolderTreeNode, Note } from '@/types'
 import { onUnmounted, ref } from 'vue'
 import { getTime } from '@/utils/date'
 import { useDexie } from './useDexie'
@@ -163,38 +163,34 @@ export function useNote() {
     return notes.value.filter(note => note.lastdotime > lastdotime)
   }
 
-  async function getFolderTreeByPUuid(puuid: string | null = null) {
+  function getFolderTreeByPUuid(puuid: string | null = null): FolderTreeNode[] {
     /**
      * 先获取全部文件夹，再根据puuid获取对应的文件夹，再递归寻找每个文件夹的子文件夹
+     * 使用新的数据结构，不修改原始数据
      */
     const allFolders = notes.value.filter(note => note.type === 'folder' && note.isdeleted !== 1)
     const folders = allFolders.filter(item => item.puuid === puuid)
 
     if (folders && folders.length > 0) {
-      // 递归寻找每个文件夹的子文件夹
-      const buildFolderTree = async (currentFolder: Note, allFolders: Note[]): Promise<Note> => {
-        const children = allFolders.filter(item => item.puuid === currentFolder.uuid)
-
-        if (children.length > 0) {
-          currentFolder.children = []
-          // 递归处理每个子文件夹
-          for (const child of children) {
-            const processedChild = await buildFolderTree(child, allFolders)
-            currentFolder.children.push(processedChild)
-          }
+      // 递归构建文件夹树
+      const buildFolderTree = (currentFolder: Note, allFolders: Note[]): FolderTreeNode => {
+        // 创建一个新的树节点，引用原始数据
+        const folderNode: FolderTreeNode = {
+          children: [],
+          originNote: currentFolder,
         }
 
-        // 直接使用数据库中的 subcount，无需计算
-        return currentFolder
+        const childFolders = allFolders.filter(item => item.puuid === currentFolder.uuid)
+
+        if (childFolders.length > 0) {
+          folderNode.children = childFolders.map(child => buildFolderTree(child, allFolders))
+        }
+
+        return folderNode
       }
 
       // 为每个顶层文件夹构建树结构
-      const result = []
-      for (const folder of folders) {
-        const processedFolder = await buildFolderTree(folder, allFolders)
-        result.push(processedFolder)
-      }
-      return result
+      return folders.map(folder => buildFolderTree(folder, allFolders))
     }
     return []
   }

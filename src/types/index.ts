@@ -84,9 +84,15 @@ export interface SearchResult {
   keyword: string
 }
 
-// 文件夹树节点类型
-export interface FolderTreeNode extends Note {
-  children?: FolderTreeNode[]
+// 文件夹树节点类型 - 新的数据结构
+export interface FolderTreeNode {
+  children: FolderTreeNode[]
+  originNote: Note // 引用原始笔记对象
+}
+
+// 旧的文件夹树节点类型（保持向后兼容）
+export interface LegacyFolderTreeNode extends Note {
+  children?: LegacyFolderTreeNode[]
   expanded?: boolean
   level?: number
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { NoteDetail } from '@/types'
+import type { FolderTreeNode } from '@/types'
 import { IonAccordion, IonIcon, IonItem, IonLabel, IonNote, useIonRouter } from '@ionic/vue'
 import dayjs from 'dayjs'
 import calendar from 'dayjs/plugin/calendar'
@@ -14,7 +14,7 @@ defineOptions({
 
 const props = withDefaults(
   defineProps<{
-    data: NoteDetail
+    data: FolderTreeNode
     showParentFolder?: boolean
     disabledRoute?: boolean
   }>(),
@@ -31,6 +31,17 @@ dayjs.extend(calendar)
 const route = useRoute()
 const router = useIonRouter()
 const { isDesktop } = useDeviceType()
+
+// 计算属性：获取实际的 Note 数据
+const noteData = computed(() => {
+  return props.data.originNote
+})
+
+// 计算属性：获取子节点数据
+const childrenData = computed(() => {
+  return props.data.children || []
+})
+
 const calendarConfig = {
   sameDay: 'HH:mm', // 今天显示时间
   lastDay: '[昨天] HH:mm', // 昨天显示"昨天 HH:mm:ss"
@@ -42,11 +53,11 @@ const routerLink = computed(() => {
   if (isDesktop.value)
     return undefined
 
-  if (props.data.uuid === 'deleted') {
+  if (noteData.value.uuid === 'deleted') {
     return `/deleted`
   }
 
-  if (props.data.type === 'folder') {
+  if (noteData.value.type === 'folder') {
     /**
      * 文件夹跳转逻辑
      * 1. isDesktop 不跳转
@@ -58,64 +69,64 @@ const routerLink = computed(() => {
     const isUserHome = route.params.username && (route.name === 'UserHome' || route.path === `/${route.params.username}`)
 
     if (isHome) {
-      return `/f/${props.data.uuid}`
+      return `/f/${noteData.value.uuid}`
     }
     else if (isUserHome) {
-      return `/${route.params.username}/f/${props.data.uuid}`
+      return `/${route.params.username}/f/${noteData.value.uuid}`
     }
     else {
-      return `${route.path}/${props.data.uuid}`
+      return `${route.path}/${noteData.value.uuid}`
     }
   }
 
   // 笔记跳转逻辑
   const isUserContext = route.params.username
   if (isUserContext) {
-    return `/${route.params.username}/n/${props.data.uuid}`
+    return `/${route.params.username}/n/${noteData.value.uuid}`
   }
 
-  return `/n/${props.data.uuid}`
+  return `/n/${noteData.value.uuid}`
 })
 
 function onClick() {
-  emit('selected', props.data.uuid)
+  emit('selected', noteData.value.uuid)
   if (!props.disabledRoute)
     router.push(routerLink.value)
 }
 </script>
 
 <template>
-  <IonAccordion v-if="data.type === 'folder'" :value="data.uuid" :class="{ 'no-children': !data.children }" class="message-list-item">
+  <IonAccordion v-if="noteData.type === 'folder'" :value="noteData.uuid" :class="{ 'no-children': !childrenData.length }" class="message-list-item">
     <IonItem
-      v-if="data"
+      v-if="noteData"
       slot="header"
       :detail="false"
-      :uuid="data.uuid"
+      :uuid="noteData.uuid"
       class="list-item"
       lines="inset"
       style="--inner-border-width: 0 0 0.55px 0;"
     >
-      <IonIcon :icon="$props.data.uuid === 'deleted' ? trashOutline : folderOutline" class="folder-icon mr-3 primary" />
+      <IonIcon :icon="noteData.uuid === 'deleted' ? trashOutline : folderOutline" class="folder-icon mr-3 primary" />
       <IonLabel
         class="ion-text-wrap my-0! py-[10px]!"
         @click.stop="onClick"
       >
         <h2 class="mb-0 line-height-[24px]">
-          {{ data.title }}
+          {{ noteData.title }}
           <span class="date">
-            <IonNote class="text-gray-400 text-base font-semibold">{{ data.subcount }}</IonNote>
+            <IonNote class="text-gray-400 text-base font-semibold">{{ noteData.subcount }}</IonNote>
           </span>
         </h2>
       </IonLabel>
     </IonItem>
-    <div v-if="data.children" slot="content">
-      <MessageListItem v-for="d in data.children" :key="d.uuid" :data="d" :disabled-route class="child-list-item" @selected="$emit('selected', $event)" />
+    <div v-if="childrenData.length" slot="content">
+      <MessageListItem v-for="d in childrenData" :key="d.originNote.uuid" :data="d" :disabled-route class="child-list-item" @selected="$emit('selected', $event)" />
     </div>
   </IonAccordion>
   <IonItem
     v-else
     :detail="false"
-    :uuid="data.uuid"
+    :uuid="noteData.uuid"
     class="list-item"
     lines="inset"
   >
@@ -124,19 +135,19 @@ function onClick() {
       @click.stop="onClick"
     >
       <h2>
-        {{ data.title }}
+        {{ noteData.title }}
         <span class="date">
-          <!-- <ion-note>{{ data.newstime }}</ion-note> -->
+          <!-- <ion-note>{{ noteData.newstime }}</ion-note> -->
           <!-- <ion-icon aria-hidden="true" :icon="chevronForward" size="small" /> -->
         </span>
       </h2>
       <p class="text-gray-400! text-elipsis!">
-        {{ dayjs(data.newstime).calendar(null, calendarConfig) }}&nbsp;&nbsp;
-        {{ data.smalltext }}
+        {{ dayjs(noteData.newstime).calendar(null, calendarConfig) }}&nbsp;&nbsp;
+        {{ noteData.smalltext }}
       </p>
       <p v-if="showParentFolder" class="text-gray-400!">
         <IonIcon :icon="folderOutline" class="v-text-bottom" />
-        {{ data.folderName }}
+        {{ noteData.folderName }}
       </p>
     </IonLabel>
   </IonItem>

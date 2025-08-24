@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AlertButton } from '@ionic/vue'
-import type { Note, NoteDetail } from '@/types'
+import type { FolderTreeNode, Note, NoteDetail } from '@/types'
 import {
   IonAlert,
   IonBackButton,
@@ -40,7 +40,7 @@ const props = withDefaults(
 defineEmits(['selected'])
 
 const route = useRoute()
-const { addNote, getNote, getAllFolders, getNotesByPUuid } = useNote()
+const { notes, addNote, getNote, getAllFolders, getFolderTreeByPUuid } = useNote()
 const { isDesktop } = useDeviceType()
 
 const longPressMenuOpen = ref(false)
@@ -59,7 +59,8 @@ useIonicLongPressList(listRef, {
   },
 })
 const data = ref<Note>({} as Note)
-const dataList = ref<NoteDetail[]>([])
+const folderList = ref<FolderTreeNode[]>([])
+const noteList = ref<FolderTreeNode[]>([])
 
 const state = reactive({
   windowWidth: 0,
@@ -107,11 +108,7 @@ const isTopFolder = computed(() => {
 })
 
 const folders = computed(() => {
-  return dataList.value.filter(d => d.type === 'folder')
-})
-
-const notes = computed(() => {
-  return dataList.value.filter(d => d.type === 'note').sort((a, b) => new Date(b.lastdotime).getTime() - new Date(a.lastdotime).getTime())
+  return folderList.value
 })
 
 const defaultHref = computed(() => {
@@ -176,7 +173,7 @@ async function init() {
       }
 
       const contents = await getUserPublicFolderContentsByUsername(username.value, uuid, cachedUser?.id)
-      dataList.value = contents
+      folderList.value = contents.map(d => ({ originNote: d })) as FolderTreeNode[]
 
       // 直接使用数据库中的 subcount，无需计算
     }
@@ -186,8 +183,8 @@ async function init() {
       if (res)
         data.value = res
 
-      const res2 = await getNotesByPUuid(uuid)
-      dataList.value = res2
+      folderList.value = getFolderTreeByPUuid(uuid)
+      noteList.value = notes.value.filter(d => d.type === 'note' && d.puuid === uuid).map(d => ({ originNote: d })) as FolderTreeNode[]
 
       if (data.value.uuid === 'allnotes') {
         /**
@@ -201,18 +198,18 @@ async function init() {
         const folderMap = new Map(folders.map(folder => [folder.uuid, folder]))
 
         // 遍历 dataList，为每个备忘录查找并设置其所属文件夹的名称
-        dataList.value.forEach((note) => {
-          if (note.puuid) {
-            const parentFolder = folderMap.get(note.puuid)
+        folderList.value.forEach((note) => {
+          if (note.originNote.puuid) {
+            const parentFolder = folderMap.get(note.originNote.puuid)
             if (parentFolder) {
-              note.folderName = parentFolder.title
+              note.originNote.folderName = parentFolder.title
             }
             else {
-              note.folderName = '文件夹已删除'
+              note.originNote.folderName = '文件夹已删除'
             }
           }
           else {
-            note.folderName = '无文件夹'
+            note.originNote.folderName = '无文件夹'
           }
         })
       }
@@ -255,7 +252,7 @@ onIonViewDidEnter(() => {
 
       <NoteList
         v-model:note-uuid="state.noteUuid"
-        :data-list="[...folders, ...notes]"
+        :data-list="[...folders, ...noteList]"
         :show-parent-folder="data.uuid === 'allnotes'"
         @selected="$emit('selected', $event)"
       />

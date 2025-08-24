@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DefineComponent, Ref } from 'vue'
 import type { ItemType } from '@/components/LongPressMenu.vue'
-import type { Note } from '@/types'
+import type { FolderTreeNode, Note } from '@/types'
 import { IonAccordionGroup, IonList } from '@ionic/vue'
 import { ref } from 'vue'
 import LongPressMenu from '@/components/LongPressMenu.vue'
@@ -11,7 +11,7 @@ import NoteListItem from './NoteListItem.vue'
 
 const props = withDefaults(
   defineProps<{
-    dataList: Note[]
+    dataList: FolderTreeNode[]
     allNotesCount?: number
     unfiledNotesCount?: number
     deletedNoteCount?: number
@@ -85,12 +85,20 @@ defineExpose({
       <NoteListItem
         v-if="showAllNotes"
         :data="{
-          uuid: 'allnotes',
-          title: '全部备忘录',
-          type: 'folder',
-          puuid: null,
-          subcount: allNotesCount,
-        } as Note"
+          originNote: {
+            uuid: 'allnotes',
+            title: '全部备忘录',
+            type: 'folder',
+            puuid: null,
+            subcount: allNotesCount,
+            newstime: '',
+            newstext: '',
+            lastdotime: '',
+            isdeleted: 0,
+            islocked: 0,
+          },
+          children: [],
+        } as FolderTreeNode"
         :class="{ active: noteUuid === 'allnotes' }"
         :disabled-route
         @selected="onSelected('allnotes')"
@@ -98,22 +106,30 @@ defineExpose({
       <NoteListItem
         v-if="showUnfiledNotes"
         :data="{
-          uuid: 'unfilednotes',
-          title: '备忘录',
-          type: 'folder',
-          puuid: null,
-          subcount: unfiledNotesCount,
-        } as Note"
+          originNote: {
+            uuid: 'unfilednotes',
+            title: '备忘录',
+            type: 'folder',
+            puuid: null,
+            subcount: unfiledNotesCount,
+            newstime: '',
+            newstext: '',
+            lastdotime: '',
+            isdeleted: 0,
+            islocked: 0,
+          },
+          children: [],
+        } as FolderTreeNode"
         :class="{ active: noteUuid === 'allnotes' }"
         :disabled-route
         @selected="onSelected('unfilednotes')"
       />
       <NoteListItem
         v-for="d in dataList"
-        :key="d.uuid"
+        :key="d.originNote.uuid"
         :data="d"
-        :class="{ active: noteUuid === d.uuid }"
-        :uuid="d.uuid"
+        :class="{ active: noteUuid === d.originNote.uuid }"
+        :uuid="d.originNote.uuid"
         :show-parent-folder
         :disabled-route
         @selected="onSelected($event)"
@@ -121,12 +137,20 @@ defineExpose({
       <NoteListItem
         v-if="showDelete && deletedNoteCount > 0"
         :data="{
-          uuid: 'deleted',
-          title: '最近删除',
-          type: 'folder',
-          puuid: null,
-          subcount: deletedNoteCount,
-        } as Note"
+          originNote: {
+            uuid: 'deleted',
+            title: '最近删除',
+            type: 'folder',
+            puuid: null,
+            subcount: deletedNoteCount,
+            newstime: '',
+            newstext: '',
+            lastdotime: '',
+            isdeleted: 0,
+            islocked: 0,
+          },
+          children: [],
+        } as FolderTreeNode"
         :class="{ active: noteUuid === 'deleted' }"
         :disabled-route
         @selected="onSelected('deleted')"

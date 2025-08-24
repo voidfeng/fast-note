@@ -2,7 +2,7 @@
 import type {
   AlertButton,
 } from '@ionic/vue'
-import type { Note } from '@/types'
+import type { FolderTreeNode, Note } from '@/types'
 import {
   IonAlert,
   IonButton,
@@ -75,7 +75,7 @@ onUnmounted(() => {
 
 const page = ref()
 
-const dataList = ref<Note[]>([])
+const dataList = ref<FolderTreeNode[]>([])
 const allNotesCount = ref(0)
 const unfiledNotesCount = ref(0)
 const deletedNotes = ref<Note[]>([])
@@ -108,7 +108,12 @@ const state = reactive({
   noteUuid: '',
 })
 
-const sortDataList = computed(() => dataList.value.toSorted((a: Note, b: Note) => new Date(b.lastdotime!).getTime() - new Date(a.lastdotime!).getTime()))
+const sortDataList = computed(() => {
+  return dataList.value
+    .toSorted((a: FolderTreeNode, b: FolderTreeNode) => {
+      return new Date(b.originNote.lastdotime!).getTime() - new Date(a.originNote.lastdotime!).getTime()
+    })
+})
 
 async function refresh(ev: CustomEvent) {
   await init()
@@ -117,20 +122,12 @@ async function refresh(ev: CustomEvent) {
 
 async function init() {
   // 获取文件夹树数据
-  const { data: treeData, error: treeError } = await withErrorHandling(
-    () => getFolderTreeByPUuid(),
-    ErrorType.DATABASE,
-  )
-
-  unfiledNotesCount.value = getUnfiledNotesCount()
-
-  if (treeError) {
-    console.error('获取文件夹数据失败:', errorHandler.getUserFriendlyMessage(treeError))
-  }
-  else if (treeData && treeData.length > 0) {
+  const treeData = getFolderTreeByPUuid()
+  if (treeData && treeData.length > 0) {
+    // 从新的数据结构中提取原始数据，过滤掉无效的节点
     dataList.value = treeData
     // 直接使用 subcount，无需计算
-    allNotesCount.value = dataList.value.reduce((acc, cur) => acc + cur.subcount!, 0) + unfiledNotesCount.value
+    allNotesCount.value = dataList.value.reduce((acc, cur) => acc + cur.originNote.subcount!, 0) + unfiledNotesCount.value
   }
 
   // 获取已删除的备忘录
