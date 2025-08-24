@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AlertButton } from '@ionic/vue'
-import type { FolderTreeNode, Note, NoteDetail } from '@/types'
+import type { FolderTreeNode, Note } from '@/types'
 import {
   IonAlert,
   IonBackButton,
@@ -40,7 +40,7 @@ const props = withDefaults(
 defineEmits(['selected'])
 
 const route = useRoute()
-const { notes, addNote, getNote, getAllFolders, getFolderTreeByPUuid } = useNote()
+const { notes, addNote, getNote, getFolderTreeByPUuid } = useNote()
 const { isDesktop } = useDeviceType()
 
 const longPressMenuOpen = ref(false)
@@ -183,11 +183,7 @@ async function init() {
       if (res)
         data.value = res
 
-      if (uuid !== 'allnotes') {
-        folderList.value = getFolderTreeByPUuid(uuid)
-        noteList.value = notes.value.filter(d => d.type === 'note' && d.puuid === uuid).map(d => ({ originNote: d })) as FolderTreeNode[]
-      }
-      else if (uuid === 'allnotes') {
+      if (uuid === 'allnotes') {
         data.value = { uuid: 'allnotes' } as Note
         /**
          * 获取备忘录所属的分类名称
@@ -212,10 +208,18 @@ async function init() {
             }
           }
           else {
-            note.folderName = '无文件夹'
+            note.folderName = '备忘录'
           }
         })
         noteList.value = allNotes
+      }
+      else if (uuid === 'unfilednotes') {
+        data.value = { uuid: 'unfilednotes' } as Note
+        noteList.value = notes.value.filter(d => d.type === 'note' && !d.puuid).map(d => ({ originNote: d })) as FolderTreeNode[]
+      }
+      else {
+        folderList.value = getFolderTreeByPUuid(uuid)
+        noteList.value = notes.value.filter(d => d.type === 'note' && d.puuid === uuid).map(d => ({ originNote: d })) as FolderTreeNode[]
       }
     }
   }

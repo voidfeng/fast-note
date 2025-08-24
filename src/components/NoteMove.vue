@@ -28,23 +28,23 @@ const dismiss = () => modalRef.value.$el.dismiss()
  * @param notes
  * @returns string[]
  */
-function findFoldersWithChildren(notes: Note[]): string[] {
+function findFoldersWithChildren(notes: FolderTreeNode[]): string[] {
   const uuids: string[] = []
 
-  function traverse(note: Note) {
-    if (note.children && note.children.length > 0) {
-      uuids.push(note.uuid)
-      note.children.forEach(child => traverse(child))
+  function traverse(node: FolderTreeNode) {
+    if (node.children && node.children.length > 0) {
+      uuids.push(node.originNote.uuid)
+      node.children.forEach(child => traverse(child))
     }
   }
 
-  notes.forEach(note => traverse(note))
+  notes.forEach(node => traverse(node))
   return uuids
 }
 
 async function onSelected(uuid: string) {
   if (currentNote.value) {
-    currentNote.value.puuid = uuid
+    currentNote.value.puuid = uuid === 'root' ? null : uuid
     currentNote.value.lastdotime = getTime()
     updateParentFolderSubcount(currentNote.value)
   }
@@ -84,8 +84,8 @@ function onWillPersent() {
     },
     children: validChildren,
   }]
-  // const folderIds = findFoldersWithChildren(dataList.value)
-  // noteListRef.value.setExpandedItems(folderIds)
+  const folderIds = findFoldersWithChildren(dataList.value)
+  noteListRef.value.setExpandedItems(folderIds)
   currentNote.value = getNote(props.uuid)
 }
 </script>

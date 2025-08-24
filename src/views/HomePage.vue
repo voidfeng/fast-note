@@ -36,7 +36,7 @@ import { errorHandler, ErrorType, withErrorHandling } from '@/utils/errorHandler
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
-const { addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid, getUnfiledNotesCount } = useNote()
+const { notes, addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid } = useNote()
 const { isDesktop } = useDeviceType()
 const { showGlobalSearch } = useGlobalSearch()
 const { isExtensionEnabled, getExtensionModule } = useExtensions()
@@ -76,8 +76,24 @@ onUnmounted(() => {
 const page = ref()
 
 const dataList = ref<FolderTreeNode[]>([])
-const allNotesCount = ref(0)
-const unfiledNotesCount = ref(0)
+// 使用单个计算属性同时计算两个值，只遍历一次数组
+const noteCounts = computed(() => {
+  const counts = notes.value.reduce((acc, note) => {
+    if (note.type === 'note' && note.isdeleted === 0) {
+      acc.all++
+      if (!note.puuid) {
+        acc.unfiled++
+      }
+    }
+    return acc
+  }, { all: 0, unfiled: 0 })
+
+  return counts
+})
+
+// 从计算属性中提取各个计数值
+const allNotesCount = computed(() => noteCounts.value.all)
+const unfiledNotesCount = computed(() => noteCounts.value.unfiled)
 const deletedNotes = ref<Note[]>([])
 const presentingElement = ref()
 const addButtons: AlertButton[] = [
@@ -126,8 +142,7 @@ async function init() {
   if (treeData && treeData.length > 0) {
     // 从新的数据结构中提取原始数据，过滤掉无效的节点
     dataList.value = treeData
-    // 直接使用 subcount，无需计算
-    allNotesCount.value = dataList.value.reduce((acc, cur) => acc + cur.originNote.subcount!, 0) + unfiledNotesCount.value
+    // 笔记计数已移至计算属性，此处无需重复计算
   }
 
   // 获取已删除的备忘录
