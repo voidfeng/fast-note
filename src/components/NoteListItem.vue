@@ -147,7 +147,7 @@ function onClick() {
       </p>
       <p v-if="showParentFolder" class="text-gray-400!">
         <IonIcon :icon="folderOutline" class="v-text-bottom" />
-        {{ noteData.folderName }}
+        {{ data.folderName }}
       </p>
     </IonLabel>
   </IonItem>

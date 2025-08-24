@@ -183,35 +183,39 @@ async function init() {
       if (res)
         data.value = res
 
-      folderList.value = getFolderTreeByPUuid(uuid)
-      noteList.value = notes.value.filter(d => d.type === 'note' && d.puuid === uuid).map(d => ({ originNote: d })) as FolderTreeNode[]
-
-      if (data.value.uuid === 'allnotes') {
+      if (uuid !== 'allnotes') {
+        folderList.value = getFolderTreeByPUuid(uuid)
+        noteList.value = notes.value.filter(d => d.type === 'note' && d.puuid === uuid).map(d => ({ originNote: d })) as FolderTreeNode[]
+      }
+      else if (uuid === 'allnotes') {
+        data.value = { uuid: 'allnotes' } as Note
         /**
          * 获取备忘录所属的分类名称
          * 1. 获取所有分类
          * 2. 找到当前备忘录所属的分类
          * 3. 将分类名称赋值给当前备忘录
          */
-        const folders = await getAllFolders()
+        const allNotes = notes.value.filter(d => d.type === 'note').map(d => ({ originNote: d })) as FolderTreeNode[]
+        const allFolders = notes.value.filter(d => d.type === 'folder')
         // 将文件夹数组转换为 Map，以 uuid 为键
-        const folderMap = new Map(folders.map(folder => [folder.uuid, folder]))
+        const folderMap = new Map(allFolders.map(folder => [folder.uuid, folder]))
 
         // 遍历 dataList，为每个备忘录查找并设置其所属文件夹的名称
-        folderList.value.forEach((note) => {
+        allNotes.forEach((note) => {
           if (note.originNote.puuid) {
             const parentFolder = folderMap.get(note.originNote.puuid)
             if (parentFolder) {
-              note.originNote.folderName = parentFolder.title
+              note.folderName = parentFolder.title
             }
             else {
-              note.originNote.folderName = '文件夹已删除'
+              note.folderName = '备忘录'
             }
           }
           else {
-            note.originNote.folderName = '无文件夹'
+            note.folderName = '无文件夹'
           }
         })
+        noteList.value = allNotes
       }
     }
   }

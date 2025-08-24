@@ -88,6 +88,7 @@ export interface SearchResult {
 export interface FolderTreeNode {
   children: FolderTreeNode[]
   originNote: Note // 引用原始笔记对象
+  folderName?: string
 }
 
 // 旧的文件夹树节点类型（保持向后兼容）
