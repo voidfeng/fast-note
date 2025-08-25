@@ -1,106 +1,80 @@
-import type { UserInfo } from './useDexie'
 import { ref } from 'vue'
-import { useUserPublicNotes } from './useUserPublicNotes'
+import { getUserByUsername } from '@/extensions/supabase/api/userApi'
 
-// 使用 UserInfo 类型作为 CachedUser
-type CachedUser = UserInfo
+// 用户信息类型
+interface UserInfo {
+  id: string
+  username: string
+  name?: string
+}
 
 // 全局用户缓存
-const userCache = new Map<string, CachedUser>()
-const currentUser = ref<CachedUser | null>(null)
+const userCache = new Map<string, UserInfo>()
 
 export function useUserCache() {
-  // 获取缓存的用户信息
-  function getCachedUser(username: string): CachedUser | null {
-    return userCache.get(username) || null
-  }
-
-  // 设置缓存的用户信息
-  function setCachedUser(username: string, user: CachedUser) {
-    userCache.set(username, user)
-    if (currentUser.value?.username === username) {
-      currentUser.value = user
-    }
-  }
-
-  // 获取当前用户
-  function getCurrentUser(): CachedUser | null {
-    return currentUser.value
-  }
-
-  // 设置当前用户
-  function setCurrentUser(user: CachedUser | null) {
-    currentUser.value = user
-  }
-
-  // 从本地数据库获取用户信息
-  async function getUserFromCache(username: string): Promise<CachedUser | null> {
+  /**
+   * 根据用户名获取用户信息
+   * 如果全局变量没有数据就从接口获取
+   */
+  async function getUserInfo(username: string): Promise<UserInfo | null> {
     // 先检查内存缓存
-    const memoryCache = getCachedUser(username)
-    if (memoryCache) {
-      return memoryCache
+    const cachedUser = userCache.get(username)
+    if (cachedUser) {
+      return cachedUser
     }
 
-    // 从统一的 IndexedDB 获取
-    const userPublicNotes = useUserPublicNotes(username)
-    await userPublicNotes.init()
-    const localUserInfo = await userPublicNotes.getUserInfo()
+    // 从接口获取用户信息
+    try {
+      const user = await getUserByUsername(username)
+      if (user) {
+        const userInfo: UserInfo = {
+          id: user.id,
+          username: user.username,
+          name: user.username || `用户 ${user.username}`,
+        }
 
-    if (localUserInfo) {
-      setCachedUser(username, localUserInfo)
-      return localUserInfo
+        // 保存到内存缓存
+        userCache.set(username, userInfo)
+        return userInfo
+      }
+    }
+    catch (error) {
+      console.error('获取用户信息失败:', error)
     }
 
     return null
   }
 
-  // 保存用户信息到缓存和数据库
-  async function saveUserToCache(username: string, user: CachedUser) {
-    // 保存到内存缓存
-    setCachedUser(username, user)
+  /**
+   * 强制请求接口更新用户信息
+   */
+  async function forceUpdateUserInfo(username: string): Promise<UserInfo | null> {
+    try {
+      const user = await getUserByUsername(username)
+      if (user) {
+        const userInfo: UserInfo = {
+          id: user.id,
+          username: user.username,
+          name: user.username || `用户 ${user.username}`,
+        }
 
-    // 保存到 IndexedDB
-    const userPublicNotes = useUserPublicNotes(username)
-    await userPublicNotes.init()
-    await userPublicNotes.saveUserInfo(user)
-  }
-
-  // 获取用户ID（兼容旧代码中的 cachedUserId）
-  function getCachedUserId(username: string): string | null {
-    const user = getCachedUser(username)
-    return user?.id || null
-  }
-
-  // 清除用户缓存
-  function clearUserCache(username?: string) {
-    if (username) {
-      userCache.delete(username)
-      if (currentUser.value?.username === username) {
-        currentUser.value = null
+        // 更新内存缓存
+        userCache.set(username, userInfo)
+        return userInfo
       }
     }
-    else {
-      userCache.clear()
-      currentUser.value = null
+    catch (error) {
+      console.error('强制更新用户信息失败:', error)
     }
+
+    return null
   }
 
   return {
-    getCachedUser,
-    setCachedUser,
-    getCurrentUser,
-    setCurrentUser,
-    getUserFromCache,
-    saveUserToCache,
-    getCachedUserId,
-    clearUserCache,
+    getUserInfo,
+    forceUpdateUserInfo,
   }
 }
 
 // 导出一个全局实例，方便在其他地方使用
 export const globalUserCache = useUserCache()
-
-// 兼容旧代码的全局变量
-export function getCachedUserId(username: string): string | null {
-  return globalUserCache.getCachedUserId(username)
-}

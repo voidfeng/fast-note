@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Note } from '@/types'
+import type { FolderTreeNode, Note } from '@/types'
 import {
   IonBackButton,
   IonButton,
@@ -20,8 +20,9 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
-import { globalUserCache } from '@/hooks/useUserCache'
-import { useUserPublicNotes } from '@/hooks/useUserPublicNotes'
+import { globalUserCache, useUserCache } from '@/hooks/useUserCache'
+import { initializeUserPublicNotes, useUserPublicNotes } from '@/hooks/useUserPublicNotes'
+import { useUserPublicNotesSync } from '@/hooks/useUserPublicNotesSync'
 import { getUserByUsername, getUserPublicFolderContentsByUsername, getUserPublicFoldersByUsername } from '../extensions/supabase/api/userApi'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
@@ -32,13 +33,24 @@ const { isDesktop } = useDeviceType()
 // 获取路由参数
 const username = computed(() => route.params.username as string)
 
+const { getUserInfo } = useUserCache()
 // 初始化用户公开笔记存储
-const userPublicNotes = useUserPublicNotes(username.value)
+const {
+  notes,
+  getAllFolders,
+  addNote,
+  updateNote,
+  deleteNote,
+  getNote,
+  getNotesByPUuid,
+  getFolderTreeByPUuid,
+  updateParentFolderSubcount,
+} = useUserPublicNotes(username.value)
 
 // 页面状态
 const loading = ref(true)
 const error = ref('')
-const publicFolders = ref<Note[]>([])
+const publicFolders = ref<FolderTreeNode[]>([])
 const userInfo = ref<{ id: string, name?: string } | null>(null)
 const presentingElement = ref()
 const page = ref()
@@ -49,86 +61,8 @@ const state = reactive({
   noteUuid: '',
 })
 
-// 构建树形结构的文件夹列表
-const treeStructure = computed(() => {
-  if (!publicFolders.value.length)
-    return []
-
-  // 创建一个 Map 来存储所有节点
-  const nodeMap = new Map<string, Note & { children?: Note[] }>()
-
-  // 首先将所有文件夹添加到 Map 中
-  publicFolders.value.forEach((folder) => {
-    nodeMap.set(folder.uuid, { ...folder, children: [] })
-  })
-
-  // 构建树形结构
-  const rootNodes: (Note & { children?: Note[] })[] = []
-
-  publicFolders.value.forEach((folder) => {
-    const node = nodeMap.get(folder.uuid)!
-
-    if (!folder.puuid) {
-      // 根节点
-      rootNodes.push(node)
-    }
-    else {
-      // 子节点
-      const parent = nodeMap.get(folder.puuid)
-      if (parent) {
-        parent.children!.push(node)
-      }
-      else {
-        // 如果找不到父节点，当作根节点处理
-        rootNodes.push(node)
-      }
-    }
-  })
-
-  // 递归排序函数
-  function sortNodes(nodes: (Note & { children?: Note[] })[]): (Note & { children?: Note[] })[] {
-    return nodes
-      .sort((a, b) => {
-        const timeA = new Date(a.lastdotime || a.newstime || '').getTime()
-        const timeB = new Date(b.lastdotime || b.newstime || '').getTime()
-        return timeB - timeA
-      })
-      .map(node => ({
-        ...node,
-        children: node.children && node.children.length > 0 ? sortNodes(node.children) : undefined,
-      }))
-  }
-
-  return sortNodes(rootNodes)
-})
-
-// 从远程获取数据
-async function fetchRemoteData() {
-  // 先获取用户信息（只调用一次）
-  const user = await getUserByUsername(username.value)
-  if (!user) {
-    throw new Error('用户不存在')
-  }
-
-  // 获取用户的公开文件夹（传入用户ID避免重复查询）
-  const folders = await getUserPublicFoldersByUsername(username.value, user.id)
-
-  // 为每个文件夹计算内容数量（传入用户ID避免重复查询）
-  const foldersWithCount = await Promise.all(
-    folders.map(async (folder) => {
-      const contents = await getUserPublicFolderContentsByUsername(username.value, folder.uuid, user.id)
-      return {
-        ...folder,
-        subcount: contents.length,
-      }
-    }),
-  )
-
-  return { user, foldersWithCount }
-}
-
 // 初始化数据
-async function init(forceRefresh = false) {
+async function init() {
   if (!username.value) {
     error.value = '无效的用户名'
     loading.value = false
@@ -139,73 +73,10 @@ async function init(forceRefresh = false) {
     loading.value = true
     error.value = ''
 
-    // 初始化用户公开笔记存储
-    await userPublicNotes.init()
-
-    let shouldFetchRemote = forceRefresh
-
-    if (!forceRefresh) {
-      // 检查本地是否有数据，如果没有则强制从远程获取
-      const localFolders = await userPublicNotes.getLocalFolders()
-      if (localFolders.length === 0) {
-        shouldFetchRemote = true
-      }
-      else {
-        // 检查是否需要更新数据
-        shouldFetchRemote = await userPublicNotes.shouldUpdate()
-      }
-    }
-
-    if (shouldFetchRemote) {
-      // 从远程获取数据
-      const { user, foldersWithCount } = await fetchRemoteData()
-
-      // 保存到本地数据库
-      await userPublicNotes.saveFolders(foldersWithCount)
-      await userPublicNotes.saveLastUpdateTime(new Date().toISOString())
-
-      // 保存用户信息到本地数据库
-      const userInfoData = {
-        id: user.id,
-        username: user.username,
-        name: user.username || `用户 ${user.username}`,
-      }
-      await userPublicNotes.saveUserInfo(userInfoData)
-
-      // 同时更新全局用户缓存
-      await globalUserCache.saveUserToCache(username.value, userInfoData)
-
-      publicFolders.value = foldersWithCount
-      userInfo.value = userInfoData
-    }
-    else {
-      // 从本地数据库获取数据
-      const localFolders = await userPublicNotes.getLocalFolders()
-
-      publicFolders.value = localFolders
-
-      // 优先从全局缓存获取用户信息
-      const cachedUser = await globalUserCache.getUserFromCache(username.value)
-      if (cachedUser) {
-        userInfo.value = {
-          id: cachedUser.id,
-          name: cachedUser.name || cachedUser.username || `用户 ${cachedUser.username}`,
-        }
-      }
-      else {
-        // 如果缓存中没有用户信息，需要获取一次
-        const user = await getUserByUsername(username.value)
-        if (user) {
-          const userInfoData = {
-            id: user.id,
-            username: user.username,
-            name: user.username || `用户 ${user.username}`,
-          }
-          await globalUserCache.saveUserToCache(username.value, userInfoData)
-          userInfo.value = userInfoData
-        }
-      }
-    }
+    // 从远程获取数据
+    userInfo.value = await getUserInfo(username.value)
+    useUserPublicNotesSync(username.value)
+    publicFolders.value = getFolderTreeByPUuid()
   }
   catch (err) {
     error.value = err instanceof Error ? err.message : '加载用户数据失败'
@@ -271,10 +142,10 @@ onMounted(() => {
       </div>
 
       <div v-else>
-        <!-- 使用NoteList组件显示树形文件夹列表 -->
+        <!-- 使用NoteList组件显示文件夹列表 -->
         <NoteList
           :note-uuid="state.folderUuid"
-          :data-list="treeStructure"
+          :data-list="publicFolders"
           :presenting-element="presentingElement"
           :disabled-route="isDesktop"
           @refresh="init"

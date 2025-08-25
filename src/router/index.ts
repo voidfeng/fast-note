@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from '@ionic/vue-router'
+import { initializeUserPublicNotes } from '../hooks/useUserPublicNotes'
 import HomePage from '../views/HomePage.vue'
 import { routeManager } from './routeManager'
 
@@ -49,6 +50,24 @@ const routes: Array<RouteRecordRaw> = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+})
+
+// 路由守卫：在进入以 /:username 开头的路由时初始化用户公开笔记
+router.beforeEach(async (to, from, next) => {
+  // 检查是否是以 /:username 开头的路由
+  const usernameRoutes = ['UserHome', 'UserFolder', 'UserNote']
+
+  if (usernameRoutes.includes(to.name as string) && to.params.username) {
+    const username = to.params.username as string
+    try {
+      await initializeUserPublicNotes(username)
+    }
+    catch (error) {
+      console.error('初始化用户公开笔记失败:', error)
+    }
+  }
+
+  next()
 })
 
 // 初始化路由管理器
