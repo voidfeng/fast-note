@@ -3,6 +3,32 @@ import { useAuth } from '../hooks/useAuth'
 import { uploadFileToStorage } from '../utils/fileStorage'
 import { supabase } from './client'
 
+// 获取指定用户ID的公开笔记
+export async function getSupabasePublicNotesByUserId(userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('note')
+      .select('*')
+      .eq('is_public', true)
+      .eq('user_id', userId)
+      .eq('isdeleted', 0)
+      .order('lastdotime', { ascending: false })
+
+    if (error) {
+      console.error('获取公开笔记失败:', error)
+      throw error
+    }
+
+    return {
+      d: data || [],
+    }
+  }
+  catch (error) {
+    console.error('获取公开笔记异常:', error)
+    throw error
+  }
+}
+
 // 笔记相关 API
 export async function getSupabaseNodesByLastdotime(lastdotime: string) {
   const { currentUser } = useAuth()

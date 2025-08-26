@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from '@ionic/vue-router'
+import { useUserPublicNotesSync } from '@/hooks/useUserPublicNotesSync'
 import { initializeUserPublicNotes } from '../hooks/useUserPublicNotes'
 import HomePage from '../views/HomePage.vue'
 import { routeManager } from './routeManager'
@@ -59,8 +60,10 @@ router.beforeEach(async (to, from, next) => {
 
   if (usernameRoutes.includes(to.name as string) && to.params.username) {
     const username = to.params.username as string
+    const { syncUserPublicNotes } = useUserPublicNotesSync(username)
     try {
       await initializeUserPublicNotes(username)
+      await syncUserPublicNotes()
     }
     catch (error) {
       console.error('初始化用户公开笔记失败:', error)
