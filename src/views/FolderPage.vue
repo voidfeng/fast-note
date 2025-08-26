@@ -153,19 +153,7 @@ async function init() {
     if (isUserContext.value) {
       // 用户公开文件夹上下文
       // 从全局缓存获取用户信息
-      let cachedUser = await globalUserCache.getUserFromCache(username.value)
-
-      if (!cachedUser) {
-        const user = await getUserByUsername(username.value)
-        if (user) {
-          cachedUser = {
-            id: user.id,
-            username: user.username,
-            name: user.username || `用户 ${user.username}`,
-          }
-          await globalUserCache.saveUserToCache(username.value, cachedUser)
-        }
-      }
+      const cachedUser = await globalUserCache.getUserInfo(username.value)
 
       const folderInfo = await getUserPublicFolderByUsername(username.value, uuid, cachedUser?.id)
       if (folderInfo) {

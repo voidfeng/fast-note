@@ -89,7 +89,7 @@ async function init() {
 
 // 刷新数据
 async function refresh(ev: CustomEvent) {
-  await init(true) // 强制刷新，从远程获取数据
+  await init() // 强制刷新，从远程获取数据
   ev.detail.complete()
 }
 

@@ -1,4 +1,3 @@
-import { ref } from 'vue'
 import { getUserByUsername } from '@/extensions/supabase/api/userApi'
 
 // 用户信息类型
