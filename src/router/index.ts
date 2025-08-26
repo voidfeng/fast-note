@@ -53,6 +53,9 @@ const router = createRouter({
   routes,
 })
 
+// 记录已初始化的用户，避免重复初始化
+const initializedUsers = new Set<string>()
+
 // 路由守卫：在进入以 /:username 开头的路由时初始化用户公开笔记
 router.beforeEach(async (to, from, next) => {
   // 检查是否是以 /:username 开头的路由
@@ -60,13 +63,19 @@ router.beforeEach(async (to, from, next) => {
 
   if (usernameRoutes.includes(to.name as string) && to.params.username) {
     const username = to.params.username as string
-    const { syncUserPublicNotes } = useUserPublicNotesSync(username)
-    try {
-      await initializeUserPublicNotes(username)
-      await syncUserPublicNotes()
-    }
-    catch (error) {
-      console.error('初始化用户公开笔记失败:', error)
+
+    // 只有第一次访问该用户时才进行初始化
+    if (!initializedUsers.has(username)) {
+      const { syncUserPublicNotes } = useUserPublicNotesSync(username)
+      try {
+        await initializeUserPublicNotes(username)
+        await syncUserPublicNotes()
+        // 标记该用户已初始化
+        initializedUsers.add(username)
+      }
+      catch (error) {
+        console.error('初始化用户公开笔记失败:', error)
+      }
     }
   }
 

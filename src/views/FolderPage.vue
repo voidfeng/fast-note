@@ -21,11 +21,10 @@ import { nanoid } from 'nanoid'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
-import { getUserByUsername, getUserPublicFolderByUsername, getUserPublicFolderContentsByUsername } from '@/extensions/supabase/api/userApi'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote } from '@/hooks/useNote'
-import { globalUserCache } from '@/hooks/useUserCache'
+import { useUserPublicNotes } from '@/hooks/useUserPublicNotes'
 import { getTime } from '@/utils/date'
 
 const props = withDefaults(
@@ -151,17 +150,17 @@ async function init() {
 
   try {
     if (isUserContext.value) {
-      // 用户公开文件夹上下文
-      // 从全局缓存获取用户信息
-      const cachedUser = await globalUserCache.getUserInfo(username.value)
+      const { notes: publicNotes, getFolderTreeByPUuid, getNote: getPublicNote } = useUserPublicNotes(username.value)
 
-      const folderInfo = await getUserPublicFolderByUsername(username.value, uuid, cachedUser?.id)
+      // 用户公开文件夹上下文
+      const folderInfo = getPublicNote(uuid)
       if (folderInfo) {
         data.value = folderInfo
       }
 
-      const contents = await getUserPublicFolderContentsByUsername(username.value, uuid, cachedUser?.id)
-      folderList.value = contents.map(d => ({ originNote: d })) as FolderTreeNode[]
+      folderList.value = getFolderTreeByPUuid(uuid)
+      if (publicNotes.value)
+        noteList.value = publicNotes.value.filter(d => d.type === 'note' && d.puuid === uuid).map(d => ({ originNote: d })) as FolderTreeNode[]
 
       // 直接使用数据库中的 subcount，无需计算
     }

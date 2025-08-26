@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FolderTreeNode, Note } from '@/types'
+import type { FolderTreeNode } from '@/types'
 import {
   IonBackButton,
   IonButton,
@@ -20,10 +20,9 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
-import { globalUserCache, useUserCache } from '@/hooks/useUserCache'
-import { initializeUserPublicNotes, useUserPublicNotes } from '@/hooks/useUserPublicNotes'
+import { useUserCache } from '@/hooks/useUserCache'
+import { useUserPublicNotes } from '@/hooks/useUserPublicNotes'
 import { useUserPublicNotesSync } from '@/hooks/useUserPublicNotesSync'
-import { getUserByUsername, getUserPublicFolderContentsByUsername, getUserPublicFoldersByUsername } from '../extensions/supabase/api/userApi'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
@@ -36,15 +35,7 @@ const username = computed(() => route.params.username as string)
 const { getUserInfo } = useUserCache()
 // 初始化用户公开笔记存储
 const {
-  notes,
-  getAllFolders,
-  addNote,
-  updateNote,
-  deleteNote,
-  getNote,
-  getNotesByPUuid,
   getFolderTreeByPUuid,
-  updateParentFolderSubcount,
 } = useUserPublicNotes(username.value)
 
 // 页面状态

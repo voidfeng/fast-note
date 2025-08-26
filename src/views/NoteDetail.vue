@@ -10,11 +10,11 @@ import NoteMore from '@/components/NoteMore.vue'
 import TableFormatModal from '@/components/TableFormatModal.vue'
 import TextFormatModal from '@/components/TextFormatModal.vue'
 import YYEditor from '@/components/YYEditor.vue'
-import { getPublicNoteByUsername } from '@/extensions/supabase/api/userApi'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useNote } from '@/hooks/useNote'
+import { useUserPublicNotes } from '@/hooks/useUserPublicNotes'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useWebAuthn } from '@/hooks/useWebAuthn'
 import { getTime } from '@/utils/date'
@@ -229,8 +229,9 @@ async function syncAttachments(uuid: string, content: string) {
 async function init(uuid: string) {
   try {
     if (isUserContext.value) {
+      const { getNote: getPublicNote } = useUserPublicNotes(username.value)
       // 获取用户公开笔记
-      data.value = await getPublicNoteByUsername(username.value, uuid)
+      data.value = getPublicNote(uuid)
       if (data.value) {
         // 公开笔记始终为只读模式
         editorRef.value?.setEditable(false)
