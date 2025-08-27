@@ -69,7 +69,7 @@ router.beforeEach(async (to, from, next) => {
       const { syncUserPublicNotes } = useUserPublicNotesSync(username)
       try {
         await initializeUserPublicNotes(username)
-        await syncUserPublicNotes()
+        syncUserPublicNotes()
         // 标记该用户已初始化
         initializedUsers.add(username)
       }
