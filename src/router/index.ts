@@ -1,7 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from '@ionic/vue-router'
 import { useUserPublicNotesSync } from '@/hooks/useUserPublicNotesSync'
-import { initializeUserPublicNotes } from '../hooks/useUserPublicNotes'
+import { initializeUserPublicNotes } from '@/stores'
 import HomePage from '../views/HomePage.vue'
 import { routeManager } from './routeManager'
 

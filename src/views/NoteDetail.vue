@@ -13,10 +13,9 @@ import YYEditor from '@/components/YYEditor.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
-import { useNote } from '@/hooks/useNote'
-import { useUserPublicNotes } from '@/hooks/useUserPublicNotes'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useWebAuthn } from '@/hooks/useWebAuthn'
+import { useNote, useUserPublicNotes } from '@/stores'
 import { getTime } from '@/utils/date'
 
 const props = withDefaults(
@@ -229,7 +228,7 @@ async function syncAttachments(uuid: string, content: string) {
 async function init(uuid: string) {
   try {
     if (isUserContext.value) {
-      const { getNote: getPublicNote } = useUserPublicNotes(username.value)
+      const { getPublicNote } = useUserPublicNotes(username.value)
       // 获取用户公开笔记
       data.value = getPublicNote(uuid)
       if (data.value) {

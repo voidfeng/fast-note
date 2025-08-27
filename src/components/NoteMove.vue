@@ -2,7 +2,7 @@
 import type { FolderTreeNode, Note } from '@/types'
 import { IonButton, IonButtons, IonContent, IonHeader, IonModal, IonTitle, IonToolbar } from '@ionic/vue'
 import { ref } from 'vue'
-import { useNote } from '@/hooks/useNote'
+import { useNote } from '@/stores'
 import { getTime } from '@/utils/date'
 import NoteList from './NoteList.vue'
 

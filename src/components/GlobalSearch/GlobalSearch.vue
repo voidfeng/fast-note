@@ -4,7 +4,7 @@ import { IonContent, IonSearchbar } from '@ionic/vue'
 import { useDebounceFn } from '@vueuse/core'
 import { reactive, ref } from 'vue'
 import NoteList from '@/components/NoteList.vue'
-import { useNote } from '@/hooks/useNote'
+import { useNote } from '@/stores'
 import { useGlobalSearch } from './useGlobalSearch'
 
 const props = withDefaults(defineProps<{

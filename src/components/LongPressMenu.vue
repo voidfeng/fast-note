@@ -2,7 +2,7 @@
 import type { Note } from '@/types'
 import { alertController, IonItem, IonLabel, IonList, IonModal } from '@ionic/vue'
 import { ref, toRaw, watch } from 'vue'
-import { useNote } from '@/hooks/useNote'
+import { useNote } from '@/stores'
 import { getTime } from '@/utils/date'
 import NoteMove from './NoteMove.vue'
 

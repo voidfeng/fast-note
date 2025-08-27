@@ -15,7 +15,7 @@ import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
-import { useNote } from '@/hooks/useNote'
+import { useNote } from '@/stores'
 
 defineEmits(['selected'])
 

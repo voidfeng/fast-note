@@ -1,18 +1,18 @@
 import type { Note } from '@/types'
 import { ref } from 'vue'
 import { getSupabasePublicNotesByUserId } from '@/extensions/supabase/api/api'
+import { useUserPublicNotes } from '@/stores'
 import { useUserCache } from './useUserCache'
-import { useUserPublicNotes } from './useUserPublicNotes'
 
 export function useUserPublicNotesSync(username: string) {
-  const { notes } = useUserPublicNotes(username)
+  const { publicNotes } = useUserPublicNotes(username)
   const { getUserInfo } = useUserCache()
   const syncing = ref(false)
 
   // 设置笔记数据的函数
-  function setNotes(newNotes: Note[]) {
-    // 直接更新 notes ref
-    notes.value = newNotes
+  function setPublicNotes(newNotes: Note[]) {
+    // 直接更新 publicNotes ref
+    publicNotes.value = newNotes
   }
 
   // 同步指定用户的公开笔记
@@ -45,7 +45,7 @@ export function useUserPublicNotesSync(username: string) {
       }))
 
       // 更新本地存储的公开笔记
-      setNotes(processedNotes)
+      setPublicNotes(processedNotes)
 
       // 只更新本地存储的公开笔记，不修改本地数据库
 
@@ -66,7 +66,7 @@ export function useUserPublicNotesSync(username: string) {
   }
 
   return {
-    notes,
+    publicNotes,
     syncing,
     syncUserPublicNotes,
   }

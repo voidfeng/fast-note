@@ -21,8 +21,8 @@ import { useRoute } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useUserCache } from '@/hooks/useUserCache'
-import { useUserPublicNotes } from '@/hooks/useUserPublicNotes'
 import { useUserPublicNotesSync } from '@/hooks/useUserPublicNotesSync'
+import { useUserPublicNotes } from '@/stores'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
@@ -35,7 +35,7 @@ const username = computed(() => route.params.username as string)
 const { getUserInfo } = useUserCache()
 // 初始化用户公开笔记存储
 const {
-  getFolderTreeByPUuid,
+  getPublicFolderTreeByPUuid,
 } = useUserPublicNotes(username.value)
 
 // 页面状态
@@ -67,7 +67,7 @@ async function init() {
     // 从远程获取数据
     userInfo.value = await getUserInfo(username.value)
     useUserPublicNotesSync(username.value)
-    publicFolders.value = getFolderTreeByPUuid()
+    publicFolders.value = getPublicFolderTreeByPUuid()
   }
   catch (err) {
     error.value = err instanceof Error ? err.message : '加载用户数据失败'

@@ -2,7 +2,7 @@ import type { FileRef, Note, TypedFile } from '@/types'
 import { ref } from 'vue'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
-import { useNote } from '@/hooks/useNote'
+import { useNote } from '@/stores'
 import { getTime } from '@/utils/date'
 import {
   addSupabaseFile,

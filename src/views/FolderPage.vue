@@ -23,8 +23,7 @@ import { useRoute } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
-import { useNote } from '@/hooks/useNote'
-import { useUserPublicNotes } from '@/hooks/useUserPublicNotes'
+import { useNote, useUserPublicNotes } from '@/stores'
 import { getTime } from '@/utils/date'
 
 const props = withDefaults(
@@ -150,7 +149,7 @@ async function init() {
 
   try {
     if (isUserContext.value) {
-      const { notes: publicNotes, getFolderTreeByPUuid, getNote: getPublicNote } = useUserPublicNotes(username.value)
+      const { publicNotes, getPublicFolderTreeByPUuid, getPublicNote } = useUserPublicNotes(username.value)
 
       // 用户公开文件夹上下文
       const folderInfo = getPublicNote(uuid)
@@ -158,7 +157,7 @@ async function init() {
         data.value = folderInfo
       }
 
-      folderList.value = getFolderTreeByPUuid(uuid)
+      folderList.value = getPublicFolderTreeByPUuid(uuid)
       if (publicNotes.value)
         noteList.value = publicNotes.value.filter(d => d.type === 'note' && d.puuid === uuid).map(d => ({ originNote: d })) as FolderTreeNode[]
 

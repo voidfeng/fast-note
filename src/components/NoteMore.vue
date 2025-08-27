@@ -8,8 +8,8 @@ import IconTextButton from '@/components/IconTextButton.vue'
 import { useDexie } from '@/hooks/useDexie'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
-import { useNote } from '@/hooks/useNote'
 import { useWebAuthn } from '@/hooks/useWebAuthn'
+import { useNote } from '@/stores'
 import { getTime } from '@/utils/date'
 
 withDefaults(defineProps<{

@@ -6,7 +6,6 @@ import { IonAccordionGroup, IonList } from '@ionic/vue'
 import { ref } from 'vue'
 import LongPressMenu from '@/components/LongPressMenu.vue'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
-// import { useNote } from '@/hooks/useNote'
 import NoteListItem from './NoteListItem.vue'
 
 const props = withDefaults(
