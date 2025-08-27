@@ -7,7 +7,7 @@ import { supabase } from './client'
 export async function getSupabasePublicNotesByUserId(userId: string) {
   try {
     const { data, error } = await supabase
-      .from('note')
+      .from('notes')
       .select('*')
       .eq('is_public', true)
       .eq('user_id', userId)
@@ -38,7 +38,7 @@ export async function getSupabaseNodesByLastdotime(lastdotime: string) {
   }
 
   const { data, error } = await supabase
-    .from('note')
+    .from('notes')
     .select('*')
     .eq('user_id', currentUser.value.id)
     .gt('lastdotime', lastdotime)
@@ -53,7 +53,7 @@ export async function getSupabaseNodesByLastdotime(lastdotime: string) {
 
 export async function addSupabaseNote(note: Note) {
   const { data, error } = await supabase
-    .from('note')
+    .from('notes')
     .insert(note)
     .select('uuid')
     .single()
@@ -67,7 +67,7 @@ export async function addSupabaseNote(note: Note) {
 
 export async function updateSupabaseNote(note: Note) {
   const { error } = await supabase
-    .from('note')
+    .from('notes')
     .upsert(note)
     .eq('uuid', note.uuid)
 

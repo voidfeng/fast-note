@@ -2,7 +2,7 @@ import type { Table } from 'dexie'
 import type { FolderTreeNode, Note } from '@/types'
 import Dexie from 'dexie'
 import { onUnmounted, ref } from 'vue'
-import { useRefDBSync } from '@/hooks/useRefDBSync'
+import { useRefDBSync } from '@/database'
 import { getTime } from '@/utils/date'
 
 type UpdateFn = (item: Note) => void

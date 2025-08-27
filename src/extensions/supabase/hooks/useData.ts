@@ -13,8 +13,9 @@ export function useData() {
   async function getUserNotes(lastSyncTime?: number): Promise<Note[]> {
     try {
       let query = supabase
-        .from('note')
+        .from('notes')
         .select('*')
+        .eq('user_id', currentUser.value?.id)
         .order('lastdotime', { ascending: false })
 
       // 如果提供了时间戳，只获取该时间之后的数据
@@ -112,7 +113,7 @@ export function useData() {
   async function getNoteStats() {
     try {
       const { count, error } = await supabase
-        .from('note')
+        .from('notes')
         .select('*', { count: 'exact', head: true })
 
       if (error) {
@@ -176,7 +177,7 @@ export function useData() {
       // 逐个插入笔记，确保顺序
       for (const note of notes) {
         const { error } = await supabase
-          .from('note')
+          .from('notes')
           .upsert([note], { onConflict: 'uuid' })
 
         if (error) {
@@ -290,7 +291,7 @@ export function useData() {
   async function deleteNotes(noteUuids: string[]): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('note')
+        .from('notes')
         .delete()
         .in('uuid', noteUuids)
 

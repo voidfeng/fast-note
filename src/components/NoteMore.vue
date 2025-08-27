@@ -5,7 +5,7 @@ import { lockClosed, lockOpen, shareOutline, trashOutline } from 'ionicons/icons
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import IconTextButton from '@/components/IconTextButton.vue'
-import { useDexie } from '@/hooks/useDexie'
+import { useDexie } from '@/database'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { useWebAuthn } from '@/hooks/useWebAuthn'

@@ -1,5 +1,5 @@
 import type { TypedFile } from '@/types'
-import { useDexie } from './useDexie'
+import { useDexie } from '@/database'
 
 // 为window.db添加类型声明
 declare global {

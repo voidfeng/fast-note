@@ -7,7 +7,7 @@ import { supabase } from './client'
 export async function getPublicNote(noteId: string): Promise<Note | null> {
   try {
     const { data, error } = await supabase
-      .from('note')
+      .from('notes')
       .select('*')
       .eq('uuid', noteId)
       .eq('is_public', true)
@@ -37,7 +37,7 @@ export async function getUserPublicNotes(userId: string): Promise<{
 }> {
   try {
     const { data, error } = await supabase
-      .from('note')
+      .from('notes')
       .select('*')
       .eq('user_id', userId)
       .eq('is_public', true)
@@ -72,7 +72,7 @@ export async function getUserPublicNotes(userId: string): Promise<{
 export async function getUserPublicFolders(userId: string): Promise<Note[]> {
   try {
     const { data, error } = await supabase
-      .from('note')
+      .from('notes')
       .select('*')
       .eq('user_id', userId)
       .eq('type', 'folder')
@@ -115,7 +115,7 @@ export async function shareNote(request: {
     }
 
     const { data, error } = await supabase
-      .from('note')
+      .from('notes')
       .update({ is_public: request.isPublic })
       .eq('uuid', request.noteId)
       .eq('user_id', userId)
@@ -162,7 +162,7 @@ export async function shareNote(request: {
 export async function getUserPublicFolderContents(userId: string, folderId: string): Promise<Note[]> {
   try {
     const { data, error } = await supabase
-      .from('note')
+      .from('notes')
       .select('*')
       .eq('user_id', userId)
       .eq('puuid', folderId)
@@ -199,7 +199,7 @@ export async function getUserPublicFolderContents(userId: string, folderId: stri
 export async function getUserPublicFolder(userId: string, folderId: string): Promise<Note | null> {
   try {
     const { data, error } = await supabase
-      .from('note')
+      .from('notes')
       .select('*')
       .eq('user_id', userId)
       .eq('uuid', folderId)

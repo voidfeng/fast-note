@@ -1,5 +1,5 @@
 import type { FileRef } from '@/types'
-import { useDexie } from './useDexie'
+import { useDexie } from '@/database'
 
 let isInitialized = false
 export function useFileRefs() {

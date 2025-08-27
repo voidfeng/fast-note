@@ -1,23 +1,7 @@
 import type { Ref } from 'vue'
-import type { FileRef, Note, NoteDetail, TypedFile } from '@/types'
+import type { FileRef, Metadata, Note, NoteDetail, TypedFile, UserInfo } from './types'
 import Dexie from 'dexie'
 import { ref } from 'vue'
-
-// 重新导出类型，以便其他模块可以从这里导入
-export type { FileRef, Note, NoteDetail, TypedFile }
-
-// 用户信息接口
-export interface UserInfo {
-  id: string
-  username: string
-  name?: string
-}
-
-// 元数据接口
-export interface Metadata {
-  key: string
-  value: string
-}
 
 interface NoteDatabase extends Dexie {
   note: Dexie.Table<Note, string>
@@ -34,7 +18,9 @@ const db = ref<NoteDatabase>()
 const onNoteUpdateArr: (() => void)[] = []
 let dbInitialized = false
 
-// 全局数据库初始化函数
+/**
+ * 全局数据库初始化函数
+ */
 export async function initializeDatabase() {
   if (!dbInitialized && !db.value) {
     db.value = new Dexie('note') as NoteDatabase;
@@ -54,20 +40,27 @@ export async function initializeDatabase() {
   }
 }
 
-// 辅助函数：将数字转换为布尔值
+/**
+ * 辅助函数：将数字转换为布尔值
+ */
 export function toBool(value: boolean | 0 | 1 | undefined): boolean {
   if (typeof value === 'boolean')
     return value
   return value === 1
 }
 
-// 辅助函数：将布尔值转换为数字（用于数据库存储和查询）
+/**
+ * 辅助函数：将布尔值转换为数字（用于数据库存储和查询）
+ */
 export function toNumber(value: boolean | 0 | 1 | undefined): 0 | 1 {
   if (typeof value === 'number')
     return value as 0 | 1
   return value ? 1 : 0
 }
 
+/**
+ * 使用 Dexie 数据库的组合式函数
+ */
 export function useDexie() {
   const privateNoteUpdateArr: (() => void)[] = []
 

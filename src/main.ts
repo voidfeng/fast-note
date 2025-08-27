@@ -1,9 +1,9 @@
 import { IonicVue } from '@ionic/vue'
 // import VConsole from 'vconsole'
 import { createApp } from 'vue'
+import { initializeDatabase } from '@/database'
 import { initializeNotes } from '@/stores'
 import App from './App.vue'
-import { initializeDatabase } from './hooks/useDexie'
 import router from './router'
 
 import 'core-js/stable/array/to-sorted'

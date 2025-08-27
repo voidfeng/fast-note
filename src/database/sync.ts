@@ -1,37 +1,6 @@
-import type Dexie from 'dexie'
 import type { Ref } from 'vue'
+import type { SyncableItem, SyncStatus, UseRefDBSyncOptions } from './types'
 import { nextTick, ref, toRaw, watch } from 'vue'
-
-/**
- * 可同步的数据项接口
- */
-export interface SyncableItem {
-  lastdotime: string
-  [key: string]: any
-}
-
-/**
- * useRefDBSync 配置选项
- */
-export interface UseRefDBSyncOptions<T extends SyncableItem> {
-  /** 响应式数据源 */
-  data: Ref<T[]>
-  /** Dexie 表实例 */
-  table: Dexie.Table<T, any>
-  /** ID 字段名 */
-  idField: keyof T
-  /** 防抖延迟时间（毫秒） */
-  debounceMs?: number
-}
-
-/**
- * 同步状态
- */
-export interface SyncStatus {
-  isLoading: boolean
-  error: string | null
-  lastSyncTime: string | null
-}
 
 /**
  * 生成 ISO 8601 格式的时间戳
