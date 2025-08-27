@@ -47,7 +47,7 @@ export function useData() {
   async function getUserFiles(lastSyncTime?: number): Promise<TypedFile[]> {
     try {
       let query = supabase
-        .from('file')
+        .from('files')
         .select('*')
         .order('lastdotime', { ascending: false })
 
@@ -80,7 +80,7 @@ export function useData() {
   async function getUserFileRefs(lastSyncTime?: number): Promise<FileRef[]> {
     try {
       let query = supabase
-        .from('file_refs')
+        .from('note_files')
         .select('*')
         .order('lastdotime', { ascending: false })
 
@@ -133,7 +133,7 @@ export function useData() {
   async function getFileStats() {
     try {
       const { count, error } = await supabase
-        .from('file')
+        .from('files')
         .select('*', { count: 'exact', head: true })
 
       if (error) {
@@ -153,7 +153,7 @@ export function useData() {
   async function getFileRefStats() {
     try {
       const { count, error } = await supabase
-        .from('file_refs')
+        .from('note_files')
         .select('*', { count: 'exact', head: true })
 
       if (error) {
@@ -248,7 +248,7 @@ export function useData() {
       // 批量更新文件元数据到数据库
       if (allMetadata.length > 0) {
         const { error } = await supabase
-          .from('file')
+          .from('files')
           .upsert(allMetadata, { onConflict: 'hash' })
 
         if (error) {
@@ -270,7 +270,7 @@ export function useData() {
   async function upsertFileRefs(fileRefs: any[]): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('file_refs')
+        .from('note_files')
         .upsert(fileRefs, { onConflict: 'id' })
 
       if (error) {
@@ -313,7 +313,7 @@ export function useData() {
   async function deleteFiles(fileHashes: string[]): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('file')
+        .from('files')
         .delete()
         .in('hash', fileHashes)
 
@@ -335,7 +335,7 @@ export function useData() {
   async function deleteFileRefs(refIds: number[]): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('file_refs')
+        .from('note_files')
         .delete()
         .in('id', refIds)
 

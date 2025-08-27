@@ -81,7 +81,7 @@ export async function updateSupabaseNote(note: Note) {
 // 文件引用相关 API
 export async function getSupabaseFileRefsByLastdotime(lastdotime: string) {
   const { data, error } = await supabase
-    .from('file_refs')
+    .from('note_files')
     .select('*')
     .gt('lastdotime', lastdotime)
     .order('lastdotime', { ascending: true })
@@ -95,7 +95,7 @@ export async function getSupabaseFileRefsByLastdotime(lastdotime: string) {
 
 export async function addSupabaseFileRef(fileRef: FileRef) {
   const { data, error } = await supabase
-    .from('file_refs')
+    .from('note_files')
     .insert(fileRef)
     .select('id')
     .single()
@@ -113,7 +113,7 @@ export async function addSupabaseFileRef(fileRef: FileRef) {
 
 export async function updateSupabaseFileRef(fileRef: FileRef) {
   const { error } = await supabase
-    .from('file_refs')
+    .from('note_files')
     .update(fileRef)
     .eq('id', fileRef.id)
 
@@ -136,7 +136,7 @@ export async function addSupabaseFile(file: TypedFile & { file: File }) {
 
   // 在数据库中新增文件记录
   const { data, error } = await supabase
-    .from('file')
+    .from('files')
     .insert({
       hash: file.hash,
       path: uploadResult.path,
@@ -155,7 +155,7 @@ export async function addSupabaseFile(file: TypedFile & { file: File }) {
 
 export async function getSupabaseFilesByLastdotime(lastdotime: string) {
   const { data, error } = await supabase
-    .from('file')
+    .from('files')
     .select('*')
     .gt('lastdotime', lastdotime)
     .order('lastdotime', { ascending: true })
@@ -169,7 +169,7 @@ export async function getSupabaseFilesByLastdotime(lastdotime: string) {
 
 export async function getSupabaseFile(hash: string) {
   const { data, error } = await supabase
-    .from('file')
+    .from('files')
     .select('*')
     .eq('hash', hash)
     .single()
