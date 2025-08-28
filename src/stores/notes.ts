@@ -19,7 +19,7 @@ export async function initializeNotes() {
     initializing = true
     try {
       const { db } = useDexie()
-      const data = await db.value.note
+      const data = await db.value.notes
         .orderBy('newstime')
         .toArray()
       notes.value = data
@@ -27,7 +27,7 @@ export async function initializeNotes() {
       // 初始化 useRefDBSync
       notesSync = useRefDBSync({
         data: notes,
-        table: db.value.note,
+        table: db.value.notes,
         idField: 'uuid',
         debounceMs: 300,
       })
@@ -58,7 +58,7 @@ export function useNote() {
   }
 
   function fetchNotes() {
-    return db.value.note
+    return db.value.notes
       .orderBy('newstime') // 按 newstime 排序
       .toArray() // 将结果转换为数组
       .then((data: Note[]) => {

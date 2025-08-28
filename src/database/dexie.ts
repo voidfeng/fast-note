@@ -4,9 +4,9 @@ import Dexie from 'dexie'
 import { ref } from 'vue'
 
 interface NoteDatabase extends Dexie {
-  note: Dexie.Table<Note, string>
+  notes: Dexie.Table<Note, string>
   file: Dexie.Table<TypedFile, string>
-  file_refs: Dexie.Table<FileRef, string>
+  note_files: Dexie.Table<FileRef, string>
   // 添加新表
   userInfo: Dexie.Table<UserInfo, string>
   metadata: Dexie.Table<Metadata, string>
@@ -28,9 +28,9 @@ export async function initializeDatabase() {
 
     // 定义表结构和索引，不再需要版本迁移
     db.value.version(1).stores({
-      note: '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted, subcount',
+      notes: '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted, subcount',
       file: '&hash, id, url, lastdotime',
-      file_refs: '[hash+refid], hash, refid, lastdotime',
+      note_files: '[hash+refid], hash, refid, lastdotime',
       userInfo: '&id, username, name',
       metadata: '&key, value',
     })
