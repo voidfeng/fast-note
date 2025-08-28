@@ -17,29 +17,29 @@ export function useFiles() {
   }
 
   function addFile(data: TypedFile) {
-    return db.value?.file.add(data)
+    return db.value?.files.add(data)
   }
 
   function getFile(id: string) {
-    return db.value?.file.where('id').equals(id).first()
+    return db.value?.files.where('id').equals(id).first()
   }
 
   function getFileByHash(hash: string) {
-    return db.value?.file.get(hash)
+    return db.value?.files.get(hash)
   }
 
   function getFileByUrl(url: string) {
-    return db.value?.file.where('url').equals(url).first()
+    return db.value?.files.where('url').equals(url).first()
   }
 
   function getFileByNoteId(noteId: number) {
     // 通过 file_refs 表来查找与笔记关联的文件
-    return db.value?.file_refs.where('refid').equals(noteId.toString()).toArray().then(async (refs) => {
+    return db.value?.file_refs.where('refid').equals(noteId.toString()).toArray().then(async (refs: any[]) => {
       if (!refs || refs.length === 0)
         return []
       const files = []
       for (const ref of refs) {
-        const file = await db.value?.file.get(ref.hash)
+        const file = await db.value?.files.get(ref.hash)
         if (file)
           files.push(file)
       }
@@ -53,31 +53,31 @@ export function useFiles() {
 
     // 检查是否有文件不再被任何笔记引用，如果是则删除文件
     const allRefs = await db.value?.file_refs.toArray()
-    const referencedHashes = new Set(allRefs?.map(ref => ref.hash) || [])
+    const referencedHashes = new Set(allRefs?.map((ref: any) => ref.hash) || [])
 
-    const allFiles = await db.value?.file.toArray()
+    const allFiles = await db.value?.files.toArray()
     for (const file of allFiles || []) {
       if (!referencedHashes.has(file.hash)) {
-        await db.value?.file.delete(file.hash)
+        await db.value?.files.delete(file.hash)
       }
     }
   }
 
   // 使用hash作为主键删除文件
   function deleteFile(hash: string) {
-    return db.value?.file.delete(hash)
+    return db.value?.files.delete(hash)
   }
 
   function updateFile(file: TypedFile) {
-    return db.value?.file.put(file)
+    return db.value?.files.put(file)
   }
 
   function getLocalFiles() {
-    return db.value?.file.where('id').equals(0).toArray()
+    return db.value?.files.where('id').equals(0).toArray()
   }
 
   function getFilesByLastdotime(lastdotime: string) {
-    return db.value?.file.where('lastdotime').above(lastdotime).toArray()
+    return db.value?.files.where('lastdotime').above(lastdotime).toArray()
   }
 
   return {

@@ -38,7 +38,7 @@ async function onWillPresent() {
 
 // 获取所有子级笔记（递归）
 async function getAllChildrenNotes(noteUuid: string): Promise<Note[]> {
-  const children = await db.value.note
+  const children = await db.value.notes
     .where('puuid')
     .equals(noteUuid)
     .and((item: Note) => item.isdeleted !== 1)
@@ -60,7 +60,7 @@ async function getAllChildrenNotes(noteUuid: string): Promise<Note[]> {
 async function getParentNote(puuid: string | null): Promise<Note | null> {
   if (!puuid)
     return null
-  return await db.value.note.where('uuid').equals(puuid).first() || null
+  return await db.value.notes.where('uuid').equals(puuid).first() || null
 }
 
 // 递归获取所有父级笔记

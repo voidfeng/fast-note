@@ -5,10 +5,10 @@ import { ref } from 'vue'
 
 interface NoteDatabase extends Dexie {
   notes: Dexie.Table<Note, string>
-  file: Dexie.Table<TypedFile, string>
+  files: Dexie.Table<TypedFile, string>
   note_files: Dexie.Table<FileRef, string>
   // 添加新表
-  userInfo: Dexie.Table<UserInfo, string>
+  user_info: Dexie.Table<UserInfo, string>
   metadata: Dexie.Table<Metadata, string>
   // 动态添加的用户公开笔记表将在运行时创建
   [key: string]: any
@@ -29,9 +29,9 @@ export async function initializeDatabase() {
     // 定义表结构和索引，不再需要版本迁移
     db.value.version(1).stores({
       notes: '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted, subcount',
-      file: '&hash, id, url, lastdotime',
+      files: '&hash, id, url, lastdotime',
       note_files: '[hash+refid], hash, refid, lastdotime',
-      userInfo: '&id, username, name',
+      user_info: '&id, username, name',
       metadata: '&key, value',
     })
 
