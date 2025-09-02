@@ -283,7 +283,7 @@ function openTableFormatModal() {
 }
 
 function openTextFormatModal() {
-  if (keyboardHeight.value > 0 || isPlatform('desktop')) {
+  if (isPlatform('desktop')) {
     editorRef.value?.setInputMode('none')
     setTimeout(() => {
       state.showFormat = true
