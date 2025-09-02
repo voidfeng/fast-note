@@ -33,6 +33,7 @@ const emit = defineEmits(['update:isOpen'])
 const { extensions, toggleExtension, isExtensionLoaded } = useExtensions()
 const loadingExtensions = ref<Record<string, boolean>>({})
 const errorExtensions = ref<Record<string, string>>({})
+const version = window.version
 
 // 处理扩展切换
 async function handleToggleExtension(id: string) {
@@ -110,6 +111,9 @@ function closeModal() {
             />
           </div>
         </IonItem>
+        <div class="mt-2 text-sm text-center">
+          v0.0.1({{ version }})
+        </div>
       </IonList>
     </IonContent>
   </IonModal>
