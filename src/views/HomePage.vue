@@ -209,6 +209,12 @@ onMounted(() => {
               component-name="UserProfile"
               :component-props="{}"
             />
+            <!-- 使用扩展渲染器动态渲染 PocketBase 用户信息组件 -->
+            <ExtensionRenderer
+              extension-id="pocketbase"
+              component-name="UserProfile"
+              :component-props="{}"
+            />
           </div>
           <div class="flex items-center">
             <ExtensionButton @click="showExtensionManager = true" />

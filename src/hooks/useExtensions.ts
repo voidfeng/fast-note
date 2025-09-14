@@ -23,6 +23,13 @@ const availableExtensions = [
     icon: 'person-circle-outline',
     path: '/src/extensions/supabase', // 扩展的路径
   },
+  {
+    id: 'pocketbase',
+    name: 'PocketBase 用户认证',
+    description: '基于 PocketBase 的用户登录、注册和认证管理',
+    icon: 'person-circle-outline',
+    path: '/src/extensions/pocketbase', // 扩展的路径
+  },
 ]
 
 // 初始化内置扩展
@@ -119,6 +126,9 @@ async function loadExtension(id: string): Promise<boolean> {
       // 根据扩展ID动态导入对应模块
       if (id === 'supabase') {
         module = await import('../extensions/supabase')
+      }
+      else if (id === 'pocketbase') {
+        module = await import('../extensions/pocketbase')
       }
       else {
         console.error(`未知的扩展ID: ${id}`)
