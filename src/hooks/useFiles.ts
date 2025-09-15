@@ -76,8 +76,8 @@ export function useFiles() {
     return db.value?.files.where('id').equals(0).toArray()
   }
 
-  function getFilesByLastdotime(lastdotime: string) {
-    return db.value?.files.where('lastdotime').above(lastdotime).toArray()
+  function getFilesByLastdotime(updated: string) {
+    return db.value?.files.where('updated').above(updated).toArray()
   }
 
   return {

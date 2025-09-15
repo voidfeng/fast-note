@@ -16,14 +16,15 @@ import { useFiles } from '@/hooks/useFiles'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useWebAuthn } from '@/hooks/useWebAuthn'
 import { useNote, useUserPublicNotes } from '@/stores'
+import { NOTE_TYPE } from '@/types'
 import { getTime } from '@/utils/date'
 
 const props = withDefaults(
   defineProps<{
-    noteUuid?: string
+    noteId?: string
   }>(),
   {
-    noteUuid: '',
+    noteId: '',
   },
 )
 
@@ -51,9 +52,9 @@ const state = reactive({
   isAuth: false,
 })
 
-const uuidFromRoute = computed(() => route.params.uuid as string || route.params.noteId as string)
-const uuidFromSource = computed(() => props.noteUuid || uuidFromRoute.value)
-const isNewNote = computed(() => uuidFromSource.value === '0')
+const idFromRoute = computed(() => route.params.id as string || route.params.noteId as string)
+const idFromSource = computed(() => props.noteId || idFromRoute.value)
+const isNewNote = computed(() => idFromSource.value === '0')
 const username = computed(() => route.params.username as string)
 const isUserContext = computed(() => !!username.value)
 
@@ -66,14 +67,14 @@ const effectiveUuid = computed(() => {
   if (isNewNote.value)
     return newNoteId.value
 
-  return uuidFromSource.value
+  return idFromSource.value
 })
 
-watch(uuidFromSource, (uuid) => {
-  if (uuid && uuid !== '0') {
-    init(uuid)
+watch(idFromSource, (id) => {
+  if (id && id !== '0') {
+    init(id)
   }
-  else if (!isNewNote.value) { // This condition means uuid is falsy (e.g. '', undefined)
+  else if (!isNewNote.value) { // This condition means id is falsy (e.g. '', undefined)
     // No note selected, clear editor
     data.value = null
     // Using nextTick to ensure editorRef is available
@@ -127,8 +128,8 @@ async function handleNoteSaving() {
   if (isNewNote.value && isDesktop.value)
     router.replace({ path: `/n/${effectiveUuid.value}` })
 
-  const uuid = effectiveUuid.value
-  if (!uuid)
+  const id = effectiveUuid.value
+  if (!id)
     return
 
   restoreHeight()
@@ -137,32 +138,32 @@ async function handleNoteSaving() {
 
   // 保存笔记数据
   if (content) {
-    const noteExists = await getNote(uuid)
+    const noteExists = await getNote(id)
     if (noteExists) {
       // 更新笔记
       const updatedNote = Object.assign(toRaw(data.value) || {}, {
         title,
         smalltext,
-        newstext: content,
-        lastdotime: time,
+        content: content,
+        updated: time,
         version: (data.value?.version || 1) + 1,
       })
-      await updateNote(uuid, updatedNote)
+      await updateNote(id, updatedNote)
     }
     else {
       // 新增笔记
       const newNote = {
         title,
-        smalltext,
-        newstext: content,
+        summary: smalltext,
+        content: content,
         newstime: getTime(),
-        lastdotime: time,
-        type: 'note',
-        puuid: (!route.query.puuid || route.query.puuid === 'unfilednotes') ? null : route.query.puuid as string,
-        uuid,
-        isdeleted: 0,
-        islocked: 0,
-        subcount: 0,
+        updated: time,
+        item_type: NOTE_TYPE.NOTE,
+        parent_id: (!route.query.pid || route.query.pid === 'unfilednotes') ? null : route.query.pid as string,
+        id,
+        is_deleted: 0,
+        is_locked: 0,
+        note_count: 0,
       }
       await addNote(newNote)
       updateParentFolderSubcount(newNote)
@@ -171,14 +172,14 @@ async function handleNoteSaving() {
   }
   else {
     // 内容为空，删除笔记
-    await deleteNote(uuid)
+    await deleteNote(id)
   }
 
   // 同步附件引用
-  await syncAttachments(uuid, content)
+  await syncAttachments(id, content)
 }
 
-async function syncAttachments(uuid: string, content: string) {
+async function syncAttachments(id: string, content: string) {
   const fileUrls = Array.from(content.matchAll(/<file-upload url="([^"]+)"/g), m => m[1])
 
   const getHash = async (url: string): Promise<string | null> => {
@@ -190,7 +191,7 @@ async function syncAttachments(uuid: string, content: string) {
   }
 
   const currentHashes = (await Promise.all(fileUrls.map(getHash))).filter(Boolean) as string[]
-  const dbFileRefs = await getFileRefsByRefid(uuid)
+  const dbFileRefs = await getFileRefsByRefid(id)
   const time = getTime()
 
   const actions: Promise<any>[] = []
@@ -202,15 +203,15 @@ async function syncAttachments(uuid: string, content: string) {
   for (const dbFile of dbFileRefs) {
     if (!currentHashesSet.has(dbFile.hash)) {
       // 如果数据库中的引用不在当前内容中，则标记为删除
-      if (dbFile.isdeleted !== 1)
-        actions.push(updateFileRef({ ...dbFile, isdeleted: 1, lastdotime: time }))
+      if (dbFile.is_deleted !== 1)
+        actions.push(updateFileRef({ ...dbFile, is_deleted: 1, updated: time }))
     }
     else {
       // 如果引用存在，则确保其为未删除状态并更新时间
-      if (dbFile.isdeleted === 1)
-        actions.push(updateFileRef({ ...dbFile, isdeleted: 0, lastdotime: time }))
+      if (dbFile.is_deleted === 1)
+        actions.push(updateFileRef({ ...dbFile, is_deleted: 0, updated: time }))
       else
-        actions.push(updateFileRef({ ...dbFile, lastdotime: time }))
+        actions.push(updateFileRef({ ...dbFile, updated: time }))
     }
   }
 
@@ -225,25 +226,25 @@ async function syncAttachments(uuid: string, content: string) {
   await Promise.all(actions)
 }
 
-async function init(uuid: string) {
+async function init(id: string) {
   try {
     if (isUserContext.value) {
       const { getPublicNote } = useUserPublicNotes(username.value)
       // 获取用户公开笔记
-      data.value = getPublicNote(uuid)
+      data.value = getPublicNote(id)
       if (data.value) {
         // 公开笔记始终为只读模式
         editorRef.value?.setEditable(false)
         nextTick(() => {
-          editorRef.value?.setContent(data.value.newstext)
+          editorRef.value?.setContent(data.value.content)
         })
       }
     }
     else {
       // 获取当前用户的笔记
-      data.value = await getNote(uuid)
+      data.value = await getNote(id)
       if (data.value) {
-        if (data.value.isdeleted === 1)
+        if (data.value.is_deleted === 1)
           editorRef.value?.setEditable(false)
 
         if (data.value?.islocked === 1) {
@@ -253,7 +254,7 @@ async function init(uuid: string) {
             state.isAuth = await register()
         }
         nextTick(() => {
-          editorRef.value?.setContent(data.value.newstext)
+          editorRef.value?.setContent(data.value.content)
         })
       }
     }
@@ -293,8 +294,8 @@ function openTextFormatModal() {
 
 onMounted(() => {
   if (isNewNote.value && !isDesktop.value) {
-    if (route.query.puuid) {
-      window.history.replaceState(null, '', `/n/${newNoteId.value}?puuid=${route.query.puuid}`)
+    if (route.query.pid) {
+      window.history.replaceState(null, '', `/n/${newNoteId.value}?pid=${route.query.pid}`)
     }
     else {
       window.history.replaceState(null, '', `/n/${newNoteId.value}`)
@@ -343,7 +344,7 @@ onIonViewWillLeave(() => {
         <YYEditor
           v-if="effectiveUuid"
           ref="editorRef"
-          :uuid="effectiveUuid"
+          :id="effectiveUuid"
           @blur="handleNoteSaving"
         />
       </div>

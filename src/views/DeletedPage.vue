@@ -31,9 +31,9 @@ useIonicLongPressList(listRef, {
   duration: 500,
   pressedClass: 'item-long-press',
   onItemLongPress: async (element) => {
-    const uuid = element.getAttribute('uuid')
-    if (uuid) {
-      longPressUUID.value = uuid
+    const id = element.getAttribute('id')
+    if (id) {
+      longPressUUID.value = id
       longPressMenuOpen.value = true
     }
   },
@@ -92,7 +92,7 @@ onUnmounted(() => {
 
       <NoteList
         ref="listRef"
-        v-model:note-uuid="state.noteUuid"
+        v-model:note-id="state.noteUuid"
         :data-list="dataList"
         :press-items="[{ type: 'restore' }, { type: 'deleteNow' }]"
         @selected="$emit('selected', $event)"

@@ -24,6 +24,7 @@ import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
 import { useNote, useUserPublicNotes } from '@/stores'
+import { NOTE_TYPE } from '@/types'
 import { getTime } from '@/utils/date'
 
 const props = withDefaults(
@@ -38,7 +39,7 @@ const props = withDefaults(
 defineEmits(['selected'])
 
 const route = useRoute()
-const { notes, addNote, getNote, getFolderTreeByPUuid } = useNote()
+const { notes, addNote, getNote, getFolderTreeByParentId } = useNote()
 const { isDesktop } = useDeviceType()
 
 const longPressMenuOpen = ref(false)
@@ -49,9 +50,9 @@ useIonicLongPressList(listRef, {
   duration: 500,
   pressedClass: 'item-long-press',
   onItemLongPress: async (element) => {
-    const uuid = element.getAttribute('uuid')
-    if (uuid) {
-      longPressUUID.value = uuid
+    const id = element.getAttribute('id')
+    if (id) {
+      longPressUUID.value = id
       longPressMenuOpen.value = true
     }
   },
@@ -83,15 +84,15 @@ const addButtons: AlertButton[] = [
       await addNote({
         title: d.newFolderName,
         newstime: getTime(),
-        lastdotime: isoTime,
-        type: 'folder',
-        puuid: folderId.value || null,
-        uuid: nanoid(12),
+        updated: isoTime,
+        item_type: NOTE_TYPE.FOLDER,
+        parent_id: folderId.value || null,
+        id: nanoid(12),
         version: 1,
-        newstext: '',
-        isdeleted: 0,
-        islocked: 0,
-        subcount: 0,
+        content: '',
+        is_deleted: 0,
+        is_locked: 0,
+        note_count: 0,
       })
       init()
     },
@@ -139,12 +140,12 @@ watch(
 )
 
 async function init() {
-  let uuid
+  let id
   if (isDesktop.value)
-    uuid = props.currentFolder
+    id = props.currentFolder
   else
-    uuid = folderId.value
-  if (!uuid)
+    id = folderId.value
+  if (!id)
     return
 
   try {
@@ -152,40 +153,40 @@ async function init() {
       const { publicNotes, getPublicFolderTreeByPUuid, getPublicNote } = useUserPublicNotes(username.value)
 
       // 用户公开文件夹上下文
-      const folderInfo = getPublicNote(uuid)
+      const folderInfo = getPublicNote(id)
       if (folderInfo) {
         data.value = folderInfo
       }
 
-      folderList.value = getPublicFolderTreeByPUuid(uuid)
+      folderList.value = getPublicFolderTreeByPUuid(id)
       if (publicNotes.value)
-        noteList.value = publicNotes.value.filter(d => d.type === 'note' && d.puuid === uuid).map(d => ({ originNote: d })) as FolderTreeNode[]
+        noteList.value = publicNotes.value.filter(d => d.item_type === NOTE_TYPE.NOTE && d.parent_id === id).map(d => ({ originNote: d })) as FolderTreeNode[]
 
-      // 直接使用数据库中的 subcount，无需计算
+      // 直接使用数据库中的 note_count，无需计算
     }
     else {
       // 当前用户的文件夹上下文
-      const res = await getNote(uuid)
+      const res = await getNote(id)
       if (res)
         data.value = res
 
-      if (uuid === 'allnotes') {
-        data.value = { uuid: 'allnotes' } as Note
+      if (id === 'allnotes') {
+        data.value = { id: 'allnotes' } as Note
         /**
          * 获取备忘录所属的分类名称
          * 1. 获取所有分类
          * 2. 找到当前备忘录所属的分类
          * 3. 将分类名称赋值给当前备忘录
          */
-        const allNotes = notes.value.filter(d => d.type === 'note').map(d => ({ originNote: d })) as FolderTreeNode[]
-        const allFolders = notes.value.filter(d => d.type === 'folder')
-        // 将文件夹数组转换为 Map，以 uuid 为键
-        const folderMap = new Map(allFolders.map(folder => [folder.uuid, folder]))
+        const allNotes = notes.value.filter(d => d.item_type === NOTE_TYPE.NOTE).map(d => ({ originNote: d })) as FolderTreeNode[]
+        const allFolders = notes.value.filter(d => d.item_type === NOTE_TYPE.FOLDER)
+        // 将文件夹数组转换为 Map，以 id 为键
+        const folderMap = new Map(allFolders.map(folder => [folder.id, folder]))
 
         // 遍历 dataList，为每个备忘录查找并设置其所属文件夹的名称
         allNotes.forEach((note) => {
-          if (note.originNote.puuid) {
-            const parentFolder = folderMap.get(note.originNote.puuid)
+          if (note.originNote.parent_id) {
+            const parentFolder = folderMap.get(note.originNote.parent_id)
             if (parentFolder) {
               note.folderName = parentFolder.title
             }
@@ -199,13 +200,13 @@ async function init() {
         })
         noteList.value = allNotes
       }
-      else if (uuid === 'unfilednotes') {
-        data.value = { uuid: 'unfilednotes' } as Note
-        noteList.value = notes.value.filter(d => d.type === 'note' && !d.puuid).map(d => ({ originNote: d })) as FolderTreeNode[]
+      else if (id === 'unfilednotes') {
+        data.value = { id: 'unfilednotes' } as Note
+        noteList.value = notes.value.filter(d => d.item_type === NOTE_TYPE.NOTE && !d.parent_id).map(d => ({ originNote: d })) as FolderTreeNode[]
       }
       else {
-        folderList.value = getFolderTreeByPUuid(uuid)
-        noteList.value = notes.value.filter(d => d.type === 'note' && d.puuid === uuid).map(d => ({ originNote: d })) as FolderTreeNode[]
+        folderList.value = getFolderTreeByParentId(id)
+        noteList.value = notes.value.filter(d => d.item_type === NOTE_TYPE.NOTE && d.parent_id === id).map(d => ({ originNote: d })) as FolderTreeNode[]
       }
     }
   }
@@ -245,15 +246,15 @@ onIonViewDidEnter(() => {
       </IonHeader>
 
       <NoteList
-        v-model:note-uuid="state.noteUuid"
+        v-model:note-id="state.noteUuid"
         :data-list="[...folders, ...noteList]"
-        :show-parent-folder="data.uuid === 'allnotes'"
+        :show-parent-folder="data.id === 'allnotes'"
         @selected="$emit('selected', $event)"
       />
     </IonContent>
     <IonFooter v-if="!isDesktop">
       <IonToolbar>
-        <IonButtons v-if="data.uuid !== 'allnotes' && !isUserContext" slot="start">
+        <IonButtons v-if="data.id !== 'allnotes' && !isUserContext" slot="start">
           <IonButton id="add-folder2">
             <IonIcon :icon="addOutline" />
           </IonButton>
@@ -262,8 +263,8 @@ onIonViewDidEnter(() => {
           {{ folders.length > 0 ? `${folders.length}个文件夹 ·` : '' }}
           {{ notes.length > 0 ? `${notes.length}个备忘录` : '无备忘录' }}
         </IonTitle>
-        <IonButtons v-if="data.uuid !== 'allnotes' && !isUserContext" slot="end">
-          <IonButton :router-link="`/n/0?puuid=${folderId}`" router-direction="forward">
+        <IonButtons v-if="data.id !== 'allnotes' && !isUserContext" slot="end">
+          <IonButton :router-link="`/n/0?pid=${folderId}`" router-direction="forward">
             <IonIcon :icon="createOutline" />
           </IonButton>
         </IonButtons>

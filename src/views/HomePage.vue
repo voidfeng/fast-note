@@ -31,12 +31,13 @@ import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useExtensions } from '@/hooks/useExtensions'
 import { useNote } from '@/stores'
+import { NOTE_TYPE } from '@/types'
 import { getTime } from '@/utils/date'
 import { errorHandler, ErrorType, withErrorHandling } from '@/utils/errorHandler'
 import FolderPage from './FolderPage.vue'
 import NoteDetail from './NoteDetail.vue'
 
-const { notes, addNote, onUpdateNote, getDeletedNotes, getFolderTreeByPUuid } = useNote()
+const { notes, addNote, onUpdateNote, getDeletedNotes, getFolderTreeByParentId } = useNote()
 const { isDesktop } = useDeviceType()
 const { showGlobalSearch } = useGlobalSearch()
 const { isExtensionEnabled, getExtensionModule } = useExtensions()
@@ -79,9 +80,9 @@ const dataList = ref<FolderTreeNode[]>([])
 // 使用单个计算属性同时计算两个值，只遍历一次数组
 const noteCounts = computed(() => {
   const counts = notes.value.reduce((acc, note) => {
-    if (note.type === 'note' && note.isdeleted === 0) {
+    if (note.item_type === NOTE_TYPE.NOTE && note.is_deleted === 0) {
       acc.all++
-      if (!note.puuid) {
+      if (!note.parent_id) {
         acc.unfiled++
       }
     }
@@ -105,14 +106,14 @@ const addButtons: AlertButton[] = [
       await addNote({
         title: d.newFolderName,
         newstime: getTime(),
-        newstext: '',
-        lastdotime: isoTime,
-        type: 'folder',
-        puuid: null,
-        uuid: nanoid(12),
-        subcount: 0,
-        isdeleted: 0,
-        islocked: 0,
+        content: '',
+        updated: isoTime,
+        item_type: NOTE_TYPE.FOLDER,
+        parent_id: null,
+        id: nanoid(12),
+        note_count: 0,
+        is_deleted: 0,
+        is_locked: 0,
       })
       init()
     },
@@ -127,7 +128,7 @@ const state = reactive({
 const sortDataList = computed(() => {
   return dataList.value
     .toSorted((a: FolderTreeNode, b: FolderTreeNode) => {
-      return new Date(b.originNote.lastdotime!).getTime() - new Date(a.originNote.lastdotime!).getTime()
+      return new Date(b.originNote.updated!).getTime() - new Date(a.originNote.updated!).getTime()
     })
 })
 
@@ -138,7 +139,7 @@ async function refresh(ev: CustomEvent) {
 
 async function init() {
   // 获取文件夹树数据
-  const treeData = getFolderTreeByPUuid()
+  const treeData = getFolderTreeByParentId()
   if (treeData && treeData.length > 0) {
     // 从新的数据结构中提取原始数据，过滤掉无效的节点
     dataList.value = treeData
@@ -160,7 +161,7 @@ async function init() {
 }
 
 onUpdateNote((item) => {
-  if (item.puuid === null) {
+  if (item.parent_id === null) {
     init()
   }
 })

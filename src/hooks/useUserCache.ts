@@ -1,4 +1,4 @@
-import { getUserByUsername } from '@/extensions/supabase/api/userApi'
+// import { getUserByUsername } from '@/extensions/supabase/api/userApi'
 
 // 用户信息类型
 interface UserInfo {
@@ -24,18 +24,18 @@ export function useUserCache() {
 
     // 从接口获取用户信息
     try {
-      const user = await getUserByUsername(username)
-      if (user) {
-        const userInfo: UserInfo = {
-          id: user.id,
-          username: user.username,
-          name: user.username || `用户 ${user.username}`,
-        }
+      // const user = await getUserByUsername(username)
+      // if (user) {
+      // const userInfo: UserInfo = {
+      //   id: user.id,
+      //   username: user.username,
+      //   name: user.username || `用户 ${user.username}`,
+      // }
 
-        // 保存到内存缓存
-        userCache.set(username, userInfo)
-        return userInfo
-      }
+      // 保存到内存缓存
+      // userCache.set(username, userInfo)
+      // return userInfo
+      // }
     }
     catch (error) {
       console.error('获取用户信息失败:', error)
@@ -49,18 +49,18 @@ export function useUserCache() {
    */
   async function forceUpdateUserInfo(username: string): Promise<UserInfo | null> {
     try {
-      const user = await getUserByUsername(username)
-      if (user) {
-        const userInfo: UserInfo = {
-          id: user.id,
-          username: user.username,
-          name: user.username || `用户 ${user.username}`,
-        }
+      // const user = await getUserByUsername(username)
+      // if (user) {
+      //   const userInfo: UserInfo = {
+      //     id: user.id,
+      //     username: user.username,
+      //     name: user.username || `用户 ${user.username}`,
+      //   }
 
-        // 更新内存缓存
-        userCache.set(username, userInfo)
-        return userInfo
-      }
+      //   // 更新内存缓存
+      //   userCache.set(username, userInfo)
+      //   return userInfo
+      // }
     }
     catch (error) {
       console.error('强制更新用户信息失败:', error)

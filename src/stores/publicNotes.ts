@@ -3,6 +3,7 @@ import type { FolderTreeNode, Note } from '@/types'
 import Dexie from 'dexie'
 import { onUnmounted, ref } from 'vue'
 import { useRefDBSync } from '@/database'
+import { NOTE_TYPE } from '@/types'
 import { getTime } from '@/utils/date'
 
 type UpdateFn = (item: Note) => void
@@ -15,7 +16,7 @@ class UserPublicNotesDB extends Dexie {
     super(`UserPublicNotes_${username}`)
 
     this.version(1).stores({
-      notes: '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted, subcount',
+      notes: '&id, [item_type+parent_id+is_deleted], title, newstime, item_type, parent_id, content, updated, version, is_deleted, note_count',
     })
   }
 }
@@ -65,7 +66,7 @@ export async function initializeUserPublicNotes(username: string) {
       state.publicNotesSync = useRefDBSync({
         data: state.publicNotes as any,
         table: state.db.notes,
-        idField: 'uuid',
+        idField: 'id',
         debounceMs: 300,
       })
 
@@ -100,7 +101,7 @@ export function useUserPublicNotes(username: string) {
     // 确保有 lastdotime 字段用于同步检测
     const noteWithTime = {
       ...note,
-      lastdotime: note.lastdotime || getTime(),
+      updated: note.updated || getTime(),
     }
 
     // 直接添加到 publicNotes ref 变量
@@ -113,34 +114,34 @@ export function useUserPublicNotes(username: string) {
     return noteWithTime
   }
 
-  function getPublicNote(uuid: string) {
+  function getPublicNote(id: string) {
     // 直接从 publicNotes ref 变量获取
     const publicNotes = state.publicNotes.value || []
-    const note = publicNotes.find(n => n.uuid === uuid)
+    const note = publicNotes.find(n => n.id === id)
     return note || null
   }
 
-  function deletePublicNote(uuid: string) {
+  function deletePublicNote(id: string) {
     // 直接从 publicNotes ref 变量删除
     if (!state.publicNotes.value)
       return
-    const index = state.publicNotes.value.findIndex(n => n.uuid === uuid)
+    const index = state.publicNotes.value.findIndex(n => n.id === id)
     if (index > -1) {
       state.publicNotes.value.splice(index, 1)
     }
   }
 
-  function updatePublicNote(uuid: string, updates: any) {
+  function updatePublicNote(id: string, updates: any) {
     // 直接更新 publicNotes ref 变量中的数据
     if (!state.publicNotes.value)
       return
-    const noteIndex = state.publicNotes.value.findIndex(n => n.uuid === uuid)
+    const noteIndex = state.publicNotes.value.findIndex(n => n.id === id)
     if (noteIndex > -1) {
       // 确保更新 lastdotime 用于同步检测
       const updatedNote = {
         ...state.publicNotes.value[noteIndex],
         ...updates,
-        lastdotime: updates.lastdotime || getTime(),
+        updated: updates.updated || getTime(),
       }
       state.publicNotes.value[noteIndex] = updatedNote
     }
@@ -148,44 +149,44 @@ export function useUserPublicNotes(username: string) {
 
   async function getAllPublicFolders() {
     const publicNotes = state.publicNotes.value || []
-    return publicNotes.filter(note => note.type === 'folder' && note.isdeleted !== 1)
+    return publicNotes.filter(note => note.item_type === NOTE_TYPE.FOLDER && note.is_deleted !== 1)
   }
 
-  async function getPublicNotesByPUuid(puuid: string) {
+  async function getPublicNotesByPUuid(parent_id: string) {
     const publicNotes = state.publicNotes.value || []
-    if (puuid === 'allnotes') {
-      return publicNotes.filter(note => note.type === 'note' && note.isdeleted !== 1)
+    if (parent_id === 'allnotes') {
+      return publicNotes.filter(note => note.item_type === NOTE_TYPE.NOTE && note.is_deleted !== 1)
     }
-    else if (puuid === 'unfilednotes') {
-      return publicNotes.filter(note => note.type === 'note' && note.puuid === null && note.isdeleted !== 1)
+    else if (parent_id === 'unfilednotes') {
+      return publicNotes.filter(note => note.item_type === NOTE_TYPE.NOTE && note.parent_id === null && note.is_deleted !== 1)
     }
     else {
-      return publicNotes.filter(note => note.puuid === puuid && note.isdeleted !== 1)
+      return publicNotes.filter(note => note.parent_id === parent_id && note.is_deleted !== 1)
     }
   }
 
   async function getDeletedPublicNotes() {
     const publicNotes = state.publicNotes.value || []
     const thirtyDaysAgo = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString() // 30天前的ISO字符串
-    return publicNotes.filter(note => note.isdeleted === 1 && note.lastdotime >= thirtyDaysAgo)
+    return publicNotes.filter(note => note.is_deleted === 1 && note.updated >= thirtyDaysAgo)
   }
 
-  async function getPublicNoteCountByUuid(puuid: string) {
+  async function getPublicNoteCountByUuid(parent_id: string) {
     const publicNotes = state.publicNotes.value || []
-    // 获取当前 puuid 下的所有分类
-    const categories = publicNotes.filter(note => note.puuid === puuid && note.isdeleted !== 1)
+    // 获取当前 parent_id 下的所有分类
+    const categories = publicNotes.filter(note => note.parent_id === parent_id && note.is_deleted !== 1)
 
     let count = 0
 
     // 遍历所有分类
     for (const category of categories) {
       // 如果是笔记类型，计数加1
-      if (category.type === 'note') {
+      if (category.item_type === NOTE_TYPE.NOTE) {
         count++
       }
       // 如果是文件夹类型，递归获取其中的笔记数量
-      else if (category.type === 'folder') {
-        count += category.subcount || 0
+      else if (category.item_type === NOTE_TYPE.FOLDER) {
+        count += category.note_count || 0
       }
     }
 
@@ -197,19 +198,19 @@ export function useUserPublicNotes(username: string) {
     privatePublicNoteUpdateArr.push(fn)
   }
 
-  function getPublicNotesByLastdotime(lastdotime: string) {
+  function getPublicNotesByUpdated(updated: string) {
     const publicNotes = state.publicNotes.value || []
-    return publicNotes.filter(note => note.lastdotime > lastdotime)
+    return publicNotes.filter(note => note.updated > updated)
   }
 
-  function getPublicFolderTreeByPUuid(puuid: string | null = null): FolderTreeNode[] {
+  function getPublicFolderTreeByPUuid(parent_id: string | null = null): FolderTreeNode[] {
     /**
-     * 先获取全部文件夹，再根据puuid获取对应的文件夹，再递归寻找每个文件夹的子文件夹
+     * 先获取全部文件夹，再根据parent_id获取对应的文件夹，再递归寻找每个文件夹的子文件夹
      * 使用新的数据结构，不修改原始数据
      */
     const publicNotes = state.publicNotes.value || []
-    const allFolders = publicNotes.filter(note => note.type === 'folder' && note.isdeleted !== 1)
-    const folders = allFolders.filter(item => item.puuid === puuid)
+    const allFolders = publicNotes.filter(note => note.item_type === NOTE_TYPE.FOLDER && note.is_deleted !== 1)
+    const folders = allFolders.filter(item => item.parent_id === parent_id)
 
     if (folders && folders.length > 0) {
       // 递归构建文件夹树
@@ -220,7 +221,7 @@ export function useUserPublicNotes(username: string) {
           originNote: currentFolder,
         }
 
-        const childFolders = allFolders.filter(item => item.puuid === currentFolder.uuid)
+        const childFolders = allFolders.filter(item => item.parent_id === currentFolder.id)
 
         if (childFolders.length > 0) {
           folderNode.children = childFolders.map(child => buildFolderTree(child, allFolders))
@@ -238,32 +239,32 @@ export function useUserPublicNotes(username: string) {
   function getUnfiledPublicNotesCount() {
     const publicNotes = state.publicNotes.value || []
     return publicNotes.filter(note =>
-      note.type === 'note'
-      && note.puuid === null
-      && note.isdeleted !== 1,
+      note.item_type === NOTE_TYPE.NOTE
+      && note.parent_id === null
+      && note.is_deleted !== 1,
     ).length
   }
 
-  async function searchPublicNotesByPUuid(puuid: string, title: string, keyword: string) {
+  async function searchPublicNotesByPUuid(parent_id: string, title: string, keyword: string) {
     const publicNotes = state.publicNotes.value || []
-    // 搜索当前 puuid 下符合条件的笔记
+    // 搜索当前 parent_id 下符合条件的笔记
     const directNotes = publicNotes
       .filter(note =>
-        note.type === 'note'
-        && note.puuid === puuid
-        && note.isdeleted === 0
-        && note.newstext.includes(keyword),
+        note.item_type === NOTE_TYPE.NOTE
+        && note.parent_id === parent_id
+        && note.is_deleted === 0
+        && note.content.includes(keyword),
       )
       .map(note => ({
         ...note,
         folderName: title,
       }))
 
-    // 获取当前 puuid 下的所有文件夹
+    // 获取当前 parent_id 下的所有文件夹
     const folders = publicNotes.filter(note =>
-      note.type === 'folder'
-      && note.puuid === puuid
-      && note.isdeleted === 0,
+      note.item_type === NOTE_TYPE.FOLDER
+      && note.parent_id === parent_id
+      && note.is_deleted === 0,
     )
 
     // 递归搜索每个文件夹中的笔记
@@ -271,7 +272,7 @@ export function useUserPublicNotes(username: string) {
 
     for (const folder of folders) {
       // 对每个文件夹递归调用搜索方法
-      const folderNotes = await searchPublicNotesByPUuid(folder.uuid!, folder.title, keyword)
+      const folderNotes = await searchPublicNotesByPUuid(folder.id!, folder.title, keyword)
       allMatchedNotes = [...allMatchedNotes, ...folderNotes]
     }
 
@@ -284,18 +285,18 @@ export function useUserPublicNotes(username: string) {
    * @returns void
    */
   async function updateParentPublicFolderSubcount(note: Note) {
-    if (!note || !note.puuid) {
+    if (!note || !note.parent_id) {
       return // 如果没有父级，直接返回
     }
 
-    let currentPuuid: string | null = note.puuid
+    let currentPuuid: string | null = note.parent_id
 
     // 递归更新所有父级文件夹的 noteCount
     while (currentPuuid) {
       const publicNotes = state.publicNotes.value || []
       // 获取当前父级文件夹
-      const parentFolder: Note | undefined = publicNotes.find(note => note.uuid === currentPuuid)
-      if (!parentFolder || parentFolder.type !== 'folder') {
+      const parentFolder: Note | undefined = publicNotes.find(note => note.id === currentPuuid)
+      if (!parentFolder || parentFolder.item_type !== NOTE_TYPE.FOLDER) {
         break
       }
 
@@ -303,16 +304,16 @@ export function useUserPublicNotes(username: string) {
       const noteCount = await getPublicNoteCountByUuid(currentPuuid)
 
       // 先获取当前文件夹信息，再更新父级文件夹的 subcount 和 lastdotime
-      const currentFolder = publicNotes.find(note => note.uuid === currentPuuid)
+      const currentFolder = publicNotes.find(note => note.id === currentPuuid)
       if (currentFolder) {
         updatePublicNote(currentPuuid, {
-          subcount: noteCount,
-          lastdotime: getTime(),
+          note_count: noteCount,
+          updated: getTime(),
         })
       }
 
       // 继续向上查找父级
-      currentPuuid = parentFolder.puuid
+      currentPuuid = parentFolder.parent_id
     }
   }
 
@@ -332,7 +333,6 @@ export function useUserPublicNotes(username: string) {
     getPublicNotesByPUuid,
     getDeletedPublicNotes,
     getPublicNoteCountByUuid,
-    getPublicNotesByLastdotime,
     onUpdatePublicNote,
     searchPublicNotesByPUuid,
     // 文件夹

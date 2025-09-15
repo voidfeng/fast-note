@@ -119,7 +119,7 @@ export function useRefDBSync<T extends SyncableItem>(
         // 新增项目 - 直接使用 toRaw 转换
         upsertItems.push(toRaw(item))
       }
-      else if (item.lastdotime > lastItem.lastdotime) {
+      else if (item.updated > lastItem.updated) {
         // 修改项目（通过时间戳比较）- 直接使用 toRaw 转换
         upsertItems.push(toRaw(item))
       }

@@ -3,6 +3,7 @@ import type { Note } from '@/types'
 import { alertController, IonItem, IonLabel, IonList, IonModal } from '@ionic/vue'
 import { ref, toRaw, watch } from 'vue'
 import { useNote } from '@/stores'
+import { NOTE_TYPE } from '@/types'
 import { getTime } from '@/utils/date'
 import NoteMove from './NoteMove.vue'
 
@@ -15,14 +16,14 @@ interface IConfig {
 }
 
 const props = withDefaults(defineProps <{
-  uuid: string
+  id: string
   items: { type: ItemType }[]
   presentingElement?: HTMLElement
 }>(), {})
 
 const emit = defineEmits(['refresh'])
 
-const { getNote, updateNote, getNotesByPUuid, updateParentFolderSubcount } = useNote()
+const { getNote, updateNote, getNotesByParentId, updateParentFolderSubcount } = useNote()
 
 const modal = ref()
 const note = ref<Note | null>(null)
@@ -35,15 +36,15 @@ const config = ref<IConfig>({
     label: '重命名',
     handler: async () => {
       const alert = await alertController.create({
-        header: note.value?.type === 'folder' ? '请输入新的文件夹名称' : '请输入新的标题',
+        header: note.value?.item_type === NOTE_TYPE.FOLDER ? '请输入新的文件夹名称' : '请输入新的标题',
         buttons: [
           { text: '取消', role: 'cancel', handler: () => dismiss() },
           {
             text: '确认',
             handler: async (d) => {
               note.value!.title = d.newFolderName
-              note.value!.lastdotime = getTime()
-              await updateNote(note.value!.uuid, toRaw(note.value))
+              note.value!.updated = getTime()
+              await updateNote(note.value!.id, toRaw(note.value))
               dismiss()
               emit('refresh')
             },
@@ -59,19 +60,19 @@ const config = ref<IConfig>({
     label: '删除',
     handler: async () => {
       const alert = await alertController.create({
-        header: note.value?.type === 'folder' ? '确定要删除此文件夹吗？' : '要删除此备忘录吗？',
+        header: note.value?.item_type === NOTE_TYPE.FOLDER ? '确定要删除此文件夹吗？' : '要删除此备忘录吗？',
         message: '所有备忘录和子文件夹都将删除，删除后在“最近删除”中保留 30 天',
         buttons: [
           { text: '取消', role: 'cancel', handler: () => dismiss() },
           {
             text: '确认',
             handler: async () => {
-              note.value!.isdeleted = 1
-              await updateNote(note.value!.uuid, toRaw(note.value))
-              const notes = await getNotesByPUuid(note.value!.uuid)
+              note.value!.is_deleted = 1
+              await updateNote(note.value!.id, toRaw(note.value))
+              const notes = await getNotesByParentId(note.value!.id)
               for (const note of notes) {
-                note.isdeleted = 1
-                await updateNote(note.uuid, note)
+                note.is_deleted = 1
+                await updateNote(note.id, note)
               }
               updateParentFolderSubcount(note.value!)
               emit('refresh')
@@ -87,8 +88,8 @@ const config = ref<IConfig>({
   restore: {
     label: '恢复',
     handler: async () => {
-      note.value!.isdeleted = 0
-      await updateNote(note.value!.uuid, toRaw(note.value))
+      note.value!.is_deleted = 0
+      await updateNote(note.value!.id, toRaw(note.value))
       updateParentFolderSubcount(note.value!)
       emit('refresh')
       dismiss()
@@ -97,8 +98,8 @@ const config = ref<IConfig>({
   deleteNow: {
     label: '永久删除',
     handler: async () => {
-      note.value!.lastdotime = new Date(0).toISOString()
-      await updateNote(note.value!.uuid, toRaw(note.value))
+      note.value!.updated = new Date(0).toISOString()
+      await updateNote(note.value!.id, toRaw(note.value))
       emit('refresh')
       dismiss()
     },
@@ -111,9 +112,9 @@ const config = ref<IConfig>({
   },
 })
 
-watch(() => props.uuid, () => {
-  if (props.uuid) {
-    note.value = getNote(props.uuid)
+watch(() => props.id, () => {
+  if (props.id) {
+    note.value = getNote(props.id)
   }
 })
 </script>
@@ -129,8 +130,8 @@ watch(() => props.uuid, () => {
     </div>
   </IonModal>
   <NoteMove
+    :id="id"
     :is-open="showMove"
-    :uuid="uuid"
     :presenting-element
     @did-dismiss="() => showMove = false"
     @refresh="() => {

@@ -46,9 +46,9 @@ export function useFileRefs() {
     return db.value?.note_files.where('hash').equals(hash).count()
   }
 
-  // 根据lastdotime获取全部引用
-  function getFileRefsByLastdotime(lastdotime: string) {
-    return db.value?.note_files.where('lastdotime').aboveOrEqual(lastdotime).toArray()
+  // 根据updated获取全部引用
+  function getFileRefsByLastdotime(updated: string) {
+    return db.value?.note_files.where('updated').aboveOrEqual(updated).toArray()
   }
 
   // 根据id删除文件引用

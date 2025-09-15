@@ -3,17 +3,18 @@ import type { FolderTreeNode, Note } from '@/types'
 import { IonButton, IonButtons, IonContent, IonHeader, IonModal, IonTitle, IonToolbar } from '@ionic/vue'
 import { ref } from 'vue'
 import { useNote } from '@/stores'
+import { NOTE_TYPE } from '@/types'
 import { getTime } from '@/utils/date'
 import NoteList from './NoteList.vue'
 
 const props = withDefaults(defineProps<{
   isOpen: boolean
-  uuid: string
+  id: string
 }>(), {})
 
 const emit = defineEmits(['refresh'])
 
-const { getFolderTreeByPUuid, getNote, updateParentFolderSubcount } = useNote()
+const { getFolderTreeByParentId, getNote, updateParentFolderSubcount } = useNote()
 
 const modalRef = ref()
 const noteListRef = ref()
@@ -29,33 +30,33 @@ const dismiss = () => modalRef.value.$el.dismiss()
  * @returns string[]
  */
 function findFoldersWithChildren(notes: FolderTreeNode[]): string[] {
-  const uuids: string[] = []
+  const ids: string[] = []
 
   function traverse(node: FolderTreeNode) {
     if (node.children && node.children.length > 0) {
-      uuids.push(node.originNote.uuid)
+      ids.push(node.originNote.id)
       node.children.forEach(child => traverse(child))
     }
   }
 
   notes.forEach(node => traverse(node))
-  return uuids
+  return ids
 }
 
-async function onSelected(uuid: string) {
+async function onSelected(id: string) {
   if (currentNote.value) {
-    currentNote.value.puuid = uuid === 'root' ? null : uuid
-    currentNote.value.lastdotime = getTime()
+    currentNote.value.parent_id = id === 'root' ? null : id
+    currentNote.value.updated = getTime()
     updateParentFolderSubcount(currentNote.value)
   }
   // const preNote = Object.assign({}, currentNote.value)
-  // currentNote.value!.puuid = uuid || null
-  // currentNote.value!.lastdotime = getTime()
-  // await updateNote(currentNote.value!.uuid, toRaw(currentNote.value!))
-  // if (preNote.puuid) {
+  // currentNote.value!.pid = id || null
+  // currentNote.value!.updated = getTime()
+  // await updateNote(currentNote.value!.id, toRaw(currentNote.value!))
+  // if (preNote.pid) {
   //   updateParentFolderSubcount(preNote)
   // }
-  // if (currentNote.value!.puuid) {
+  // if (currentNote.value!.pid) {
   //   updateParentFolderSubcount(currentNote.value!)
   // }
   dismiss()
@@ -63,30 +64,30 @@ async function onSelected(uuid: string) {
 }
 
 function onWillPersent() {
-  const val = getFolderTreeByPUuid()
+  const val = getFolderTreeByParentId()
   // 过滤掉无效的节点
   const validChildren = val ? val.filter(node => node && node.originNote) : []
 
   dataList.value = [{
     originNote: {
-      uuid: 'root',
+      id: 'root',
       title: '根目录',
-      type: 'folder',
-      puuid: null,
-      isdeleted: 0,
-      islocked: 0,
+      item_type: NOTE_TYPE.FOLDER,
+      parent_id: null,
+      is_deleted: 0,
+      is_locked: 0,
       version: 1,
-      lastdotime: getTime(),
-      smalltext: '',
+      updated: getTime(),
+      summary: '',
       newstime: getTime(),
-      newstext: '',
-      subcount: 0,
+      content: '',
+      note_count: 0,
     },
     children: validChildren,
   }]
   const folderIds = findFoldersWithChildren(dataList.value)
   noteListRef.value.setExpandedItems(folderIds)
-  currentNote.value = getNote(props.uuid)
+  currentNote.value = getNote(props.id)
 }
 </script>
 

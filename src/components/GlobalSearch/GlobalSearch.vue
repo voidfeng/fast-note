@@ -14,7 +14,7 @@ const props = withDefaults(defineProps<{
 })
 
 const { showGlobalSearch, showGlobalSearchState } = useGlobalSearch()
-const { searchNotesByPUuid } = useNote()
+const { searchNotesByParentId } = useNote()
 
 const fullScreenRef = ref<HTMLDivElement>()
 const state = reactive({
@@ -46,7 +46,7 @@ function onCancel() {
 
 const debouncedSearch = useDebounceFn(async (searchText: string) => {
   if (searchText) {
-    const _notes = await searchNotesByPUuid(props.puuid || '', '全部', searchText)
+    const _notes = await searchNotesByParentId(props.puuid || '', '全部', searchText)
     // 处理搜索结果
     state.notes = _notes
   }
@@ -72,7 +72,7 @@ function onInput(event: CustomEvent) {
         'leave-start': showGlobalSearchState === 'leaveStart',
       }"
       :style="{ top: `${state.top}px` }"
-      class="global-search__full-container flex flex-col"
+      class="flex global-search__full-container flex-col"
     >
       <IonSearchbar
         :show-cancel-button="showGlobalSearch ? 'always' : 'never'"
@@ -85,7 +85,7 @@ function onInput(event: CustomEvent) {
       <div class="flex-1">
         <IonContent>
           <template v-if="state.notes.length > 0">
-            <div class="px-4 flex justify-between">
+            <div class="flex px-4 justify-between">
               <h2 class="mb0">
                 备忘录
               </h2>

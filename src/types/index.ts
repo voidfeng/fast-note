@@ -2,22 +2,29 @@
  * 统一的类型定义文件
  */
 
+// 笔记类型枚举
+export const NOTE_TYPE = {
+  FOLDER: 1, // 文件夹
+  NOTE: 2, // 笔记
+} as const
+
+export type NoteType = typeof NOTE_TYPE[keyof typeof NOTE_TYPE]
+
 // 基础笔记类型
 export interface Note {
-  id?: number
-  uuid: string
+  id: string
   title: string
-  smalltext?: string
+  summary?: string
   newstime: string
-  newstext: string
-  type: string
-  puuid: string | null
-  lastdotime: string
+  content: string
+  item_type: NoteType
+  parent_id: string | null
+  updated: string
   version?: number
-  isdeleted: number
-  islocked: number
+  is_deleted: number
+  is_locked: number
   is_public?: boolean
-  subcount: number
+  note_count: number
   children?: Note[]
   folderName?: string
   user_id?: string
@@ -36,8 +43,8 @@ export interface TypedFile {
   file?: File
   hash: string
   id?: number
-  isdeleted?: 0 | 1
-  lastdotime: string
+  is_deleted?: 0 | 1
+  updated: string
   user_id?: string
 }
 
@@ -46,8 +53,8 @@ export interface FileRef {
   id?: number
   hash: string
   refid: string
-  lastdotime: string
-  isdeleted?: 0 | 1
+  updated: string
+  is_deleted?: 0 | 1
   user_id?: string
 }
 
@@ -121,7 +128,7 @@ export interface SortParams {
 
 // 筛选参数类型
 export interface FilterParams {
-  type?: 'note' | 'folder'
+  type?: NoteType
   isDeleted?: boolean
   dateRange?: {
     start: number

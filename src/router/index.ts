@@ -16,7 +16,7 @@ const routes: Array<RouteRecordRaw> = [
     component: HomePage,
   },
   {
-    path: '/n/:uuid',
+    path: '/n/:id',
     component: () => import('../views/NoteDetail.vue'),
   },
   // 用户公开文件夹内部页面

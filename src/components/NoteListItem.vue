@@ -7,6 +7,7 @@ import { folderOutline, trashOutline } from 'ionicons/icons'
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDeviceType } from '@/hooks/useDeviceType'
+import { NOTE_TYPE } from '@/types'
 
 defineOptions({
   name: 'MessageListItem',
@@ -53,11 +54,11 @@ const routerLink = computed(() => {
   if (isDesktop.value)
     return undefined
 
-  if (noteData.value.uuid === 'deleted') {
+  if (noteData.value.id === 'deleted') {
     return `/deleted`
   }
 
-  if (noteData.value.type === 'folder') {
+  if (noteData.value.item_type === NOTE_TYPE.FOLDER) {
     /**
      * 文件夹跳转逻辑
      * 1. isDesktop 不跳转
@@ -69,44 +70,44 @@ const routerLink = computed(() => {
     const isUserHome = route.params.username && (route.name === 'UserHome' || route.path === `/${route.params.username}`)
 
     if (isHome) {
-      return `/f/${noteData.value.uuid}`
+      return `/f/${noteData.value.id}`
     }
     else if (isUserHome) {
-      return `/${route.params.username}/f/${noteData.value.uuid}`
+      return `/${route.params.username}/f/${noteData.value.id}`
     }
     else {
-      return `${route.path}/${noteData.value.uuid}`
+      return `${route.path}/${noteData.value.id}`
     }
   }
 
   // 笔记跳转逻辑
   const isUserContext = route.params.username
   if (isUserContext) {
-    return `/${route.params.username}/n/${noteData.value.uuid}`
+    return `/${route.params.username}/n/${noteData.value.id}`
   }
 
-  return `/n/${noteData.value.uuid}`
+  return `/n/${noteData.value.id}`
 })
 
 function onClick() {
-  emit('selected', noteData.value.uuid)
+  emit('selected', noteData.value.id)
   if (!props.disabledRoute)
     router.push(routerLink.value)
 }
 </script>
 
 <template>
-  <IonAccordion v-if="noteData.type === 'folder'" :value="noteData.uuid" :class="{ 'no-children': !childrenData.length }" class="message-list-item">
+  <IonAccordion v-if="noteData.item_type === NOTE_TYPE.FOLDER" :value="noteData.id" :class="{ 'no-children': !childrenData.length }" class="message-list-item">
     <IonItem
       v-if="noteData"
       slot="header"
       :detail="false"
-      :uuid="noteData.uuid"
+      :uuid="noteData.id"
       class="list-item"
       lines="inset"
       style="--inner-border-width: 0 0 0.55px 0;"
     >
-      <IonIcon :icon="noteData.uuid === 'deleted' ? trashOutline : folderOutline" class="folder-icon mr-3 primary" />
+      <IonIcon :icon="noteData.id === 'deleted' ? trashOutline : folderOutline" class="folder-icon mr-3 primary" />
       <IonLabel
         class="ion-text-wrap my-0! py-[10px]!"
         @click.stop="onClick"
@@ -114,19 +115,19 @@ function onClick() {
         <h2 class="mb-0 line-height-[24px]">
           {{ noteData.title }}
           <span class="date">
-            <IonNote class="text-gray-400 text-base font-semibold">{{ noteData.subcount }}</IonNote>
+            <IonNote class="text-gray-400 text-base font-semibold">{{ noteData.note_count }}</IonNote>
           </span>
         </h2>
       </IonLabel>
     </IonItem>
     <div v-if="childrenData.length" slot="content">
-      <MessageListItem v-for="d in childrenData" :key="d.originNote.uuid" :data="d" :disabled-route class="child-list-item" @selected="$emit('selected', $event)" />
+      <MessageListItem v-for="d in childrenData" :key="d.originNote.id" :data="d" :disabled-route class="child-list-item" @selected="$emit('selected', $event)" />
     </div>
   </IonAccordion>
   <IonItem
     v-else
     :detail="false"
-    :uuid="noteData.uuid"
+    :uuid="noteData.id"
     class="list-item"
     lines="inset"
   >
@@ -143,7 +144,7 @@ function onClick() {
       </h2>
       <p class="text-gray-400! text-elipsis!">
         {{ dayjs(noteData.newstime).calendar(null, calendarConfig) }}&nbsp;&nbsp;
-        {{ noteData.smalltext }}
+        {{ noteData.summary }}
       </p>
       <p v-if="showParentFolder" class="text-gray-400!">
         <IonIcon :icon="folderOutline" class="v-text-bottom" />

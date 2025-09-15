@@ -8,7 +8,7 @@ import { useEditor } from '@/composables/useEditor'
 import 'photoswipe/style.css'
 
 const props = defineProps<{
-  uuid: string
+  id: string
 }>()
 
 const emit = defineEmits(['focus', 'blur'])
@@ -23,7 +23,7 @@ const {
   getContent,
   setEditable,
   setInputMode,
-} = useEditor(props.uuid)
+} = useEditor(props.id)
 
 // PhotoSwipe 相关
 const lightbox = ref<any>(null)

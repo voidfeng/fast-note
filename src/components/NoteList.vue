@@ -6,6 +6,7 @@ import { IonAccordionGroup, IonList } from '@ionic/vue'
 import { ref } from 'vue'
 import LongPressMenu from '@/components/LongPressMenu.vue'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
+import { NOTE_TYPE } from '@/types'
 import NoteListItem from './NoteListItem.vue'
 
 const props = withDefaults(
@@ -54,18 +55,18 @@ if (!props.disabledLongPress) {
     duration: 500,
     pressedClass: 'item-long-press',
     onItemLongPress: async (element) => {
-      const uuid = element.getAttribute('uuid')
-      if (uuid && !['allnotes', 'deleted', 'unfilednotes'].includes(uuid)) {
-        longPressUUID.value = uuid
+      const id = element.getAttribute('id')
+      if (id && !['allnotes', 'deleted', 'unfilednotes'].includes(id)) {
+        longPressUUID.value = id
         longPressMenuOpen.value = true
       }
     },
   })
 }
 
-function onSelected(uuid: string) {
-  emit('update:noteUuid', uuid)
-  emit('selected', uuid)
+function onSelected(id: string) {
+  emit('update:noteUuid', id)
+  emit('selected', id)
 }
 
 function setExpandedItems(items: string[]) {
@@ -85,16 +86,17 @@ defineExpose({
         v-if="showAllNotes"
         :data="{
           originNote: {
-            uuid: 'allnotes',
+            id: 'allnotes',
             title: '全部备忘录',
-            type: 'folder',
-            puuid: null,
-            subcount: allNotesCount,
+            item_type: NOTE_TYPE.FOLDER,
+            parent_id: null,
+            note_count: allNotesCount,
             newstime: '',
-            newstext: '',
-            lastdotime: '',
-            isdeleted: 0,
-            islocked: 0,
+            content: '',
+            updated: '',
+            is_deleted: 0,
+            is_locked: 0,
+            summary: '',
           },
           children: [],
         } as FolderTreeNode"
@@ -106,16 +108,17 @@ defineExpose({
         v-if="showUnfiledNotes"
         :data="{
           originNote: {
-            uuid: 'unfilednotes',
+            id: 'unfilednotes',
             title: '备忘录',
-            type: 'folder',
-            puuid: null,
-            subcount: unfiledNotesCount,
+            item_type: NOTE_TYPE.FOLDER,
+            parent_id: null,
+            note_count: unfiledNotesCount,
             newstime: '',
-            newstext: '',
-            lastdotime: '',
-            isdeleted: 0,
-            islocked: 0,
+            content: '',
+            updated: '',
+            is_deleted: 0,
+            is_locked: 0,
+            summary: '',
           },
           children: [],
         } as FolderTreeNode"
@@ -125,10 +128,10 @@ defineExpose({
       />
       <NoteListItem
         v-for="d in dataList"
-        :key="d.originNote.uuid"
+        :id="d.originNote.id"
+        :key="d.originNote.id"
         :data="d"
-        :class="{ active: noteUuid === d.originNote.uuid }"
-        :uuid="d.originNote.uuid"
+        :class="{ active: noteUuid === d.originNote.id }"
         :show-parent-folder
         :disabled-route
         @selected="onSelected($event)"
@@ -137,16 +140,17 @@ defineExpose({
         v-if="showDelete && deletedNoteCount > 0"
         :data="{
           originNote: {
-            uuid: 'deleted',
+            id: 'deleted',
             title: '最近删除',
-            type: 'folder',
-            puuid: null,
-            subcount: deletedNoteCount,
+            item_type: NOTE_TYPE.FOLDER,
+            parent_id: null,
+            note_count: deletedNoteCount,
             newstime: '',
-            newstext: '',
-            lastdotime: '',
-            isdeleted: 0,
-            islocked: 0,
+            content: '',
+            updated: '',
+            is_deleted: 0,
+            is_locked: 0,
+            summary: '',
           },
           children: [],
         } as FolderTreeNode"
@@ -158,8 +162,8 @@ defineExpose({
   </IonList>
 
   <LongPressMenu
+    :id="longPressUUID"
     :is-open="longPressMenuOpen"
-    :uuid="longPressUUID"
     :items="pressItems"
     :presenting-element
     @did-dismiss="() => longPressMenuOpen = false"

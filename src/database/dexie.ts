@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import type { FileRef, Metadata, Note, NoteDetail, TypedFile, UserInfo } from './types'
 import Dexie from 'dexie'
 import { ref } from 'vue'
+import { NOTE_TYPE } from '@/types'
 
 interface NoteDatabase extends Dexie {
   notes: Dexie.Table<Note, string>
@@ -26,13 +27,34 @@ export async function initializeDatabase() {
     db.value = new Dexie('note') as NoteDatabase;
     (window as any).db = db.value
 
-    // 定义表结构和索引，不再需要版本迁移
+    // 版本1：原始结构
     db.value.version(1).stores({
-      notes: '&uuid, [type+puuid+isdeleted], title, newstime, type, puuid, newstext, lastdotime, version, isdeleted, subcount',
-      files: '&hash, id, url, lastdotime',
-      note_files: '[hash+refid], hash, refid, lastdotime',
+      notes: '&id, [item_type+parent_id+is_deleted], title, newstime, item_type, parent_id, content, updated, version, is_deleted, note_count',
+      files: '&hash, id, url, updated',
+      note_files: '[hash+refid], hash, refid, updated',
       user_info: '&id, username, name',
       metadata: '&key, value',
+    })
+
+    // 版本2：迁移 item_type 从字符串到数字枚举
+    db.value.version(2).stores({
+      notes: '&id, [item_type+parent_id+is_deleted], title, newstime, item_type, parent_id, content, updated, version, is_deleted, note_count',
+      files: '&hash, id, url, updated',
+      note_files: '[hash+refid], hash, refid, updated',
+      user_info: '&id, username, name',
+      metadata: '&key, value',
+    }).upgrade((trans) => {
+      // 迁移现有数据，将字符串类型转换为数字枚举
+      return trans.table('notes').toCollection().modify((note) => {
+        if (typeof note.item_type === 'string') {
+          if (note.item_type === 'folder') {
+            note.item_type = NOTE_TYPE.FOLDER
+          }
+          else if (note.item_type === 'note') {
+            note.item_type = NOTE_TYPE.NOTE
+          }
+        }
+      })
     })
 
     await db.value.open()

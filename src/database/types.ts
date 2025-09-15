@@ -13,7 +13,7 @@ export type { FileRef, Note, NoteDetail, TypedFile } from '@/types'
  * 可同步的数据项接口
  */
 export interface SyncableItem {
-  lastdotime: string
+  updated: string
   [key: string]: any
 }
 

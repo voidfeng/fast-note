@@ -62,12 +62,12 @@ export function useEditor(uuid: string) {
           console.warn(`文件未找到: ${hash}`)
           return { url: hash, type: '' }
         }
-        const { downloadFileFromSupabase } = await import('@/extensions/supabase/utils/fileDownload')
-        const result = await downloadFileFromSupabase(fileData.path)
+        // const { downloadFileFromSupabase } = await import('@/extensions/supabase/utils/fileDownload')
+        // const result = await downloadFileFromSupabase(fileData.path)
 
         return {
-          url: result.url,
-          type: result.type || fileData.file?.type || '',
+          // url: result.url,
+          // type: result.type || fileData.file?.type || '',
         }
       }
     }
@@ -99,8 +99,12 @@ export function useEditor(uuid: string) {
         TaskItem,
         TableKit,
         FileUpload.configure({
-          async loadFile(hash: string) {
-            return await loadFileFromSupabase(hash)
+          async loadFile(hash: string): Promise<{ url: string, type: string }> {
+            const result = await loadFileFromSupabase(hash)
+            if (result && result.url && result.type) {
+              return { url: result.url, type: result.type }
+            }
+            return { url: '', type: '' }
           },
           onImageLoaded(url: string, width: number, height: number) {
             console.warn('图片加载完成', url, width, height)
@@ -140,8 +144,8 @@ export function useEditor(uuid: string) {
           hash,
           file,
           id: 0,
-          lastdotime: getTime(),
-          isdeleted: 0,
+          updated: getTime(),
+          is_deleted: 0,
         })
         editor.value.commands.setFileUpload({ url: hash })
       }
@@ -150,8 +154,8 @@ export function useEditor(uuid: string) {
         await addFileRef({
           hash,
           refid: uuid,
-          lastdotime: getTime(),
-          isdeleted: 0,
+          updated: getTime(),
+          is_deleted: 0,
         })
       }
     }
@@ -162,7 +166,7 @@ export function useEditor(uuid: string) {
    */
   function getContentInfo() {
     if (!editor.value)
-      return { title: '', smalltext: '' }
+      return { title: '', summary: '' }
 
     function extractTextFromNode(node: any): string {
       if (!node)
