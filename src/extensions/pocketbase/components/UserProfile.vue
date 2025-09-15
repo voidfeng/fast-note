@@ -24,34 +24,35 @@ import {
 } from '@ionic/vue'
 import {
   closeOutline,
+  cloudDoneOutline,
   logInOutline,
   logOutOutline,
   personCircleOutline,
   refreshOutline,
+  syncOutline,
+  warningOutline,
 } from 'ionicons/icons'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAuth } from '../hooks/useAuth'
+import { useSync } from '../hooks/useSync'
 
 const router = useIonRouter()
 const { currentUser, logout, isLoggedIn } = useAuth()
+const { sync, syncing, syncStatus, getLocalDataStats } = useSync()
 
 // 弹窗控制
 const isModalOpen = ref(false)
 const isLoading = ref(false)
+
+// 同步相关状态
+const syncResult = ref<{ uploaded: number, downloaded: number, deleted: number } | null>(null)
+const localStats = ref<{ notes: number } | null>(null)
 
 // 用户信息显示名称
 const displayName = computed(() => {
   if (!currentUser.value)
     return '未登录'
   return currentUser.value.email || '用户'
-})
-
-// 用户头像 URL (PocketBase 的用户头像处理)
-const avatarUrl = computed(() => {
-  if (!currentUser.value)
-    return null
-  // PocketBase 用户头像逻辑可以在这里处理
-  return currentUser.value.avatar || null
 })
 
 function handleLogin() {
@@ -98,8 +99,9 @@ async function handleLogout() {
 async function handleRefresh() {
   isLoading.value = true
   try {
-    // 这里可以添加刷新用户信息的逻辑
-    console.log('刷新 PocketBase 用户信息')
+    // 刷新用户信息和本地数据统计
+    console.warn('刷新 PocketBase 用户信息')
+    await loadLocalStats()
   }
   catch (error) {
     console.error('刷新用户信息失败:', error)
@@ -109,9 +111,72 @@ async function handleRefresh() {
   }
 }
 
+// 加载本地数据统计
+async function loadLocalStats() {
+  try {
+    localStats.value = await getLocalDataStats()
+  }
+  catch (error) {
+    console.error('获取本地数据统计失败:', error)
+  }
+}
+
+// 处理同步功能
+async function handleSync() {
+  if (!isLoggedIn.value) {
+    const alert = await alertController.create({
+      header: '未登录',
+      message: '请先登录 PocketBase 账户后再进行同步',
+      buttons: ['确定'],
+    })
+    await alert.present()
+    return
+  }
+
+  try {
+    const loading = await loadingController.create({
+      message: '正在同步数据...',
+    })
+    await loading.present()
+
+    const result = await sync()
+    syncResult.value = result
+
+    await loading.dismiss()
+
+    // 显示同步结果
+    const alert = await alertController.create({
+      header: '同步完成',
+      message: `上传: ${result.uploaded} 条, 下载: ${result.downloaded} 条, 删除: ${result.deleted} 条`,
+      buttons: ['确定'],
+    })
+    await alert.present()
+
+    // 刷新本地数据统计
+    await loadLocalStats()
+  }
+  catch (error) {
+    console.error('同步失败:', error)
+
+    const alert = await alertController.create({
+      header: '同步失败',
+      message: error instanceof Error ? error.message : '同步过程中发生错误',
+      buttons: ['确定'],
+    })
+    await alert.present()
+  }
+}
+
 function closeModal() {
   isModalOpen.value = false
 }
+
+// 组件挂载时加载本地数据统计
+onMounted(() => {
+  if (isLoggedIn.value) {
+    loadLocalStats()
+  }
+})
 </script>
 
 <template>
@@ -199,6 +264,48 @@ function closeModal() {
               </IonCardContent>
             </IonCard>
 
+            <!-- 数据统计信息 -->
+            <IonCard v-if="isLoggedIn">
+              <IonCardHeader>
+                <IonCardTitle class="flex items-center">
+                  <IonIcon :icon="cloudDoneOutline" class="mr-2" />
+                  数据统计
+                </IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <IonList>
+                  <IonItem>
+                    <IonLabel>
+                      <h3>本地笔记数量</h3>
+                      <p>{{ localStats?.notes ?? '加载中...' }} 条</p>
+                    </IonLabel>
+                  </IonItem>
+
+                  <IonItem v-if="syncResult">
+                    <IonLabel>
+                      <h3>上次同步结果</h3>
+                      <p>上传: {{ syncResult.uploaded }} 条, 下载: {{ syncResult.downloaded }} 条, 删除: {{ syncResult.deleted }} 条</p>
+                    </IonLabel>
+                  </IonItem>
+
+                  <IonItem v-if="syncStatus.lastSyncTime">
+                    <IonLabel>
+                      <h3>上次同步时间</h3>
+                      <p>{{ syncStatus.lastSyncTime.toLocaleString('zh-CN') }}</p>
+                    </IonLabel>
+                  </IonItem>
+
+                  <IonItem v-if="syncStatus.error">
+                    <IonLabel color="danger">
+                      <h3>同步错误</h3>
+                      <p>{{ syncStatus.error }}</p>
+                    </IonLabel>
+                    <IonIcon slot="end" :icon="warningOutline" color="danger" />
+                  </IonItem>
+                </IonList>
+              </IonCardContent>
+            </IonCard>
+
             <!-- 操作按钮 -->
             <div class="flex mt-4 flex-col space-y-3">
               <IonButton
@@ -209,6 +316,17 @@ function closeModal() {
               >
                 <IonIcon slot="start" :icon="refreshOutline" />
                 刷新信息
+              </IonButton>
+
+              <IonButton
+                v-if="isLoggedIn"
+                expand="block"
+                color="primary"
+                :disabled="syncing || isLoading"
+                @click="handleSync"
+              >
+                <IonIcon slot="start" :icon="syncOutline" />
+                {{ syncing ? '同步中...' : '同步数据' }}
               </IonButton>
 
               <IonButton
@@ -250,6 +368,10 @@ function closeModal() {
 
 .mt-4 {
   margin-top: 1rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
 }
 
 .text-xs {

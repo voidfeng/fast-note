@@ -7,6 +7,8 @@ const pocketbaseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8
 // 创建 PocketBase 客户端实例
 export const pb = new PocketBase(pocketbaseUrl)
 
+window.pb = pb
+
 // 用户信息转换函数
 function transformUser(record: any): UserInfo {
   return {
@@ -128,6 +130,76 @@ export const authApi = {
   // 监听认证状态变化
   onAuthChange(callback: (token: string, model: any) => void): () => void {
     return pb.authStore.onChange(callback)
+  },
+}
+
+// Notes API
+export const notesApi = {
+  // 获取指定lastdotime之后的所有笔记变更
+  async getNotesByLastdotime(lastdotime: string): Promise<{ d: any[] }> {
+    try {
+      if (!pb.authStore.isValid) {
+        throw new Error('用户未登录')
+      }
+
+      const records = await pb.collection('notes').getFullList({
+        filter: `updated > "${lastdotime}" && userid = "${pb.authStore.model?.id}"`,
+        sort: '+updated',
+      })
+
+      return { d: records || [] }
+    }
+    catch (error: any) {
+      console.error('获取PocketBase笔记失败:', error)
+      throw new Error(`获取PocketBase笔记失败: ${mapErrorMessage(error)}`)
+    }
+  },
+
+  // 添加新笔记
+  async addNote(note: any): Promise<string> {
+    try {
+      const record = await pb.collection('notes').create({
+        ...note,
+        user_id: pb.authStore.model?.id,
+      })
+
+      return record.uuid
+    }
+    catch (error: any) {
+      console.error('添加PocketBase笔记失败:', error)
+      throw new Error(`添加PocketBase笔记失败: ${mapErrorMessage(error)}`)
+    }
+  },
+
+  // 更新笔记（upsert 操作）
+  async updateNote(note: any): Promise<boolean> {
+    try {
+      // 先尝试查找是否存在
+      const existingRecords = await pb.collection('notes').getFullList({
+        filter: `uuid = "${note.uuid}" && user_id = "${pb.authStore.model?.id}"`,
+      })
+
+      if (existingRecords.length > 0) {
+        // 更新现有记录
+        await pb.collection('notes').update(existingRecords[0].id, {
+          ...note,
+          user_id: pb.authStore.model?.id,
+        })
+      }
+      else {
+        // 创建新记录
+        await pb.collection('notes').create({
+          ...note,
+          user_id: pb.authStore.model?.id,
+        })
+      }
+
+      return true
+    }
+    catch (error: any) {
+      console.error('更新PocketBase笔记失败:', error)
+      throw new Error(`更新PocketBase笔记失败: ${mapErrorMessage(error)}`)
+    }
   },
 }
 

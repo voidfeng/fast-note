@@ -48,6 +48,10 @@ export default defineConfig(({ mode }) => {
           target: 'https://next.0122.vip',
           changeOrigin: true,
         },
+        '/api': {
+          target: 'https://api.0122.vip',
+          changeOrigin: true,
+        },
       },
     },
   }
