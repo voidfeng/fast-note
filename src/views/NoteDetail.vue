@@ -144,7 +144,7 @@ async function handleNoteSaving() {
       const updatedNote = Object.assign(toRaw(data.value) || {}, {
         title,
         smalltext,
-        content: content,
+        content,
         updated: time,
         version: (data.value?.version || 1) + 1,
       })
@@ -155,7 +155,7 @@ async function handleNoteSaving() {
       const newNote = {
         title,
         summary: smalltext,
-        content: content,
+        content,
         newstime: getTime(),
         updated: time,
         item_type: NOTE_TYPE.NOTE,
@@ -247,7 +247,7 @@ async function init(id: string) {
         if (data.value.is_deleted === 1)
           editorRef.value?.setEditable(false)
 
-        if (data.value?.islocked === 1) {
+        if (data.value?.is_locked === 1) {
           if (authState.isRegistered)
             state.isAuth = await verify()
           else
@@ -340,11 +340,11 @@ onIonViewWillLeave(() => {
         </ion-label>
       </ion-item> -->
 
-      <div v-if="data?.islocked !== 1 || state.isAuth" class="ion-padding">
+      <div v-if="data?.is_locked !== 1 || state.isAuth" class="ion-padding">
         <YYEditor
           v-if="effectiveUuid"
-          ref="editorRef"
           :id="effectiveUuid"
+          ref="editorRef"
           @blur="handleNoteSaving"
         />
       </div>
