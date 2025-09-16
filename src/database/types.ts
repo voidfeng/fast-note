@@ -7,7 +7,7 @@ import type Dexie from 'dexie'
 // 导入必要的类型
 import type { Ref } from 'vue'
 
-export type { FileRef, Note, NoteDetail, TypedFile } from '@/types'
+export type { FileRef, Note, TypedFile } from '@/types'
 
 /**
  * 可同步的数据项接口

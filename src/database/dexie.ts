@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import type { FileRef, Metadata, Note, NoteDetail, TypedFile, UserInfo } from './types'
+import type { FileRef, Metadata, Note, TypedFile, UserInfo } from './types'
 import Dexie from 'dexie'
 import { ref } from 'vue'
 import { NOTE_TYPE } from '@/types'

@@ -4,15 +4,15 @@ import { useNote } from '@/stores'
 import { getTime } from '@/utils/date'
 import { notesApi } from '../api/client'
 
-const defaultLastdotime = JSON.stringify(getTime('2010/01/01 00:00:00'))
-const lastdotime = ref(JSON.parse(localStorage.pocketbaseLastdotime || defaultLastdotime))
+const defaultUpdated = JSON.stringify(getTime('2010/01/01 00:00:00'))
+const updated = ref(JSON.parse(localStorage.pocketbaseUpdated || defaultUpdated))
 
 const syncing = ref(false)
 // 存储同步成功的回调函数
 const syncSyncedCallbacks: Array<(result?: any) => void> = []
 
 export function useSync() {
-  const { getNotesByLastdotime, getNote, addNote, deleteNote, updateNote } = useNote()
+  const { getNotesByUpdated, getNote, addNote, deleteNote, updateNote } = useNote()
 
   // 注册同步成功的回调函数
   function onSynced(callback: (result?: any) => void) {
@@ -64,26 +64,26 @@ export function useSync() {
 
   // 同步备忘录
   async function syncNote() {
-    console.warn('PocketBase同步开始，lastdotime:', lastdotime.value)
+    console.warn('PocketBase同步开始，updated:', updated.value)
 
     // 获取本地变更数据
-    const localNotes = await getNotesByLastdotime(lastdotime.value)
+    const localNotes = await getNotesByUpdated(updated.value)
     console.warn('本地笔记变更:', localNotes)
 
     // 获取云端变更数据
-    const cloudNotes = await notesApi.getNotesByLastdotime(lastdotime.value)
+    const cloudNotes = await notesApi.getNotesByUpdated(updated.value)
     console.warn('云端笔记变更:', cloudNotes)
 
-    // newstext 转义处理（PocketBase可能也需要）
-    cloudNotes.d.forEach((note: Note) => {
-      if (note.newstext) {
-        note.newstext = note.newstext.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    // content 转义处理（PocketBase可能也需要）
+    cloudNotes.d.forEach((note: any) => {
+      if (note.content) {
+        note.content = note.content.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
       }
     })
 
-    // 创建UUID映射以便快速查找
-    const localNotesMap = new Map(localNotes.map(note => [note.uuid, note]))
-    const cloudNotesMap = new Map((cloudNotes.d as Note[]).map(note => [note.uuid, note]))
+    // 创建ID映射以便快速查找
+    const localNotesMap = new Map(localNotes.map(note => [note.id, note]))
+    const cloudNotesMap = new Map((cloudNotes.d as Note[]).map(note => [note.id, note]))
 
     // 准备需要处理的操作列表
     interface SyncOperation {
@@ -97,12 +97,12 @@ export function useSync() {
 
     // 处理本地笔记
     for (const note of localNotes) {
-      const cloudNote = cloudNotesMap.get(note.uuid)
+      const cloudNote = cloudNotesMap.get(note.id)
 
       // 处理本地已删除的笔记
-      if (note.isdeleted === 1) {
+      if (note.is_deleted === 1) {
         // 如果删除时间超过30天
-        if (now - new Date(note.lastdotime).getTime() > thirtyDaysInMs) {
+        if (now - new Date(note.updated).getTime() > thirtyDaysInMs) {
           // 从本地删除
           operations.push({ note, action: 'deleteLocal' })
 
@@ -121,11 +121,11 @@ export function useSync() {
           continue
         }
 
-        // 如果本地版本更新，上传删除状态到云端
-        const localVersion = note.version || 0
-        const cloudVersion = cloudNote.version || 0
+        // 如果本地时间更新，上传删除状态到云端
+        const localTime = new Date(note.updated).getTime()
+        const cloudTime = new Date(cloudNote.updated).getTime()
 
-        if (localVersion > cloudVersion) {
+        if (localTime > cloudTime) {
           const noteToUpdate = { ...note }
           operations.push({ note: noteToUpdate, action: 'update' })
         }
@@ -139,8 +139,8 @@ export function useSync() {
       }
       else {
         // 本地和云端都存在 - 比较时间戳
-        const localTime = new Date(note.lastdotime).getTime()
-        const cloudTime = new Date(cloudNote.lastdotime).getTime()
+        const localTime = new Date(note.updated).getTime()
+        const cloudTime = new Date(cloudNote.updated).getTime()
 
         if (localTime > cloudTime) {
           // 本地版本更新，上传到云端
@@ -156,12 +156,12 @@ export function useSync() {
 
     // 处理云端笔记
     for (const note of cloudNotes.d as Note[]) {
-      const localNote = localNotesMap.get(note.uuid)
+      const localNote = localNotesMap.get(note.id)
 
       // 处理云端已删除的笔记
-      if (note.isdeleted === 1) {
+      if (note.is_deleted === 1) {
         // 如果删除时间超过30天且本地存在，从本地删除
-        if (now - new Date(note.lastdotime).getTime() > thirtyDaysInMs) {
+        if (now - new Date(note.updated).getTime() > thirtyDaysInMs) {
           if (localNote) {
             operations.push({ note, action: 'deleteLocal' })
           }
@@ -174,12 +174,12 @@ export function useSync() {
           continue
         }
 
-        // 如果本地存在，比较版本
-        const localVersion = localNote.version || 0
-        const cloudVersion = note.version || 0
+        // 如果本地存在，比较时间戳
+        const localTime = new Date(localNote.updated).getTime()
+        const cloudTime = new Date(note.updated).getTime()
 
-        if (cloudVersion > localVersion) {
-          // 云端版本更新，更新本地数据
+        if (cloudTime > localTime) {
+          // 云端时间更新，更新本地数据
           operations.push({ note, action: 'download' })
         }
         continue
@@ -191,19 +191,19 @@ export function useSync() {
         operations.push({ note, action: 'download' })
       }
       else {
-        // 本地和云端都存在 - 比较版本号
-        const localVersion = localNote.version || 0
-        const cloudVersion = note.version || 0
+        // 本地和云端都存在 - 比较时间戳
+        const localTime = new Date(localNote.updated).getTime()
+        const cloudTime = new Date(note.updated).getTime()
 
-        if (cloudVersion > localVersion) {
-          // 云端版本更新，更新本地数据
+        if (cloudTime > localTime) {
+          // 云端时间更新，更新本地数据
           operations.push({ note, action: 'download' })
         }
       }
     }
 
-    // 按照lastdotime顺序排序所有操作
-    operations.sort((a, b) => new Date(a.note.lastdotime).getTime() - new Date(b.note.lastdotime).getTime())
+    // 按照updated顺序排序所有操作
+    operations.sort((a, b) => new Date(a.note.updated).getTime() - new Date(b.note.updated).getTime())
 
     // 统计同步结果
     let uploadedCount = 0
@@ -222,9 +222,9 @@ export function useSync() {
           uploadedCount++
         }
         else if (action === 'download') {
-          const localNote = await getNote(note.uuid)
+          const localNote = await getNote(note.id)
           if (localNote) {
-            await updateNote(note.uuid, note)
+            await updateNote(note.id, note)
           }
           else {
             await addNote(note)
@@ -232,7 +232,7 @@ export function useSync() {
           downloadedCount++
         }
         else if (action === 'deleteLocal') {
-          await deleteNote(note.uuid)
+          await deleteNote(note.id)
           deletedCount++
         }
         else if (action === 'delete') {
@@ -241,10 +241,10 @@ export function useSync() {
           deletedCount++
         }
 
-        // 每成功同步一条记录，就更新lastdotime
-        if (new Date(note.lastdotime).getTime() > new Date(lastdotime.value).getTime()) {
-          lastdotime.value = note.lastdotime
-          localStorage.pocketbaseLastdotime = JSON.stringify(note.lastdotime)
+        // 每成功同步一条记录，就更新updated
+        if (new Date(note.updated).getTime() > new Date(updated.value).getTime()) {
+          updated.value = note.updated
+          localStorage.pocketbaseUpdated = JSON.stringify(note.updated)
         }
       }
       catch (error) {
@@ -303,10 +303,10 @@ export function useSync() {
 
   // 获取本地数据统计
   async function getLocalDataStats() {
-    const { getNotesByLastdotime } = useNote()
+    const { getNotesByUpdated } = useNote()
 
     try {
-      const notes = await getNotesByLastdotime('1970-01-01T00:00:00.000Z')
+      const notes = await getNotesByUpdated('1970-01-01T00:00:00.000Z')
 
       return {
         notes: notes?.length || 0,
@@ -320,15 +320,15 @@ export function useSync() {
 
   // 清空本地数据
   async function clearLocalData() {
-    const { deleteNote, getNotesByLastdotime } = useNote()
+    const { deleteNote, getNotesByUpdated } = useNote()
 
     try {
       // 获取所有本地数据
-      const notes = await getNotesByLastdotime('1970-01-01T00:00:00.000Z')
+      const notes = await getNotesByUpdated('1970-01-01T00:00:00.000Z')
 
       // 删除所有笔记
       for (const note of notes || []) {
-        await deleteNote(note.uuid)
+        await deleteNote(note.id)
       }
 
       return true

@@ -20,7 +20,6 @@ export type {
   FileRef,
   Metadata,
   Note,
-  NoteDetail,
   SyncableItem,
   SyncStatus,
   TypedFile,

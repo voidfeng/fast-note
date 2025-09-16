@@ -7,7 +7,7 @@ const pocketbaseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8
 // 创建 PocketBase 客户端实例
 export const pb = new PocketBase(pocketbaseUrl)
 
-window.pb = pb
+;(window as any).pb = pb
 
 // 用户信息转换函数
 function transformUser(record: any): UserInfo {
@@ -135,15 +135,15 @@ export const authApi = {
 
 // Notes API
 export const notesApi = {
-  // 获取指定lastdotime之后的所有笔记变更
-  async getNotesByLastdotime(lastdotime: string): Promise<{ d: any[] }> {
+  // 获取指定时间之后的所有笔记变更
+  async getNotesByUpdated(lastUpdated: string): Promise<{ d: any[] }> {
     try {
       if (!pb.authStore.isValid) {
         throw new Error('用户未登录')
       }
 
       const records = await pb.collection('notes').getFullList({
-        filter: `updated > "${lastdotime}" && userid = "${pb.authStore.model?.id}"`,
+        filter: `updated > "${lastUpdated}" && userid = "${pb.authStore.model?.id}"`,
         sort: '+updated',
       })
 
@@ -163,7 +163,7 @@ export const notesApi = {
         user_id: pb.authStore.model?.id,
       })
 
-      return record.uuid
+      return record.id
     }
     catch (error: any) {
       console.error('添加PocketBase笔记失败:', error)
@@ -176,7 +176,7 @@ export const notesApi = {
     try {
       // 先尝试查找是否存在
       const existingRecords = await pb.collection('notes').getFullList({
-        filter: `uuid = "${note.uuid}" && user_id = "${pb.authStore.model?.id}"`,
+        filter: `id = "${note.id}" && user_id = "${pb.authStore.model?.id}"`,
       })
 
       if (existingRecords.length > 0) {
