@@ -143,7 +143,7 @@ export const notesApi = {
       }
 
       const records = await pb.collection('notes').getFullList({
-        filter: `updated > "${lastUpdated}" && userid = "${pb.authStore.model?.id}"`,
+        filter: `updated > "${lastUpdated}" && user_id = "${pb.authStore.model?.id}"`,
         sort: '+updated',
       })
 

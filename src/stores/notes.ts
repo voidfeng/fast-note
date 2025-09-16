@@ -21,7 +21,7 @@ export async function initializeNotes() {
     try {
       const { db } = useDexie()
       const data = await db.value.notes
-        .orderBy('newstime')
+        .orderBy('created')
         .toArray()
       notes.value = data
 
@@ -54,13 +54,13 @@ export function useNote() {
   const privateNoteUpdateArr: UpdateFn[] = []
 
   function getFirstNote() {
-    const sortedNotes = [...notes.value].sort((a, b) => a.newstime.localeCompare(b.newstime))
+    const sortedNotes = [...notes.value].sort((a, b) => (a.created || '').localeCompare(b.created || ''))
     return sortedNotes[0] || null
   }
 
   function fetchNotes() {
     return db.value.notes
-      .orderBy('newstime') // 按 newstime 排序
+      .orderBy('created') // 按 created 排序
       .toArray() // 将结果转换为数组
       .then((data: Note[]) => {
         notes.value = data
@@ -79,8 +79,8 @@ export function useNote() {
 
     // 直接添加到 notes ref 变量
     notes.value.push(noteWithTime)
-    // 按 newstime 重新排序
-    notes.value.sort((a, b) => a.newstime.localeCompare(b.newstime))
+    // 按 created 重新排序
+    notes.value.sort((a, b) => (a.created || '').localeCompare(b.created || ''))
     return noteWithTime
   }
 

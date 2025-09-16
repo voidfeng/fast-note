@@ -138,12 +138,12 @@ function onClick() {
       <h2>
         {{ noteData.title }}
         <span class="date">
-          <!-- <ion-note>{{ noteData.newstime }}</ion-note> -->
+          <!-- <ion-note>{{ noteData.created }}</ion-note> -->
           <!-- <ion-icon aria-hidden="true" :icon="chevronForward" size="small" /> -->
         </span>
       </h2>
       <p class="text-gray-400! text-elipsis!">
-        {{ dayjs(noteData.newstime).calendar(null, calendarConfig) }}&nbsp;&nbsp;
+        {{ dayjs(noteData.created).calendar(null, calendarConfig) }}&nbsp;&nbsp;
         {{ noteData.summary }}
       </p>
       <p v-if="showParentFolder" class="text-gray-400!">

@@ -28,7 +28,7 @@ export async function initializeDatabase() {
 
     // 数据库结构定义（使用数字枚举的item_type）
     db.value.version(1).stores({
-      notes: '&id, [item_type+parent_id+is_deleted], title, newstime, item_type, parent_id, content, updated, version, is_deleted, note_count',
+      notes: '&id, [item_type+parent_id+is_deleted], title, created, item_type, parent_id, content, updated, version, is_deleted, note_count',
       files: '&hash, id, url, updated',
       note_files: '[hash+refid], hash, refid, updated',
       user_info: '&id, username, name',

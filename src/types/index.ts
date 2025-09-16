@@ -15,7 +15,7 @@ export interface Note {
   id: string
   title: string
   summary?: string
-  newstime: string
+  created: string
   content: string
   item_type: NoteType
   parent_id: string | null

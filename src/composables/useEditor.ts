@@ -217,14 +217,14 @@ export function useEditor(uuid: string) {
       title = extractTextFromNode(json.content[0]).trim()
     }
 
-    const smalltext = editor.value
+    const summary = editor.value
       .getText()
       .replace(title, '')
       .replace(/\n+/g, ' ')
       .trim()
       .slice(0, 255)
 
-    return { title, smalltext }
+    return { title, summary }
   }
 
   /**

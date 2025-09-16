@@ -105,7 +105,7 @@ const addButtons: AlertButton[] = [
       const isoTime = getTime()
       await addNote({
         title: d.newFolderName,
-        newstime: getTime(),
+        created: getTime(),
         content: '',
         updated: isoTime,
         item_type: NOTE_TYPE.FOLDER,

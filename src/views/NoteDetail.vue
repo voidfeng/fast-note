@@ -118,7 +118,7 @@ async function handleNoteSaving() {
   if (!editorRef.value)
     return
   const content = editorRef.value.getContent()
-  const { title, smalltext } = editorRef.value.getTitle()
+  const { title, summary } = editorRef.value.getTitle()
 
   // 如果是新笔记且内容为空，则不执行任何操作
   if (isNewNote.value && !content)
@@ -143,7 +143,7 @@ async function handleNoteSaving() {
       // 更新笔记
       const updatedNote = Object.assign(toRaw(data.value) || {}, {
         title,
-        smalltext,
+        summary,
         content,
         updated: time,
         version: (data.value?.version || 1) + 1,
@@ -154,9 +154,9 @@ async function handleNoteSaving() {
       // 新增笔记
       const newNote = {
         title,
-        summary: smalltext,
+        summary,
         content,
-        newstime: getTime(),
+        created: getTime(),
         updated: time,
         item_type: NOTE_TYPE.NOTE,
         parent_id: (!route.query.pid || route.query.pid === 'unfilednotes') ? null : route.query.pid as string,

@@ -16,7 +16,7 @@ class UserPublicNotesDB extends Dexie {
     super(`UserPublicNotes_${username}`)
 
     this.version(1).stores({
-      notes: '&id, [item_type+parent_id+is_deleted], title, newstime, item_type, parent_id, content, updated, version, is_deleted, note_count',
+      notes: '&id, [item_type+parent_id+is_deleted], title, created, item_type, parent_id, content, updated, version, is_deleted, note_count',
     })
   }
 }
@@ -58,7 +58,7 @@ export async function initializeUserPublicNotes(username: string) {
 
       // 从数据库读取数据
       const data = await state.db.notes
-        .orderBy('newstime')
+        .orderBy('created')
         .toArray()
       state.publicNotes.value = data
 
@@ -93,7 +93,7 @@ export function useUserPublicNotes(username: string) {
 
   function getFirstPublicNote() {
     const publicNotes = state.publicNotes.value || []
-    const sortedNotes = [...publicNotes].sort((a, b) => a.newstime.localeCompare(b.newstime))
+    const sortedNotes = [...publicNotes].sort((a, b) => (a.created || '').localeCompare(b.created || ''))
     return sortedNotes[0] || null
   }
 
@@ -109,8 +109,8 @@ export function useUserPublicNotes(username: string) {
       state.publicNotes.value = []
     }
     state.publicNotes.value.push(noteWithTime)
-    // 按 newstime 重新排序
-    state.publicNotes.value.sort((a, b) => a.newstime.localeCompare(b.newstime))
+    // 按 created 重新排序
+    state.publicNotes.value.sort((a, b) => (a.created || '').localeCompare(b.created || ''))
     return noteWithTime
   }
 

@@ -79,7 +79,7 @@ function onWillPersent() {
       version: 1,
       updated: getTime(),
       summary: '',
-      newstime: getTime(),
+      created: getTime(),
       content: '',
       note_count: 0,
     },
