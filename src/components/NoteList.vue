@@ -128,7 +128,6 @@ defineExpose({
       />
       <NoteListItem
         v-for="d in dataList"
-        :id="d.originNote.id"
         :key="d.originNote.id"
         :data="d"
         :class="{ active: noteUuid === d.originNote.id }"
