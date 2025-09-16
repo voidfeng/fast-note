@@ -34,7 +34,7 @@ const { addNote, getNote, updateNote, deleteNote, updateParentFolderSubcount } =
 const { getFileByUrl } = useFiles()
 const { getFileRefsByRefid, updateFileRef } = useFileRefs()
 const { isDesktop } = useDeviceType()
-const { keyboardHeight, restoreHeight } = useVisualViewport()
+const { restoreHeight } = useVisualViewport()
 const { state: authState, verify, register } = useWebAuthn()
 
 const isIos = isPlatform('ios')

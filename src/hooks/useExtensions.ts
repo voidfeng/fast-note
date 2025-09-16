@@ -1,4 +1,4 @@
-import type { Extension, ExtensionMetadata, ExtensionState } from '@/types/extension'
+import type { Extension, ExtensionState } from '@/types/extension'
 import { reactive, watch } from 'vue'
 
 // 创建一个响应式状态来管理扩展
@@ -16,13 +16,6 @@ const loadingPromises = new Map<string, Promise<boolean>>()
 
 // 可用扩展的元数据
 const availableExtensions = [
-  // {
-  //   id: 'supabase',
-  //   name: 'Supabase 用户认证',
-  //   description: '基于 Supabase 的用户登录、注册和认证管理',
-  //   icon: 'person-circle-outline',
-  //   path: '/src/extensions/supabase', // 扩展的路径
-  // },
   {
     id: 'pocketbase',
     name: 'PocketBase 用户认证',
@@ -124,10 +117,6 @@ async function loadExtension(id: string): Promise<boolean> {
       let module
 
       // 根据扩展ID动态导入对应模块
-      // if (id === 'supabase') {
-      //   module = await import('../extensions/supabase')
-      // }
-      // else
       if (id === 'pocketbase') {
         module = await import('../extensions/pocketbase')
       }

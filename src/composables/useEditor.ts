@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
 import { Color } from '@tiptap/extension-color'
 import { ListItem, TaskItem, TaskList } from '@tiptap/extension-list'
 import { TableKit } from '@tiptap/extension-table'
@@ -9,6 +8,7 @@ import { Editor } from '@tiptap/vue-3'
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { FileUpload } from '@/components/extensions/FileUpload/FileUpload'
+import { filesApi } from '@/extensions/pocketbase/api/client'
 import { useFileRefs } from '@/hooks/useFileRefs'
 import { useFiles } from '@/hooks/useFiles'
 import { getFileHash } from '@/utils'
@@ -25,12 +25,12 @@ export function useEditor(uuid: string) {
   const editor = ref<Editor | null>(null)
 
   /**
-   * 从supabase中加载文件
+   * 从 PocketBase 中加载文件
    * 1. 通过hash查询indexedDB中的文件获取属性path
    * 2. 根据当前路由判断是否需要使用签名URL
    * 3. 返回文件的blob URL或签名URL
    */
-  async function loadFileFromSupabase(hash: string) {
+  async function loadFileFromPocketBase(hash: string) {
     try {
       // 检查当前路由是否为其他用户的备忘录
       // 路由格式: /:userId/n/:noteId
@@ -42,32 +42,51 @@ export function useEditor(uuid: string) {
         const pathParts = currentPath.split('/')
         const noteUuid = pathParts[pathParts.length - 1]
 
-        const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY)
-        const { data: response, error: _error } = await supabase.functions.invoke('get-sign-file', {
-          body: { note_uuid: noteUuid, hash },
-        })
+        const response = await filesApi.getSignedFileUrl(noteUuid, hash)
 
-        return {
-          url: response.signedUrl,
-          type: response.type,
+        if (response) {
+          return {
+            url: response.signedUrl,
+            type: response.type,
+          }
         }
+
+        // 如果获取签名URL失败，返回默认值
+        console.warn(`无法获取文件签名URL: ${hash}`)
+        return { url: hash, type: '' }
       }
       else {
-        // 访问自己的备忘录，直接下载文件
+        // 访问自己的备忘录，直接从 PocketBase 获取文件
 
         // 1. 从 indexedDB 获取文件信息
         const fileData = await getFileByHash(hash)
 
         if (!fileData?.path) {
+          // 2. 如果本地没有，尝试从 PocketBase 获取
+          const result = await filesApi.getFileByHash(hash)
+          if (result) {
+            return {
+              url: result.url,
+              type: result.type,
+            }
+          }
+
           console.warn(`文件未找到: ${hash}`)
           return { url: hash, type: '' }
         }
-        // const { downloadFileFromSupabase } = await import('@/extensions/supabase/utils/fileDownload')
-        // const result = await downloadFileFromSupabase(fileData.path)
+
+        // 3. 如果有本地文件信息，返回本地路径或从 PocketBase 获取
+        const result = await filesApi.getFileByHash(hash)
+        if (result) {
+          return {
+            url: result.url,
+            type: result.type,
+          }
+        }
 
         return {
-          // url: result.url,
-          // type: result.type || fileData.file?.type || '',
+          url: fileData.path,
+          type: fileData.file?.type || '',
         }
       }
     }
@@ -100,7 +119,7 @@ export function useEditor(uuid: string) {
         TableKit,
         FileUpload.configure({
           async loadFile(hash: string): Promise<{ url: string, type: string }> {
-            const result = await loadFileFromSupabase(hash)
+            const result = await loadFileFromPocketBase(hash)
             if (result && result.url && result.type) {
               return { url: result.url, type: result.type }
             }

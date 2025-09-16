@@ -41,11 +41,8 @@ export default {
   install(app: any) {
     // 检查是否已经安装，避免重复安装
     if (isInstalled) {
-      console.log('PocketBase 扩展已经安装，跳过重复安装')
       return
     }
-
-    console.log('安装 PocketBase 用户认证扩展')
 
     // 注册全局组件
     app.component('PocketBaseLoginPage', LoginPage)
@@ -61,9 +58,7 @@ export default {
   },
 
   // 卸载扩展
-  uninstall(app: any) {
-    console.log('卸载 PocketBase 用户认证扩展')
-
+  uninstall() {
     // 移除动态注册的路由
     routeManager.unregisterExtensionRoutes('pocketbase')
 
