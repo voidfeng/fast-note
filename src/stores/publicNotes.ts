@@ -203,7 +203,7 @@ export function useUserPublicNotes(username: string) {
     return publicNotes.filter(note => note.updated > updated)
   }
 
-  function getPublicFolderTreeByPUuid(parent_id: string | null = null): FolderTreeNode[] {
+  function getPublicFolderTreeByPUuid(parent_id: string | null = ''): FolderTreeNode[] {
     /**
      * 先获取全部文件夹，再根据parent_id获取对应的文件夹，再递归寻找每个文件夹的子文件夹
      * 使用新的数据结构，不修改原始数据

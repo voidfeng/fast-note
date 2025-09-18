@@ -7,10 +7,6 @@ import { onMounted, onUnmounted, provide, ref } from 'vue'
 import { useEditor } from '@/composables/useEditor'
 import 'photoswipe/style.css'
 
-const props = defineProps<{
-  id: string
-}>()
-
 const emit = defineEmits(['focus', 'blur'])
 
 // 使用新的编辑器组合式函数
@@ -18,12 +14,13 @@ const {
   editor,
   initEditor,
   insertFiles,
+  extractFileHashes,
   getContentInfo,
   setContent,
   getContent,
   setEditable,
   setInputMode,
-} = useEditor(props.id)
+} = useEditor()
 
 // PhotoSwipe 相关
 const lightbox = ref<any>(null)
@@ -113,22 +110,25 @@ onUnmounted(() => {
 /**
  * 处理文件输入事件
  */
-async function handleFileInput(e: Event) {
+async function handleFileInput(e: Event): Promise<string[]> {
   const files = (e.target as HTMLInputElement).files
   if (files) {
-    await insertFiles(files)
+    return await insertFiles(files)
   }
+  return []
 }
 
 // 暴露给父组件的方法和属性
 defineExpose({
   getContent,
   getTitle: getContentInfo,
+  extractFileHashes,
   setContent,
   setEditable,
   setInputMode,
   editor,
   insertFile: handleFileInput,
+  insertFiles,
 })
 </script>
 

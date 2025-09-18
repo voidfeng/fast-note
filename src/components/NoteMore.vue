@@ -6,8 +6,6 @@ import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import IconTextButton from '@/components/IconTextButton.vue'
 import { useDexie } from '@/database'
-import { useFileRefs } from '@/hooks/useFileRefs'
-import { useFiles } from '@/hooks/useFiles'
 import { useWebAuthn } from '@/hooks/useWebAuthn'
 import { useNote } from '@/stores'
 import { getTime } from '@/utils/date'
@@ -21,8 +19,6 @@ const emit = defineEmits(['update:isOpen'])
 const route = useRoute()
 const router = useIonRouter()
 const { updateNote, getNote, updateParentFolderSubcount } = useNote()
-const { getFileRefsByRefid, updateFileRef, getFilesRefByHash } = useFileRefs()
-const { updateFile, getFile } = useFiles()
 const { state, register, verify } = useWebAuthn()
 const { db } = useDexie()
 
@@ -192,20 +188,6 @@ async function onDelete() {
   const now = getTime()
   if (note?.id) {
     await updateNote(note.id, { ...note, is_deleted: 1, updated: now })
-    const fileRefs = await getFileRefsByRefid(note.id)
-    if (fileRefs.length > 0) {
-      for (const fileRef of fileRefs) {
-        await updateFileRef({ ...fileRef, is_deleted: 1, updated: now })
-        // 重新统计
-        const filesRef = await getFilesRefByHash(fileRef.hash)
-        if (filesRef.length === filesRef.filter(item => item.is_deleted === 0).length) {
-          const file = await getFile(fileRef.hash)
-          if (file) {
-            await updateFile({ ...file, is_deleted: 1, updated: now })
-          }
-        }
-      }
-    }
     updateParentFolderSubcount(note)
     router.back()
     emit('update:isOpen', false)

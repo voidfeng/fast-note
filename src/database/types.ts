@@ -7,7 +7,20 @@ import type Dexie from 'dexie'
 // 导入必要的类型
 import type { Ref } from 'vue'
 
-export type { FileRef, Note, TypedFile } from '@/types'
+export type { Note, TypedFile } from '@/types'
+
+/**
+ * 笔记文件关联表（用于存储文件与hash的映射关系）
+ */
+export interface NoteFile {
+  hash: string // 文件hash值，作为主键
+  file: File // File对象
+  fileName: string // 文件名
+  fileSize: number // 文件大小
+  fileType: string // 文件类型
+  created: string // 创建时间
+  updated: string // 更新时间
+}
 
 /**
  * 可同步的数据项接口

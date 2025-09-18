@@ -18,13 +18,14 @@ export interface Note {
   created: string
   content: string
   item_type: NoteType
-  parent_id: string | null
+  parent_id: string
   updated: string
   version?: number
   is_deleted: number
   is_locked: number
   is_public?: boolean
   note_count: number
+  files?: string[] // 附件字段，存储文件hash数组
   children?: Note[]
   folderName?: string
   user_id?: string

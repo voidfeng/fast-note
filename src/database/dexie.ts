@@ -1,12 +1,11 @@
 import type { Ref } from 'vue'
-import type { FileRef, Metadata, Note, TypedFile, UserInfo } from './types'
+import type { Metadata, Note, NoteFile, UserInfo } from './types'
 import Dexie from 'dexie'
 import { ref } from 'vue'
 
 interface NoteDatabase extends Dexie {
   notes: Dexie.Table<Note, string>
-  files: Dexie.Table<TypedFile, string>
-  note_files: Dexie.Table<FileRef, string>
+  note_files: Dexie.Table<NoteFile, string> // 笔记文件关联表
   // 添加新表
   user_info: Dexie.Table<UserInfo, string>
   metadata: Dexie.Table<Metadata, string>
@@ -28,9 +27,8 @@ export async function initializeDatabase() {
 
     // 数据库结构定义（使用数字枚举的item_type）
     db.value.version(1).stores({
-      notes: '&id, [item_type+parent_id+is_deleted], title, created, item_type, parent_id, content, updated, version, is_deleted, note_count',
-      files: '&hash, id, url, updated',
-      note_files: '[hash+refid], hash, refid, updated',
+      notes: '&id, [item_type+parent_id+is_deleted], title, created, item_type, parent_id, content, updated, version, is_deleted, note_count, files',
+      note_files: '&hash, fileName, fileSize, fileType, created, updated', // 文件存储表
       user_info: '&id, username, name',
       metadata: '&key, value',
     })

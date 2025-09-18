@@ -109,7 +109,7 @@ const addButtons: AlertButton[] = [
         content: '',
         updated: isoTime,
         item_type: NOTE_TYPE.FOLDER,
-        parent_id: null,
+        parent_id: '',
         id: nanoid(12),
         note_count: 0,
         is_deleted: 0,

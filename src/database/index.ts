@@ -17,7 +17,6 @@ export {
 
 // 导出类型
 export type {
-  FileRef,
   Metadata,
   Note,
   SyncableItem,

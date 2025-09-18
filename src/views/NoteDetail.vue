@@ -11,8 +11,6 @@ import TableFormatModal from '@/components/TableFormatModal.vue'
 import TextFormatModal from '@/components/TextFormatModal.vue'
 import YYEditor from '@/components/YYEditor.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
-import { useFileRefs } from '@/hooks/useFileRefs'
-import { useFiles } from '@/hooks/useFiles'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useWebAuthn } from '@/hooks/useWebAuthn'
 import { useNote, useUserPublicNotes } from '@/stores'
@@ -31,8 +29,6 @@ const props = withDefaults(
 const route = useRoute()
 const router = useRouter()
 const { addNote, getNote, updateNote, deleteNote, updateParentFolderSubcount } = useNote()
-const { getFileByUrl } = useFiles()
-const { getFileRefsByRefid, updateFileRef } = useFileRefs()
 const { isDesktop } = useDeviceType()
 const { restoreHeight } = useVisualViewport()
 const { state: authState, verify, register } = useWebAuthn()
@@ -44,6 +40,36 @@ const fileInputRef = ref()
 const imageInputRef = ref()
 const data = ref()
 const newNoteId = ref<string | null>(null)
+const noteFiles = ref<string[]>([]) // 当前笔记的附件hash列表
+
+/**
+ * 文件处理工具函数
+ */
+const fileUtils = {
+  // 检查hash是否已存在
+  isHashExists(hashes: string[], targetHash: string): boolean {
+    return hashes.includes(targetHash)
+  },
+
+  // 添加hash到列表
+  addHash(hashes: string[], newHash: string): string[] {
+    if (!hashes.includes(newHash)) {
+      return [...hashes, newHash]
+    }
+    return hashes
+  },
+
+  // 移除hash
+  removeHash(hashes: string[], targetHash: string): string[] {
+    return hashes.filter(hash => hash !== targetHash)
+  },
+
+  // 合并hash数组并去重
+  mergeHashes(...hashArrays: string[][]): string[] {
+    const allHashes = hashArrays.flat()
+    return [...new Set(allHashes)]
+  },
+}
 
 const state = reactive({
   showFormat: false,
@@ -71,6 +97,9 @@ const effectiveUuid = computed(() => {
 })
 
 watch(idFromSource, (id) => {
+  // 清空附件列表
+  noteFiles.value = []
+
   if (id && id !== '0') {
     init(id)
   }
@@ -136,6 +165,9 @@ async function handleNoteSaving() {
 
   const time = getTime()
 
+  // 直接使用当前笔记的附件hash列表
+  const fileHashes = noteFiles.value
+
   // 保存笔记数据
   if (content) {
     const noteExists = await getNote(id)
@@ -147,6 +179,7 @@ async function handleNoteSaving() {
         content,
         updated: time,
         version: (data.value?.version || 1) + 1,
+        files: fileHashes,
       })
       await updateNote(id, updatedNote)
     }
@@ -159,11 +192,12 @@ async function handleNoteSaving() {
         created: getTime(),
         updated: time,
         item_type: NOTE_TYPE.NOTE,
-        parent_id: (!route.query.pid || route.query.pid === 'unfilednotes') ? null : route.query.pid as string,
+        parent_id: (!route.query.pid || route.query.pid === 'unfilednotes') ? '' : route.query.pid as string,
         id,
         is_deleted: 0,
         is_locked: 0,
         note_count: 0,
+        files: fileHashes,
       }
       await addNote(newNote)
       updateParentFolderSubcount(newNote)
@@ -174,56 +208,6 @@ async function handleNoteSaving() {
     // 内容为空，删除笔记
     await deleteNote(id)
   }
-
-  // 同步附件引用
-  await syncAttachments(id, content)
-}
-
-async function syncAttachments(id: string, content: string) {
-  const fileUrls = Array.from(content.matchAll(/<file-upload url="([^"]+)"/g), m => m[1])
-
-  const getHash = async (url: string): Promise<string | null> => {
-    if (/^[a-f0-9]{64}$/i.test(url))
-      return url
-
-    const fileObj = await getFileByUrl(url)
-    return fileObj?.hash || null
-  }
-
-  const currentHashes = (await Promise.all(fileUrls.map(getHash))).filter(Boolean) as string[]
-  const dbFileRefs = await getFileRefsByRefid(id)
-  const time = getTime()
-
-  const actions: Promise<any>[] = []
-
-  // 识别并处理需要更新或删除的引用
-  const dbHashes = new Set(dbFileRefs.map(ref => ref.hash))
-  const currentHashesSet = new Set(currentHashes)
-
-  for (const dbFile of dbFileRefs) {
-    if (!currentHashesSet.has(dbFile.hash)) {
-      // 如果数据库中的引用不在当前内容中，则标记为删除
-      if (dbFile.is_deleted !== 1)
-        actions.push(updateFileRef({ ...dbFile, is_deleted: 1, updated: time }))
-    }
-    else {
-      // 如果引用存在，则确保其为未删除状态并更新时间
-      if (dbFile.is_deleted === 1)
-        actions.push(updateFileRef({ ...dbFile, is_deleted: 0, updated: time }))
-      else
-        actions.push(updateFileRef({ ...dbFile, updated: time }))
-    }
-  }
-
-  // 识别并添加新的引用 (虽然当前逻辑主要在上传时添加，但这里可以作为保障)
-  for (const hash of currentHashes) {
-    if (!dbHashes.has(hash)) {
-      // 此处逻辑依赖于文件上传时已创建FileRef记录，sync仅负责更新状态
-      // 若需在此处创建，则需要更多文件信息
-    }
-  }
-
-  await Promise.all(actions)
 }
 
 async function init(id: string) {
@@ -235,8 +219,18 @@ async function init(id: string) {
       if (data.value) {
         // 公开笔记始终为只读模式
         editorRef.value?.setEditable(false)
+        // 恢复附件信息
+        if (data.value.files) {
+          noteFiles.value = data.value.files
+        }
         nextTick(() => {
           editorRef.value?.setContent(data.value.content)
+          // 内容设置后，从富文本中提取文件hash并合并到附件列表
+          setTimeout(() => {
+            const contentHashes = editorRef.value?.extractFileHashes() || []
+            const mergedHashes = fileUtils.mergeHashes(noteFiles.value, contentHashes)
+            noteFiles.value = mergedHashes
+          }, 100)
         })
       }
     }
@@ -253,8 +247,20 @@ async function init(id: string) {
           else
             state.isAuth = await register()
         }
+
+        // 恢复附件信息
+        if (data.value.files) {
+          noteFiles.value = data.value.files
+        }
+
         nextTick(() => {
           editorRef.value?.setContent(data.value.content)
+          // 内容设置后，从富文本中提取文件hash并合并到附件列表
+          setTimeout(() => {
+            const contentHashes = editorRef.value?.extractFileHashes() || []
+            const mergedHashes = fileUtils.mergeHashes(noteFiles.value, contentHashes)
+            noteFiles.value = mergedHashes
+          }, 100)
         })
       }
     }
@@ -268,8 +274,22 @@ async function init(id: string) {
 //   editorRef.value.format(command)
 // }
 
-function onSelectFile(e: Event) {
-  editorRef.value.insertFile(e)
+async function onSelectFile(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (input.files && input.files.length > 0) {
+    // 插入文件到编辑器并获取返回的hash列表
+    const insertedHashes = await editorRef.value?.insertFiles(input.files) || []
+
+    // 将新的hash添加到当前笔记的附件列表（自动去重）
+    for (const hash of insertedHashes) {
+      if (!fileUtils.isHashExists(noteFiles.value, hash)) {
+        noteFiles.value.push(hash)
+      }
+    }
+
+    // 清空 input 以允许重复选择同一文件
+    input.value = ''
+  }
 }
 
 function onInsertTodo() {
@@ -343,7 +363,6 @@ onIonViewWillLeave(() => {
       <div v-if="data?.is_locked !== 1 || state.isAuth" class="ion-padding">
         <YYEditor
           v-if="effectiveUuid"
-          :id="effectiveUuid"
           ref="editorRef"
           @blur="handleNoteSaving"
         />

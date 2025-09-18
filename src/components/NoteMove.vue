@@ -45,12 +45,12 @@ function findFoldersWithChildren(notes: FolderTreeNode[]): string[] {
 
 async function onSelected(id: string) {
   if (currentNote.value) {
-    currentNote.value.parent_id = id === 'root' ? null : id
+    currentNote.value.parent_id = id === 'root' ? '' : id
     currentNote.value.updated = getTime()
     updateParentFolderSubcount(currentNote.value)
   }
   // const preNote = Object.assign({}, currentNote.value)
-  // currentNote.value!.pid = id || null
+  // currentNote.value!.pid = id || ''
   // currentNote.value!.updated = getTime()
   // await updateNote(currentNote.value!.id, toRaw(currentNote.value!))
   // if (preNote.pid) {
@@ -73,7 +73,7 @@ function onWillPersent() {
       id: 'root',
       title: '根目录',
       item_type: NOTE_TYPE.FOLDER,
-      parent_id: null,
+      parent_id: '',
       is_deleted: 0,
       is_locked: 0,
       version: 1,

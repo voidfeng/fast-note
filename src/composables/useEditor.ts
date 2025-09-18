@@ -9,31 +9,35 @@ import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { FileUpload } from '@/components/extensions/FileUpload/FileUpload'
 import { filesApi } from '@/extensions/pocketbase/api/client'
-import { useFileRefs } from '@/hooks/useFileRefs'
-import { useFiles } from '@/hooks/useFiles'
+import { useNoteFiles } from '@/hooks/useNoteFiles'
 import { getFileHash } from '@/utils'
-import { getTime } from '@/utils/date'
 
 /**
  * 编辑器组合式函数
  * 分离编辑器逻辑，提高可复用性和可测试性
  */
-export function useEditor(uuid: string) {
-  const { addFile, getFileByHash } = useFiles()
-  const { addFileRef, getFileRefByHashAndRefid } = useFileRefs()
-
+export function useEditor() {
   const editor = ref<Editor | null>(null)
+  const { addNoteFile, getNoteFileByHash } = useNoteFiles()
 
   /**
-   * 从 PocketBase 中加载文件
-   * 1. 通过hash查询indexedDB中的文件获取属性path
-   * 2. 根据当前路由判断是否需要使用签名URL
-   * 3. 返回文件的blob URL或签名URL
+   * 加载文件（优先从本地 indexedDB，然后从 PocketBase）
    */
-  async function loadFileFromPocketBase(hash: string) {
+  async function loadFileFromStorage(hash: string) {
     try {
+      // 首先尝试从 indexedDB 获取本地文件
+      const localFile = await getNoteFileByHash(hash)
+      if (localFile && localFile.file) {
+        // 创建临时URL用于显示
+        const blobUrl = URL.createObjectURL(localFile.file)
+        return {
+          url: blobUrl,
+          type: localFile.file.type,
+        }
+      }
+
+      // 如果本地没有，则从 PocketBase 获取
       // 检查当前路由是否为其他用户的备忘录
-      // 路由格式: /:userId/n/:noteId
       const currentPath = window.location.pathname
       const isUserContext = /^\/[^/]+\/n\/[^/]+$/.test(currentPath)
 
@@ -51,31 +55,11 @@ export function useEditor(uuid: string) {
           }
         }
 
-        // 如果获取签名URL失败，返回默认值
         console.warn(`无法获取文件签名URL: ${hash}`)
         return { url: hash, type: '' }
       }
       else {
-        // 访问自己的备忘录，直接从 PocketBase 获取文件
-
-        // 1. 从 indexedDB 获取文件信息
-        const fileData = await getFileByHash(hash)
-
-        if (!fileData?.path) {
-          // 2. 如果本地没有，尝试从 PocketBase 获取
-          const result = await filesApi.getFileByHash(hash)
-          if (result) {
-            return {
-              url: result.url,
-              type: result.type,
-            }
-          }
-
-          console.warn(`文件未找到: ${hash}`)
-          return { url: hash, type: '' }
-        }
-
-        // 3. 如果有本地文件信息，返回本地路径或从 PocketBase 获取
+        // 访问自己的备忘录，从 PocketBase 获取文件
         const result = await filesApi.getFileByHash(hash)
         if (result) {
           return {
@@ -84,10 +68,8 @@ export function useEditor(uuid: string) {
           }
         }
 
-        return {
-          url: fileData.path,
-          type: fileData.file?.type || '',
-        }
+        console.warn(`文件未找到: ${hash}`)
+        return { url: hash, type: '' }
       }
     }
     catch (error) {
@@ -119,7 +101,7 @@ export function useEditor(uuid: string) {
         TableKit,
         FileUpload.configure({
           async loadFile(hash: string): Promise<{ url: string, type: string }> {
-            const result = await loadFileFromPocketBase(hash)
+            const result = await loadFileFromStorage(hash)
             if (result && result.url && result.type) {
               return { url: result.url, type: result.type }
             }
@@ -146,38 +128,55 @@ export function useEditor(uuid: string) {
   /**
    * 插入文件到编辑器
    */
-  async function insertFiles(files: FileList) {
+  async function insertFiles(files: FileList): Promise<string[]> {
     if (!editor.value)
-      return
+      return []
+
+    const insertedHashes: string[] = []
 
     for (const file of Array.from(files)) {
-      const hash = await getFileHash(file)
-      const existFile = await getFileByHash(hash)
-      const existFileRef = await getFileRefByHashAndRefid(hash, uuid)
+      try {
+        // 计算文件hash
+        const hash = await getFileHash(file)
 
-      if (existFile) {
-        editor.value.commands.setFileUpload({ url: existFile?.path || hash })
-      }
-      else {
-        await addFile({
-          hash,
-          file,
-          id: 0,
-          updated: getTime(),
-          is_deleted: 0,
-        })
+        // 检查文件是否已存在，如果不存在则存储
+        const existingFile = await getNoteFileByHash(hash)
+        if (!existingFile) {
+          await addNoteFile(file, hash)
+        }
+
+        // 在编辑器中插入文件，使用hash作为url
         editor.value.commands.setFileUpload({ url: hash })
+        insertedHashes.push(hash)
       }
-
-      if (!existFileRef) {
-        await addFileRef({
-          hash,
-          refid: uuid,
-          updated: getTime(),
-          is_deleted: 0,
-        })
+      catch (error) {
+        console.error('插入文件失败:', error, file.name)
       }
     }
+
+    return insertedHashes
+  }
+
+  /**
+   * 从编辑器内容中提取文件hash
+   */
+  function extractFileHashes(): string[] {
+    if (!editor.value) {
+      return []
+    }
+
+    const html = editor.value.getHTML()
+    // 提取 file-upload 元素的 url 属性（即hash值）
+    const fileHashRegex = /<file-upload[^>]+url="([^"]+)"/g
+    const fileHashes: string[] = []
+    let match = fileHashRegex.exec(html)
+
+    while (match !== null) {
+      fileHashes.push(match[1])
+      match = fileHashRegex.exec(html)
+    }
+
+    return fileHashes
   }
 
   /**
@@ -278,6 +277,7 @@ export function useEditor(uuid: string) {
     editor: computed(() => editor.value),
     initEditor,
     insertFiles,
+    extractFileHashes,
     getContentInfo,
     setContent,
     getContent,
