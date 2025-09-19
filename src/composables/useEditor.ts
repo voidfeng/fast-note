@@ -107,13 +107,7 @@ export function useEditor() {
         TaskItem,
         TableKit,
         FileUpload.configure({
-          async loadFile(hash: string): Promise<{ url: string, type: string }> {
-            const result = await loadFileFromStorage(hash)
-            if (result && result.url && result.type) {
-              return { url: result.url, type: result.type }
-            }
-            return { url: '', type: '' }
-          },
+          loadFile: loadFileFromStorage,
           onImageLoaded(url: string, width: number, height: number) {
             console.warn('图片加载完成', url, width, height)
           },
