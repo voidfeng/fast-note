@@ -405,6 +405,24 @@ export const filesApi = {
       return null
     }
   },
+
+  // 根据文件名获取文件URL（用于PocketBase存储的文件）
+  getFileByFilename(noteId: string, filename: string): Promise<{ url: string, type: string } | null> {
+    try {
+      // 直接构造文件URL，使用notes集合和文件名
+      const fakeRecord = { id: noteId, collectionId: 'notes', collectionName: 'notes' }
+      const fileUrl = pb.files.getUrl(fakeRecord, filename)
+
+      return Promise.resolve({
+        url: fileUrl,
+        type: '', // PocketBase文件名通常没有具体的MIME类型信息
+      })
+    }
+    catch (error: any) {
+      console.error('根据文件名获取文件失败:', error)
+      return Promise.resolve(null)
+    }
+  },
 }
 
 // 默认导出PocketBase实例，供其他模块使用

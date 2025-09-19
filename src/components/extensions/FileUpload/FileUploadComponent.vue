@@ -194,11 +194,34 @@ async function loadFileWithExtension(url: string) {
   isLoading.value = false
 }
 
+// 检查是否需要加载文件（hash值或可能的PocketBase文件名都需要加载）
+const needsFileLoading = computed(() => {
+  const url = nodeProps.value.url
+  if (!url)
+    return false
+
+  // hash值需要加载
+  if (isSha256Hash.value)
+    return true
+
+  // 图片类型需要加载
+  if (isImage.value)
+    return true
+
+  // 可能是PocketBase文件名，也尝试加载
+  // 如果不是明显的web URL格式，就认为可能需要从PocketBase加载
+  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('data:') && !url.startsWith('blob:')) {
+    return true
+  }
+
+  return false
+})
+
 // 监听URL变化，加载文件
 watch(
   () => nodeProps.value.url,
   (newUrl) => {
-    if (newUrl && (isImage.value || isSha256Hash.value)) {
+    if (newUrl && needsFileLoading.value) {
       loadFileWithExtension(newUrl)
     }
     else {
@@ -238,13 +261,13 @@ function handleFileClick(event: Event) {
   event.stopPropagation()
 
   // 这里可以添加非图片文件的处理逻辑，比如弹出菜单
-  console.log('点击了非图片文件:', nodeProps.value.url)
+  console.warn('点击了非图片文件:', nodeProps.value.url)
 }
 
 // 组件挂载时加载文件
 onMounted(() => {
   // 加载文件
-  if (nodeProps.value.url && (isImage.value || isSha256Hash.value)) {
+  if (nodeProps.value.url && needsFileLoading.value) {
     loadFileWithExtension(nodeProps.value.url)
   }
   else {

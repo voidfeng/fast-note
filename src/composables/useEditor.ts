@@ -21,61 +21,68 @@ export function useEditor() {
   const { addNoteFile, getNoteFileByHash } = useNoteFiles()
 
   /**
-   * 加载文件（优先从本地 indexedDB，然后从 PocketBase）
+   * 检查字符串是否为SHA256 hash值（64位十六进制）
    */
-  async function loadFileFromStorage(hash: string) {
+  function isHashValue(str: string): boolean {
+    return /^[a-f0-9]{64}$/i.test(str)
+  }
+
+  /**
+   * 加载文件（hash值从本地IndexedDB获取，PocketBase文件名从PocketBase获取）
+   */
+  async function loadFileFromStorage(hashOrFilename: string) {
     try {
-      // 首先尝试从 indexedDB 获取本地文件
-      const localFile = await getNoteFileByHash(hash)
-      if (localFile && localFile.file) {
-        // 创建临时URL用于显示
-        const blobUrl = URL.createObjectURL(localFile.file)
-        return {
-          url: blobUrl,
-          type: localFile.file.type,
-        }
-      }
-
-      // 如果本地没有，则从 PocketBase 获取
-      // 检查当前路由是否为其他用户的备忘录
-      const currentPath = window.location.pathname
-      const isUserContext = /^\/[^/]+\/n\/[^/]+$/.test(currentPath)
-
-      if (isUserContext) {
-        // 访问其他用户的备忘录，使用签名URL
-        const pathParts = currentPath.split('/')
-        const noteUuid = pathParts[pathParts.length - 1]
-
-        const response = await filesApi.getSignedFileUrl(noteUuid, hash)
-
-        if (response) {
+      // 判断是hash值还是PocketBase文件名
+      if (isHashValue(hashOrFilename)) {
+        // 处理hash值 - 只从本地IndexedDB获取
+        const localFile = await getNoteFileByHash(hashOrFilename)
+        if (localFile && localFile.file) {
+          // 创建临时URL用于显示
+          const blobUrl = URL.createObjectURL(localFile.file)
           return {
-            url: response.signedUrl,
-            type: response.type,
+            url: blobUrl,
+            type: localFile.file.type,
           }
         }
 
-        console.warn(`无法获取文件签名URL: ${hash}`)
-        return { url: hash, type: '' }
+        console.warn(`本地文件未找到: ${hashOrFilename}`)
+        return { url: hashOrFilename, type: '' }
       }
       else {
-        // 访问自己的备忘录，从 PocketBase 获取文件
-        const result = await filesApi.getFileByHash(hash)
-        if (result) {
-          return {
-            url: result.url,
-            type: result.type,
+        // 处理PocketBase文件名
+        // 获取当前笔记ID
+        const currentPath = window.location.pathname
+        let noteId = ''
+
+        if (/^\/[^/]+\/n\/[^/]+$/.test(currentPath)) {
+          // 访问其他用户的备忘录
+          const pathParts = currentPath.split('/')
+          noteId = pathParts[pathParts.length - 1]
+        }
+        else if (/^\/n\/[^/]+$/.test(currentPath)) {
+          // 访问自己的备忘录
+          const pathParts = currentPath.split('/')
+          noteId = pathParts[pathParts.length - 1]
+        }
+
+        if (noteId) {
+          const result = await filesApi.getFileByFilename(noteId, hashOrFilename)
+          if (result) {
+            return {
+              url: result.url,
+              type: result.type,
+            }
           }
         }
 
-        console.warn(`文件未找到: ${hash}`)
-        return { url: hash, type: '' }
+        console.warn(`PocketBase文件未找到: ${hashOrFilename}`)
+        return { url: hashOrFilename, type: '' }
       }
     }
     catch (error) {
       console.error('加载文件失败:', error)
       return {
-        url: hash,
+        url: hashOrFilename,
         type: '',
       }
     }
