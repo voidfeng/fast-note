@@ -175,6 +175,7 @@ export const notesApi = {
   async updateNote(note: any, filesForUpload?: Array<File | string>): Promise<{
     success: boolean
     fileMapping?: Map<File, string> // File对象到PocketBase文件名的映射
+    record?: any // 返回的完整记录信息
   }> {
     try {
       // 先尝试查找是否存在
@@ -189,6 +190,7 @@ export const notesApi = {
 
       // 创建文件映射
       const fileMapping = new Map<File, string>()
+      let result: any = null
 
       // 如果有文件需要处理，使用FormData
       if (filesForUpload && filesForUpload.length > 0) {
@@ -219,7 +221,6 @@ export const notesApi = {
             formData.append(`files`, item)
           })
 
-          let result
           if (existingRecords.length > 0) {
             // 更新现有记录
             result = await pb.collection('notes').update(existingRecords[0].id, formData)
@@ -238,7 +239,7 @@ export const notesApi = {
                 // 对于File对象，映射到PocketBase返回的文件名
                 if (fileIndex < result.files.length) {
                   fileMapping.set(item, result.files[fileIndex])
-                  console.log(`文件映射: ${item.name} -> ${result.files[fileIndex]}`)
+                  console.warn(`文件映射: ${item.name} -> ${result.files[fileIndex]}`)
                   fileIndex++
                 }
               }
@@ -249,10 +250,10 @@ export const notesApi = {
           // 没有File对象，只有字符串文件名，使用普通JSON
           const updatedNoteData = { ...noteData, files: filesForUpload }
           if (existingRecords.length > 0) {
-            await pb.collection('notes').update(existingRecords[0].id, updatedNoteData)
+            result = await pb.collection('notes').update(existingRecords[0].id, updatedNoteData)
           }
           else {
-            await pb.collection('notes').create(updatedNoteData)
+            result = await pb.collection('notes').create(updatedNoteData)
           }
         }
       }
@@ -260,17 +261,18 @@ export const notesApi = {
         // 没有文件，使用普通的JSON数据
         if (existingRecords.length > 0) {
           // 更新现有记录
-          await pb.collection('notes').update(existingRecords[0].id, noteData)
+          result = await pb.collection('notes').update(existingRecords[0].id, noteData)
         }
         else {
           // 创建新记录
-          await pb.collection('notes').create(noteData)
+          result = await pb.collection('notes').create(noteData)
         }
       }
 
       return {
         success: true,
         fileMapping: fileMapping.size > 0 ? fileMapping : undefined,
+        record: result || null,
       }
     }
     catch (error: any) {

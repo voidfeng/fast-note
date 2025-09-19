@@ -41,67 +41,41 @@ export function useSync() {
   }
 
   /**
-   * 更新富文本内容中的文件引用：将hash值替换为PocketBase文件名
-   * @param content 原始富文本内容
-   * @param fileMapping File对象到PocketBase文件名的映射
-   * @param hashToFileMapping hash到File对象的映射
-   * @returns 更新后的富文本内容
+   * 生成临时文件标识符
    */
-  function updateContentFileReferences(
-    content: string,
-    fileMapping: Map<File, string>,
-    hashToFileMapping: Map<string, File>,
-  ): string {
-    let updatedContent = content
-
-    // 遍历所有hash到File的映射
-    for (const [hash, file] of hashToFileMapping) {
-      // 获取该File对应的PocketBase文件名
-      const pocketbaseFilename = fileMapping.get(file)
-
-      if (pocketbaseFilename) {
-        // 构建要替换的正则表达式：查找包含此hash的file-upload元素
-        const hashRegex = new RegExp(
-          `(<file-upload[^>]+url=")${hash}("[^>]*>)`,
-          'g',
-        )
-
-        // 将hash替换为PocketBase文件名
-        updatedContent = updatedContent.replace(hashRegex, `$1${pocketbaseFilename}$2`)
-
-        console.warn(`已将富文本中的hash ${hash} 替换为 ${pocketbaseFilename}`)
-      }
-    }
-
-    return updatedContent
+  function generateTempFileId(index: number): string {
+    return `__TEMP_FILE_${index}__`
   }
 
   /**
-   * 处理笔记的文件收集
+   * 优雅的附件处理方案
+   * 使用临时标识符简化映射关系，减少网络请求
+   * 支持同一个文件在富文本中多处引用
    */
-  async function handleNoteFiles(note: Note): Promise<{
-    note: Note
+  async function handleNoteFilesElegant(note: Note): Promise<{
+    updatedNote: Note
     filesForUpload: Array<File | string> | undefined
-    hashToFileMapping: Map<string, File> // 新增：hash到File对象的映射
+    fileMapping: Map<string, string> // hash到临时标识符的映射
   }> {
     // 从内容中提取文件引用（如果有内容的话）
     const fileReferences = note.content ? extractFileReferencesFromContent(note.content) : []
 
-    // 如果富文本中没有任何文件引用，返回undefined
-    // 这样PocketBase就不会更新files字段，保持现有文件不变
+    // 如果富文本中没有任何文件引用，返回原笔记
     if (fileReferences.length === 0) {
       return {
-        note,
+        updatedNote: note,
         filesForUpload: undefined,
-        hashToFileMapping: new Map(),
+        fileMapping: new Map(),
       }
     }
 
-    // 处理文件：hash转换为File对象，pocketbase文件名保持不变
+    let updatedContent = note.content || ''
     const filesForUpload: Array<File | string> = []
-    const hashToFileMapping = new Map<string, File>() // 记录hash到File的映射
+    const hashToTempIdMapping = new Map<string, string>() // hash到临时标识符的映射
+    const processedFiles = new Set<string>() // 已处理的文件（去重用）
+    let tempFileIndex = 0
 
-    // 处理内容中引用的文件
+    // 第一阶段：处理所有文件引用，将hash值替换为临时标识符
     for (const hashOrFilename of fileReferences) {
       try {
         // 判断是hash值还是pocketbase文件名
@@ -110,10 +84,33 @@ export function useSync() {
           const localFile = await getNoteFileByHash(hashOrFilename)
 
           if (localFile && localFile.file) {
-            // 本地文件存在，添加File对象到上传列表
-            filesForUpload.push(localFile.file)
-            // 记录hash到File的映射关系
-            hashToFileMapping.set(hashOrFilename, localFile.file)
+            let tempId: string
+
+            // 检查是否已经处理过这个hash
+            if (hashToTempIdMapping.has(hashOrFilename)) {
+              // 已处理过，使用已有的临时标识符
+              tempId = hashToTempIdMapping.get(hashOrFilename)!
+            }
+            else {
+              // 首次处理，生成新的临时标识符
+              tempId = generateTempFileId(tempFileIndex)
+              tempFileIndex++
+
+              // 记录映射关系
+              hashToTempIdMapping.set(hashOrFilename, tempId)
+
+              // 只在首次处理时添加到上传列表（避免重复）
+              filesForUpload.push(localFile.file)
+            }
+
+            // 在富文本中将hash替换为临时标识符（可能有多处）
+            const hashRegex = new RegExp(
+              `(<file-upload[^>]+url=")${hashOrFilename}("[^>]*>)`,
+              'g',
+            )
+            updatedContent = updatedContent.replace(hashRegex, `$1${tempId}$2`)
+
+            console.warn(`将hash ${hashOrFilename} 替换为临时标识符 ${tempId}`)
           }
           else {
             console.warn(`本地文件未找到: ${hashOrFilename}`)
@@ -121,26 +118,83 @@ export function useSync() {
           }
         }
         else {
-          // 不是hash值，认为是pocketbase文件名，直接保留
-          filesForUpload.push(hashOrFilename)
+          // 不是hash值，认为是pocketbase文件名
+          // 只在首次遇到时添加到上传列表（避免重复）
+          if (!processedFiles.has(hashOrFilename)) {
+            filesForUpload.push(hashOrFilename)
+            processedFiles.add(hashOrFilename)
+          }
         }
       }
       catch (error) {
         console.error(`处理文件失败: ${hashOrFilename}`, error)
         // 发生错误时，如果不是hash值则保留，避免丢失pocketbase文件
-        if (!isHashValue(hashOrFilename)) {
+        if (!isHashValue(hashOrFilename) && !processedFiles.has(hashOrFilename)) {
           filesForUpload.push(hashOrFilename)
+          processedFiles.add(hashOrFilename)
         }
       }
     }
 
-    // 只返回富文本中引用的文件
-    // 如果富文本中删除了某个文件的引用，该文件就会从附件中移除
     return {
-      note,
-      filesForUpload: filesForUpload.length > 0 ? filesForUpload : [], // 如果处理后没有文件，传递空数组以清空附件
-      hashToFileMapping, // hash到File对象的映射
+      updatedNote: { ...note, content: updatedContent },
+      filesForUpload: filesForUpload.length > 0 ? filesForUpload : [],
+      fileMapping: hashToTempIdMapping,
     }
+  }
+
+  /**
+   * 处理PocketBase返回结果，将临时标识符替换为真实文件名
+   * 现在 filesForUpload 已经去重，与 pocketbaseFiles 长度一致
+   */
+  function processUploadResult(
+    content: string,
+    filesForUpload: Array<File | string>,
+    pocketbaseFiles: string[],
+  ): string {
+    console.warn('调试信息 - processUploadResult 输入:')
+    console.warn('filesForUpload:', filesForUpload.map(item => item instanceof File ? `File(${item.name})` : item))
+    console.warn('pocketbaseFiles:', pocketbaseFiles)
+    console.warn('原始内容:', content)
+
+    let updatedContent = content
+    let fileObjectIndex = 0
+
+    // 遍历去重后的文件数组，建立 File 对象到 PocketBase 文件名的映射
+    for (let i = 0; i < filesForUpload.length; i++) {
+      const item = filesForUpload[i]
+
+      // 如果是File对象，说明对应一个临时标识符
+      if (item instanceof File) {
+        const tempId = generateTempFileId(fileObjectIndex)
+
+        // 确保PocketBase返回的文件数组有足够的文件
+        if (i < pocketbaseFiles.length) {
+          const pocketbaseFilename = pocketbaseFiles[i]
+
+          console.warn(`调试: 处理第 ${fileObjectIndex} 个File对象 (数组索引 ${i}), 临时ID: ${tempId}, 目标文件名: ${pocketbaseFilename}`)
+
+          // 将临时标识符替换为PocketBase文件名（可能有多处引用）
+          const tempIdRegex = new RegExp(
+            `(<file-upload[^>]+url=")${tempId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}("[^>]*>)`,
+            'g',
+          )
+          const beforeReplace = updatedContent
+          updatedContent = updatedContent.replace(tempIdRegex, `$1${pocketbaseFilename}$2`)
+
+          console.warn(`替换结果: ${beforeReplace === updatedContent ? '未找到匹配' : '替换成功'}`)
+          console.warn(`将临时标识符 ${tempId} 替换为 PocketBase 文件名 ${pocketbaseFilename}`)
+        }
+        else {
+          console.error(`File对象 ${fileObjectIndex} 没有对应的新上传文件！`)
+        }
+
+        fileObjectIndex++
+      }
+    }
+
+    console.warn('最终内容:', updatedContent)
+    return updatedContent
   }
 
   // 注册同步成功的回调函数
@@ -343,56 +397,80 @@ export function useSync() {
     for (const { note, action } of operations) {
       try {
         if (action === 'upload') {
-          // 处理文件收集
-          const { note: noteWithFiles, filesForUpload, hashToFileMapping } = await handleNoteFiles(note)
-          console.log('filesForUpload', filesForUpload)
-          // 根据filesForUpload是否为undefined来决定是否传递该参数
+          // 使用新的优雅方案处理附件
+          const { updatedNote, filesForUpload, fileMapping: _fileMapping } = await handleNoteFilesElegant(note)
+
+          // 上传到PocketBase
           const result = filesForUpload !== undefined
-            ? await notesApi.updateNote(noteWithFiles, filesForUpload)
-            : await notesApi.updateNote(noteWithFiles)
+            ? await notesApi.updateNote(updatedNote, filesForUpload)
+            : await notesApi.updateNote(updatedNote)
 
-          // 如果有文件映射，更新富文本内容中的文件引用
-          if (result.fileMapping && result.fileMapping.size > 0 && hashToFileMapping.size > 0) {
-            const updatedContent = updateContentFileReferences(
-              noteWithFiles.content || '',
-              result.fileMapping,
-              hashToFileMapping,
-            )
+          // 如果有需要上传的文件，处理返回结果
+          if (filesForUpload && filesForUpload.length > 0 && result.success && result.record) {
+            const uploadedRecord = result.record
 
-            // 如果内容有变化，更新本地笔记
-            if (updatedContent !== noteWithFiles.content) {
-              const updatedNote = { ...noteWithFiles, content: updatedContent, updated: getTime(), files: Array.from(result.fileMapping.values()) }
-              await updateNote(note.id, updatedNote)
-              await notesApi.updateNote(updatedNote)
+            if (uploadedRecord.files && Array.isArray(uploadedRecord.files)) {
+              // 处理PocketBase返回的文件名，更新临时标识符
+              const finalContent = processUploadResult(
+                updatedNote.content || '',
+                filesForUpload,
+                uploadedRecord.files,
+              )
+
+              // 如果内容有变化，更新本地笔记并同步到服务端
+              if (finalContent !== updatedNote.content) {
+                const finalNote = {
+                  ...updatedNote,
+                  content: finalContent,
+                  files: uploadedRecord.files,
+                  updated: getTime(),
+                }
+                // 更新本地笔记
+                await updateNote(note.id, finalNote)
+                // 将更新后的内容同步到PocketBase服务端（不包含文件，只更新内容）
+                await notesApi.updateNote(finalNote)
+                console.warn(`已更新笔记 ${note.id} 的附件引用并同步到服务端`)
+              }
             }
           }
 
           uploadedCount++
         }
         else if (action === 'update') {
-          // 处理文件收集
-          const { note: noteWithFiles, filesForUpload, hashToFileMapping } = await handleNoteFiles(note)
-          // 根据filesForUpload是否为undefined来决定是否传递该参数
+          // 使用新的优雅方案处理附件
+          const { updatedNote, filesForUpload, fileMapping: _fileMapping } = await handleNoteFilesElegant(note)
+
+          // 上传到PocketBase
           const result = filesForUpload !== undefined
-            ? await notesApi.updateNote(noteWithFiles, filesForUpload)
-            : await notesApi.updateNote(noteWithFiles)
+            ? await notesApi.updateNote(updatedNote, filesForUpload)
+            : await notesApi.updateNote(updatedNote)
 
-          // 如果有文件映射，更新富文本内容中的文件引用
-          if (result.fileMapping && result.fileMapping.size > 0 && hashToFileMapping.size > 0) {
-            const updatedContent = updateContentFileReferences(
-              noteWithFiles.content || '',
-              result.fileMapping,
-              hashToFileMapping,
-            )
+          // 如果有需要上传的文件，处理返回结果
+          if (filesForUpload && filesForUpload.length > 0 && result.success && result.record) {
+            const uploadedRecord = result.record
 
-            // 如果内容有变化，更新本地笔记
-            if (updatedContent !== noteWithFiles.content) {
-              const newDate = getTime()
-              console.warn('oldDate', noteWithFiles.updated)
-              console.warn('newDate', newDate)
-              const updatedNote = { ...noteWithFiles, content: updatedContent, updated: newDate }
-              await updateNote(note.id, updatedNote)
-              console.warn(`已更新笔记 ${note.id} 的富文本内容中的文件引用`)
+            if (uploadedRecord.files && Array.isArray(uploadedRecord.files)) {
+              // 处理PocketBase返回的文件名，更新临时标识符
+              const finalContent = processUploadResult(
+                updatedNote.content || '',
+                filesForUpload,
+                uploadedRecord.files,
+              )
+
+              // 如果内容有变化，更新本地笔记并同步到服务端
+              if (finalContent !== updatedNote.content) {
+                const finalNote = {
+                  ...updatedNote,
+                  content: finalContent,
+                  files: uploadedRecord.files,
+                  updated: getTime(),
+                }
+                // 更新本地笔记
+                await updateNote(note.id, finalNote)
+                // 将更新后的内容同步到PocketBase服务端（不包含文件，只更新内容）
+                await notesApi.updateNote(finalNote)
+                console.warn(`已更新笔记 ${note.id} 的附件引用并同步到服务端`)
+              }
             }
           }
 
