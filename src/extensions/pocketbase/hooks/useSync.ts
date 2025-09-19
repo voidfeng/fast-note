@@ -1,5 +1,6 @@
 import type { Note } from '@/types'
 import { ref } from 'vue'
+import { useNoteFiles } from '@/hooks/useNoteFiles'
 import { useNote } from '@/stores'
 import { getTime } from '@/utils/date'
 import { notesApi } from '../api/client'
@@ -13,6 +14,85 @@ const syncSyncedCallbacks: Array<(result?: any) => void> = []
 
 export function useSync() {
   const { getNotesByUpdated, getNote, addNote, deleteNote, updateNote } = useNote()
+  const { getNoteFileByHash } = useNoteFiles()
+
+  /**
+   * 从笔记内容中提取文件hash
+   */
+  function extractFileHashesFromContent(content: string): string[] {
+    // 提取 file-upload 元素的 url 属性（即hash值）
+    const fileHashRegex = /<file-upload[^>]+url="([^"]+)"/g
+    const fileHashes: string[] = []
+    let match = fileHashRegex.exec(content)
+
+    while (match !== null) {
+      fileHashes.push(match[1])
+      match = fileHashRegex.exec(content)
+    }
+
+    return fileHashes
+  }
+
+  /**
+   * 检查字符串是否为SHA256 hash值（64位十六进制）
+   */
+  function isHashValue(str: string): boolean {
+    return /^[a-f0-9]{64}$/i.test(str)
+  }
+
+  /**
+   * 处理笔记的文件收集
+   */
+  async function handleNoteFiles(note: Note): Promise<{ note: Note, filesForUpload: Array<File | string> }> {
+    if (!note.content) {
+      return { note: { ...note, files: [] }, filesForUpload: [] }
+    }
+
+    // 从内容中提取文件hash
+    const contentHashes = extractFileHashesFromContent(note.content)
+
+    if (contentHashes.length === 0) {
+      return { note: { ...note, files: [] }, filesForUpload: [] }
+    }
+
+    // 处理文件：hash转换为File对象，pocketbase文件名保持不变
+    const filesForUpload: Array<File | string> = []
+
+    for (const hashOrFilename of contentHashes) {
+      try {
+        // 判断是hash值还是pocketbase文件名
+        if (isHashValue(hashOrFilename)) {
+          // 是hash值，尝试获取本地文件
+          const localFile = await getNoteFileByHash(hashOrFilename)
+
+          if (localFile && localFile.file) {
+            // 本地文件存在，添加File对象到上传列表
+            filesForUpload.push(localFile.file)
+          }
+          else {
+            console.warn(`本地文件未找到: ${hashOrFilename}`)
+            // 如果本地文件不存在，跳过该文件（避免上传无效数据）
+          }
+        }
+        else {
+          // 不是hash值，认为是pocketbase文件名，直接保留
+          filesForUpload.push(hashOrFilename)
+        }
+      }
+      catch (error) {
+        console.error(`处理文件失败: ${hashOrFilename}`, error)
+        // 发生错误时，如果不是hash值则保留，避免丢失pocketbase文件
+        if (!isHashValue(hashOrFilename)) {
+          filesForUpload.push(hashOrFilename)
+        }
+      }
+    }
+
+    return {
+      note: { ...note, files: contentHashes }, // 保持原始的hash/文件名数组
+      filesForUpload, // 转换后的文件数组（File对象 + pocketbase文件名）
+    }
+  }
 
   // 注册同步成功的回调函数
   function onSynced(callback: (result?: any) => void) {
@@ -214,11 +294,15 @@ export function useSync() {
     for (const { note, action } of operations) {
       try {
         if (action === 'upload') {
-          await notesApi.updateNote(note)
+          // 处理文件收集
+          const { note: noteWithFiles, filesForUpload } = await handleNoteFiles(note)
+          await notesApi.updateNote(noteWithFiles, filesForUpload)
           uploadedCount++
         }
         else if (action === 'update') {
-          await notesApi.updateNote(note)
+          // 处理文件收集
+          const { note: noteWithFiles, filesForUpload } = await handleNoteFiles(note)
+          await notesApi.updateNote(noteWithFiles, filesForUpload)
           uploadedCount++
         }
         else if (action === 'download') {

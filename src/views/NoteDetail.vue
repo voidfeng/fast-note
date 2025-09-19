@@ -40,36 +40,6 @@ const fileInputRef = ref()
 const imageInputRef = ref()
 const data = ref()
 const newNoteId = ref<string | null>(null)
-const noteFiles = ref<string[]>([]) // 当前笔记的附件hash列表
-
-/**
- * 文件处理工具函数
- */
-const fileUtils = {
-  // 检查hash是否已存在
-  isHashExists(hashes: string[], targetHash: string): boolean {
-    return hashes.includes(targetHash)
-  },
-
-  // 添加hash到列表
-  addHash(hashes: string[], newHash: string): string[] {
-    if (!hashes.includes(newHash)) {
-      return [...hashes, newHash]
-    }
-    return hashes
-  },
-
-  // 移除hash
-  removeHash(hashes: string[], targetHash: string): string[] {
-    return hashes.filter(hash => hash !== targetHash)
-  },
-
-  // 合并hash数组并去重
-  mergeHashes(...hashArrays: string[][]): string[] {
-    const allHashes = hashArrays.flat()
-    return [...new Set(allHashes)]
-  },
-}
 
 const state = reactive({
   showFormat: false,
@@ -97,9 +67,6 @@ const effectiveUuid = computed(() => {
 })
 
 watch(idFromSource, (id) => {
-  // 清空附件列表
-  noteFiles.value = []
-
   if (id && id !== '0') {
     init(id)
   }
@@ -165,8 +132,8 @@ async function handleNoteSaving() {
 
   const time = getTime()
 
-  // 直接使用当前笔记的附件hash列表
-  const fileHashes = noteFiles.value
+  // 本地保存时不处理文件hash，让富文本编辑器自主管理
+  const fileHashes: string[] = []
 
   // 保存笔记数据
   if (content) {
@@ -219,18 +186,8 @@ async function init(id: string) {
       if (data.value) {
         // 公开笔记始终为只读模式
         editorRef.value?.setEditable(false)
-        // 恢复附件信息
-        if (data.value.files) {
-          noteFiles.value = data.value.files
-        }
         nextTick(() => {
           editorRef.value?.setContent(data.value.content)
-          // 内容设置后，从富文本中提取文件hash并合并到附件列表
-          setTimeout(() => {
-            const contentHashes = editorRef.value?.extractFileHashes() || []
-            const mergedHashes = fileUtils.mergeHashes(noteFiles.value, contentHashes)
-            noteFiles.value = mergedHashes
-          }, 100)
         })
       }
     }
@@ -248,19 +205,8 @@ async function init(id: string) {
             state.isAuth = await register()
         }
 
-        // 恢复附件信息
-        if (data.value.files) {
-          noteFiles.value = data.value.files
-        }
-
         nextTick(() => {
           editorRef.value?.setContent(data.value.content)
-          // 内容设置后，从富文本中提取文件hash并合并到附件列表
-          setTimeout(() => {
-            const contentHashes = editorRef.value?.extractFileHashes() || []
-            const mergedHashes = fileUtils.mergeHashes(noteFiles.value, contentHashes)
-            noteFiles.value = mergedHashes
-          }, 100)
         })
       }
     }
@@ -277,15 +223,8 @@ async function init(id: string) {
 async function onSelectFile(e: Event) {
   const input = e.target as HTMLInputElement
   if (input.files && input.files.length > 0) {
-    // 插入文件到编辑器并获取返回的hash列表
-    const insertedHashes = await editorRef.value?.insertFiles(input.files) || []
-
-    // 将新的hash添加到当前笔记的附件列表（自动去重）
-    for (const hash of insertedHashes) {
-      if (!fileUtils.isHashExists(noteFiles.value, hash)) {
-        noteFiles.value.push(hash)
-      }
-    }
+    // 插入文件到编辑器，富文本编辑器会自动处理文件管理
+    await editorRef.value?.insertFiles(input.files)
 
     // 清空 input 以允许重复选择同一文件
     input.value = ''

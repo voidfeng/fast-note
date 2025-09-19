@@ -172,26 +172,77 @@ export const notesApi = {
   },
 
   // 更新笔记（upsert 操作）
-  async updateNote(note: any): Promise<boolean> {
+  async updateNote(note: any, filesForUpload?: Array<File | string>): Promise<boolean> {
     try {
       // 先尝试查找是否存在
       const existingRecords = await pb.collection('notes').getFullList({
         filter: `id = "${note.id}" && user_id = "${pb.authStore.model?.id}"`,
       })
 
-      if (existingRecords.length > 0) {
-        // 更新现有记录
-        await pb.collection('notes').update(existingRecords[0].id, {
-          ...note,
-          user_id: pb.authStore.model?.id,
-        })
+      const noteData = {
+        ...note,
+        user_id: pb.authStore.model?.id,
+      }
+
+      // 如果有文件需要处理，使用FormData
+      if (filesForUpload && filesForUpload.length > 0) {
+        // 检查是否有File对象需要上传
+        const hasFilesToUpload = filesForUpload.some(item => item instanceof File)
+
+        if (hasFilesToUpload) {
+          const formData = new FormData()
+
+          // 添加笔记的基本数据（除了files字段）
+          Object.keys(noteData).forEach((key) => {
+            if (key !== 'files') { // files字段单独处理
+              const value = noteData[key]
+              if (value !== null && value !== undefined) {
+                if (Array.isArray(value)) {
+                  formData.append(key, JSON.stringify(value))
+                }
+                else {
+                  formData.append(key, String(value))
+                }
+              }
+            }
+          })
+
+          // 直接将filesForUpload数组作为files字段
+          // PocketBase会自动处理File对象（上传）和字符串（保留）
+          filesForUpload.forEach((item) => {
+            formData.append(`files`, item)
+          })
+
+          if (existingRecords.length > 0) {
+            // 更新现有记录
+            await pb.collection('notes').update(existingRecords[0].id, formData)
+          }
+          else {
+            // 创建新记录
+            await pb.collection('notes').create(formData)
+          }
+        }
+        else {
+          // 没有File对象，只有字符串文件名，使用普通JSON
+          const updatedNoteData = { ...noteData, files: filesForUpload }
+          if (existingRecords.length > 0) {
+            await pb.collection('notes').update(existingRecords[0].id, updatedNoteData)
+          }
+          else {
+            await pb.collection('notes').create(updatedNoteData)
+          }
+        }
       }
       else {
-        // 创建新记录
-        await pb.collection('notes').create({
-          ...note,
-          user_id: pb.authStore.model?.id,
-        })
+        // 没有文件，使用普通的JSON数据
+        if (existingRecords.length > 0) {
+          // 更新现有记录
+          await pb.collection('notes').update(existingRecords[0].id, noteData)
+        }
+        else {
+          // 创建新记录
+          await pb.collection('notes').create(noteData)
+        }
       }
 
       return true
