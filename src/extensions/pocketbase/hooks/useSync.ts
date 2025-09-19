@@ -17,20 +17,20 @@ export function useSync() {
   const { getNoteFileByHash } = useNoteFiles()
 
   /**
-   * 从笔记内容中提取文件hash
+   * 从笔记内容中提取文件引用
    */
-  function extractFileHashesFromContent(content: string): string[] {
-    // 提取 file-upload 元素的 url 属性（即hash值）
-    const fileHashRegex = /<file-upload[^>]+url="([^"]+)"/g
-    const fileHashes: string[] = []
-    let match = fileHashRegex.exec(content)
+  function extractFileReferencesFromContent(content: string): string[] {
+    // 提取 file-upload 元素的 url 属性（hash值或pocketbase文件名）
+    const fileRefRegex = /<file-upload[^>]+url="([^"]+)"/g
+    const fileReferences: string[] = []
+    let match = fileRefRegex.exec(content)
 
     while (match !== null) {
-      fileHashes.push(match[1])
-      match = fileHashRegex.exec(content)
+      fileReferences.push(match[1])
+      match = fileRefRegex.exec(content)
     }
 
-    return fileHashes
+    return fileReferences
   }
 
   /**
@@ -81,25 +81,28 @@ export function useSync() {
    */
   async function handleNoteFiles(note: Note): Promise<{
     note: Note
-    filesForUpload: Array<File | string>
+    filesForUpload: Array<File | string> | undefined
     hashToFileMapping: Map<string, File> // 新增：hash到File对象的映射
   }> {
-    if (!note.content) {
-      return { note: { ...note, files: [] }, filesForUpload: [], hashToFileMapping: new Map() }
-    }
+    // 从内容中提取文件引用（如果有内容的话）
+    const fileReferences = note.content ? extractFileReferencesFromContent(note.content) : []
 
-    // 从内容中提取文件hash
-    const contentHashes = extractFileHashesFromContent(note.content)
-
-    if (contentHashes.length === 0) {
-      return { note: { ...note, files: [] }, filesForUpload: [], hashToFileMapping: new Map() }
+    // 如果富文本中没有任何文件引用，返回undefined
+    // 这样PocketBase就不会更新files字段，保持现有文件不变
+    if (fileReferences.length === 0) {
+      return {
+        note,
+        filesForUpload: undefined,
+        hashToFileMapping: new Map(),
+      }
     }
 
     // 处理文件：hash转换为File对象，pocketbase文件名保持不变
     const filesForUpload: Array<File | string> = []
     const hashToFileMapping = new Map<string, File>() // 记录hash到File的映射
 
-    for (const hashOrFilename of contentHashes) {
+    // 处理内容中引用的文件
+    for (const hashOrFilename of fileReferences) {
       try {
         // 判断是hash值还是pocketbase文件名
         if (isHashValue(hashOrFilename)) {
@@ -131,9 +134,11 @@ export function useSync() {
       }
     }
 
+    // 只返回富文本中引用的文件
+    // 如果富文本中删除了某个文件的引用，该文件就会从附件中移除
     return {
-      note: { ...note, files: contentHashes }, // 保持原始的hash/文件名数组
-      filesForUpload, // 转换后的文件数组（File对象 + pocketbase文件名）
+      note,
+      filesForUpload: filesForUpload.length > 0 ? filesForUpload : [], // 如果处理后没有文件，传递空数组以清空附件
       hashToFileMapping, // hash到File对象的映射
     }
   }
@@ -340,7 +345,11 @@ export function useSync() {
         if (action === 'upload') {
           // 处理文件收集
           const { note: noteWithFiles, filesForUpload, hashToFileMapping } = await handleNoteFiles(note)
-          const result = await notesApi.updateNote(noteWithFiles, filesForUpload)
+          console.log('filesForUpload', filesForUpload)
+          // 根据filesForUpload是否为undefined来决定是否传递该参数
+          const result = filesForUpload !== undefined
+            ? await notesApi.updateNote(noteWithFiles, filesForUpload)
+            : await notesApi.updateNote(noteWithFiles)
 
           // 如果有文件映射，更新富文本内容中的文件引用
           if (result.fileMapping && result.fileMapping.size > 0 && hashToFileMapping.size > 0) {
@@ -352,9 +361,9 @@ export function useSync() {
 
             // 如果内容有变化，更新本地笔记
             if (updatedContent !== noteWithFiles.content) {
-              const updatedNote = { ...noteWithFiles, content: updatedContent }
+              const updatedNote = { ...noteWithFiles, content: updatedContent, updated: getTime(), files: Array.from(result.fileMapping.values()) }
               await updateNote(note.id, updatedNote)
-              console.warn(`已更新笔记 ${note.id} 的富文本内容中的文件引用`)
+              await notesApi.updateNote(updatedNote)
             }
           }
 
@@ -363,7 +372,10 @@ export function useSync() {
         else if (action === 'update') {
           // 处理文件收集
           const { note: noteWithFiles, filesForUpload, hashToFileMapping } = await handleNoteFiles(note)
-          const result = await notesApi.updateNote(noteWithFiles, filesForUpload)
+          // 根据filesForUpload是否为undefined来决定是否传递该参数
+          const result = filesForUpload !== undefined
+            ? await notesApi.updateNote(noteWithFiles, filesForUpload)
+            : await notesApi.updateNote(noteWithFiles)
 
           // 如果有文件映射，更新富文本内容中的文件引用
           if (result.fileMapping && result.fileMapping.size > 0 && hashToFileMapping.size > 0) {
@@ -375,7 +387,10 @@ export function useSync() {
 
             // 如果内容有变化，更新本地笔记
             if (updatedContent !== noteWithFiles.content) {
-              const updatedNote = { ...noteWithFiles, content: updatedContent }
+              const newDate = getTime()
+              console.warn('oldDate', noteWithFiles.updated)
+              console.warn('newDate', newDate)
+              const updatedNote = { ...noteWithFiles, content: updatedContent, updated: newDate }
               await updateNote(note.id, updatedNote)
               console.warn(`已更新笔记 ${note.id} 的富文本内容中的文件引用`)
             }
