@@ -172,7 +172,10 @@ export const notesApi = {
   },
 
   // 更新笔记（upsert 操作）
-  async updateNote(note: any, filesForUpload?: Array<File | string>): Promise<boolean> {
+  async updateNote(note: any, filesForUpload?: Array<File | string>): Promise<{
+    success: boolean
+    fileMapping?: Map<File, string> // File对象到PocketBase文件名的映射
+  }> {
     try {
       // 先尝试查找是否存在
       const existingRecords = await pb.collection('notes').getFullList({
@@ -183,6 +186,9 @@ export const notesApi = {
         ...note,
         user_id: pb.authStore.model?.id,
       }
+
+      // 创建文件映射
+      const fileMapping = new Map<File, string>()
 
       // 如果有文件需要处理，使用FormData
       if (filesForUpload && filesForUpload.length > 0) {
@@ -213,13 +219,30 @@ export const notesApi = {
             formData.append(`files`, item)
           })
 
+          let result
           if (existingRecords.length > 0) {
             // 更新现有记录
-            await pb.collection('notes').update(existingRecords[0].id, formData)
+            result = await pb.collection('notes').update(existingRecords[0].id, formData)
           }
           else {
             // 创建新记录
-            await pb.collection('notes').create(formData)
+            result = await pb.collection('notes').create(formData)
+          }
+
+          // 处理文件映射：从PocketBase返回的result中提取文件名
+          if (result && result.files && Array.isArray(result.files)) {
+            let fileIndex = 0
+            for (let i = 0; i < filesForUpload.length; i++) {
+              const item = filesForUpload[i]
+              if (item instanceof File) {
+                // 对于File对象，映射到PocketBase返回的文件名
+                if (fileIndex < result.files.length) {
+                  fileMapping.set(item, result.files[fileIndex])
+                  console.log(`文件映射: ${item.name} -> ${result.files[fileIndex]}`)
+                  fileIndex++
+                }
+              }
+            }
           }
         }
         else {
@@ -245,7 +268,10 @@ export const notesApi = {
         }
       }
 
-      return true
+      return {
+        success: true,
+        fileMapping: fileMapping.size > 0 ? fileMapping : undefined,
+      }
     }
     catch (error: any) {
       console.error('更新PocketBase笔记失败:', error)

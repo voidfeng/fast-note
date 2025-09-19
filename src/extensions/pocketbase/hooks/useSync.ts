@@ -41,22 +41,63 @@ export function useSync() {
   }
 
   /**
+   * 更新富文本内容中的文件引用：将hash值替换为PocketBase文件名
+   * @param content 原始富文本内容
+   * @param fileMapping File对象到PocketBase文件名的映射
+   * @param hashToFileMapping hash到File对象的映射
+   * @returns 更新后的富文本内容
+   */
+  function updateContentFileReferences(
+    content: string,
+    fileMapping: Map<File, string>,
+    hashToFileMapping: Map<string, File>,
+  ): string {
+    let updatedContent = content
+
+    // 遍历所有hash到File的映射
+    for (const [hash, file] of hashToFileMapping) {
+      // 获取该File对应的PocketBase文件名
+      const pocketbaseFilename = fileMapping.get(file)
+
+      if (pocketbaseFilename) {
+        // 构建要替换的正则表达式：查找包含此hash的file-upload元素
+        const hashRegex = new RegExp(
+          `(<file-upload[^>]+url=")${hash}("[^>]*>)`,
+          'g',
+        )
+
+        // 将hash替换为PocketBase文件名
+        updatedContent = updatedContent.replace(hashRegex, `$1${pocketbaseFilename}$2`)
+
+        console.warn(`已将富文本中的hash ${hash} 替换为 ${pocketbaseFilename}`)
+      }
+    }
+
+    return updatedContent
+  }
+
+  /**
    * 处理笔记的文件收集
    */
-  async function handleNoteFiles(note: Note): Promise<{ note: Note, filesForUpload: Array<File | string> }> {
+  async function handleNoteFiles(note: Note): Promise<{
+    note: Note
+    filesForUpload: Array<File | string>
+    hashToFileMapping: Map<string, File> // 新增：hash到File对象的映射
+  }> {
     if (!note.content) {
-      return { note: { ...note, files: [] }, filesForUpload: [] }
+      return { note: { ...note, files: [] }, filesForUpload: [], hashToFileMapping: new Map() }
     }
 
     // 从内容中提取文件hash
     const contentHashes = extractFileHashesFromContent(note.content)
 
     if (contentHashes.length === 0) {
-      return { note: { ...note, files: [] }, filesForUpload: [] }
+      return { note: { ...note, files: [] }, filesForUpload: [], hashToFileMapping: new Map() }
     }
 
     // 处理文件：hash转换为File对象，pocketbase文件名保持不变
     const filesForUpload: Array<File | string> = []
+    const hashToFileMapping = new Map<string, File>() // 记录hash到File的映射
 
     for (const hashOrFilename of contentHashes) {
       try {
@@ -68,6 +109,8 @@ export function useSync() {
           if (localFile && localFile.file) {
             // 本地文件存在，添加File对象到上传列表
             filesForUpload.push(localFile.file)
+            // 记录hash到File的映射关系
+            hashToFileMapping.set(hashOrFilename, localFile.file)
           }
           else {
             console.warn(`本地文件未找到: ${hashOrFilename}`)
@@ -91,6 +134,7 @@ export function useSync() {
     return {
       note: { ...note, files: contentHashes }, // 保持原始的hash/文件名数组
       filesForUpload, // 转换后的文件数组（File对象 + pocketbase文件名）
+      hashToFileMapping, // hash到File对象的映射
     }
   }
 
@@ -295,14 +339,48 @@ export function useSync() {
       try {
         if (action === 'upload') {
           // 处理文件收集
-          const { note: noteWithFiles, filesForUpload } = await handleNoteFiles(note)
-          await notesApi.updateNote(noteWithFiles, filesForUpload)
+          const { note: noteWithFiles, filesForUpload, hashToFileMapping } = await handleNoteFiles(note)
+          const result = await notesApi.updateNote(noteWithFiles, filesForUpload)
+
+          // 如果有文件映射，更新富文本内容中的文件引用
+          if (result.fileMapping && result.fileMapping.size > 0 && hashToFileMapping.size > 0) {
+            const updatedContent = updateContentFileReferences(
+              noteWithFiles.content || '',
+              result.fileMapping,
+              hashToFileMapping,
+            )
+
+            // 如果内容有变化，更新本地笔记
+            if (updatedContent !== noteWithFiles.content) {
+              const updatedNote = { ...noteWithFiles, content: updatedContent }
+              await updateNote(note.id, updatedNote)
+              console.warn(`已更新笔记 ${note.id} 的富文本内容中的文件引用`)
+            }
+          }
+
           uploadedCount++
         }
         else if (action === 'update') {
           // 处理文件收集
-          const { note: noteWithFiles, filesForUpload } = await handleNoteFiles(note)
-          await notesApi.updateNote(noteWithFiles, filesForUpload)
+          const { note: noteWithFiles, filesForUpload, hashToFileMapping } = await handleNoteFiles(note)
+          const result = await notesApi.updateNote(noteWithFiles, filesForUpload)
+
+          // 如果有文件映射，更新富文本内容中的文件引用
+          if (result.fileMapping && result.fileMapping.size > 0 && hashToFileMapping.size > 0) {
+            const updatedContent = updateContentFileReferences(
+              noteWithFiles.content || '',
+              result.fileMapping,
+              hashToFileMapping,
+            )
+
+            // 如果内容有变化，更新本地笔记
+            if (updatedContent !== noteWithFiles.content) {
+              const updatedNote = { ...noteWithFiles, content: updatedContent }
+              await updateNote(note.id, updatedNote)
+              console.warn(`已更新笔记 ${note.id} 的富文本内容中的文件引用`)
+            }
+          }
+
           uploadedCount++
         }
         else if (action === 'download') {
