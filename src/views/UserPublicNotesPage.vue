@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { PublicUserInfo } from '@/extensions/pocketbase/types'
 import type { FolderTreeNode } from '@/types'
 import {
   IonBackButton,
@@ -32,7 +33,7 @@ const { isDesktop } = useDeviceType()
 // 获取路由参数
 const username = computed(() => route.params.username as string)
 
-const { getUserInfo } = useUserCache()
+const { getPublicUserInfo } = useUserCache()
 // 初始化用户公开笔记存储
 const {
   getPublicFolderTreeByPUuid,
@@ -42,7 +43,7 @@ const {
 const loading = ref(true)
 const error = ref('')
 const publicFolders = ref<FolderTreeNode[]>([])
-const userInfo = ref<{ id: string, name?: string } | null>(null)
+const userInfo = ref<PublicUserInfo | null>(null)
 const presentingElement = ref()
 const page = ref()
 
@@ -65,7 +66,7 @@ async function init() {
     error.value = ''
 
     // 从远程获取数据
-    userInfo.value = await getUserInfo(username.value)
+    userInfo.value = await getPublicUserInfo(username.value)
     useUserPublicNotesSync(username.value)
     publicFolders.value = getPublicFolderTreeByPUuid()
   }
@@ -98,7 +99,7 @@ onMounted(() => {
   <IonPage ref="page" :class="{ 'note-desktop': isDesktop }">
     <IonHeader>
       <IonToolbar>
-        <IonTitle>{{ userInfo?.name || '用户主页' }}</IonTitle>
+        <IonTitle>{{ userInfo?.username }}</IonTitle>
         <IonButtons slot="start">
           <IonBackButton default-href="/" />
         </IonButtons>
@@ -113,7 +114,7 @@ onMounted(() => {
       <IonHeader collapse="condense">
         <IonToolbar>
           <IonTitle size="large">
-            {{ userInfo?.name || '用户主页' }}
+            {{ userInfo?.username }}
           </IonTitle>
         </IonToolbar>
       </IonHeader>

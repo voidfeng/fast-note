@@ -68,8 +68,10 @@ router.beforeEach(async (to, from, next) => {
     if (!initializedUsers.has(username)) {
       const { syncUserPublicNotes } = useUserPublicNotesSync(username)
       try {
+        // 初始化数据库
         await initializeUserPublicNotes(username)
-        syncUserPublicNotes()
+        // 初始化用户、公开笔记数据
+        await syncUserPublicNotes()
         // 标记该用户已初始化
         initializedUsers.add(username)
       }

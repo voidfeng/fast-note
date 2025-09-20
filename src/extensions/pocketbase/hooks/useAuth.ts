@@ -1,7 +1,7 @@
-import type { UserInfo } from '../types'
+import type { UserInfo } from '@/types'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { authApi, pb } from '../api/client'
+import { authApi } from '../api/client'
 
 // 全局状态
 const currentUser = ref<UserInfo | null>(null)
@@ -134,15 +134,7 @@ export function useAuth() {
       // 认证状态变化处理
       if (token && model) {
         // 登录状态
-        const userInfo: UserInfo = {
-          id: model.id,
-          email: model.email,
-          name: model.name || '',
-          username: model.username || '',
-          avatar: model.avatar ? pb.files.getUrl(model, model.avatar) : '',
-          created: model.created,
-          updated: model.updated,
-        }
+        const userInfo: UserInfo = model
         currentUser.value = userInfo
       }
       else {

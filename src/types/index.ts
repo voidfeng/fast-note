@@ -55,12 +55,12 @@ export interface FileRef {
 
 // 用户信息类型
 export interface UserInfo {
-  id?: string
-  username?: string
-  email?: string
-  avatar?: string
-  createdAt?: number
-  updatedAt?: number
+  id: string
+  username: string
+  email: string
+  avatar: string
+  created: string
+  updated: string
 }
 
 // 文件夹树节点类型 - 新的数据结构

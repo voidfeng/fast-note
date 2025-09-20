@@ -7,7 +7,7 @@ import { useUserCache } from './useUserCache'
 
 export function useUserPublicNotesSync(username: string) {
   const { publicNotes } = useUserPublicNotes(username)
-  const { getUserInfo } = useUserCache()
+  const { getPublicUserInfo } = useUserCache()
   const syncing = ref(false)
 
   // 设置笔记数据的函数（暂时未使用，等待 PocketBase 实现）
@@ -25,7 +25,7 @@ export function useUserPublicNotesSync(username: string) {
 
     try {
       // 先根据用户名获取用户信息
-      const userInfo = await getUserInfo(username)
+      const userInfo = await getPublicUserInfo(username)
       if (!userInfo) {
         console.warn('未找到用户信息:', username)
       }

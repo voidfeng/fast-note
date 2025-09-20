@@ -1,12 +1,9 @@
-// PocketBase 用户信息接口
-export interface UserInfo {
+import type { UserInfo } from '@/types'
+
+export interface PublicUserInfo {
   id: string
-  email: string
-  name?: string
-  avatar?: string
-  username?: string
-  created: string
-  updated: string
+  avatar: string
+  username: string
 }
 
 // 认证响应接口

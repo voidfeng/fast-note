@@ -1,4 +1,5 @@
-import type { AuthResponse, UserInfo } from '../types'
+import type { AuthResponse } from '../types'
+import type { UserInfo } from '@/types'
 import PocketBase from 'pocketbase'
 
 // PocketBase 配置
@@ -8,19 +9,6 @@ const pocketbaseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8
 export const pb = new PocketBase(pocketbaseUrl)
 
 ;(window as any).pb = pb
-
-// 用户信息转换函数
-function transformUser(record: any): UserInfo {
-  return {
-    id: record.id,
-    email: record.email,
-    name: record.name || '',
-    username: record.username || '',
-    avatar: record.avatar ? pb.files.getUrl(record, record.avatar) : '',
-    created: record.created,
-    updated: record.updated,
-  }
-}
 
 // 错误消息映射
 function mapErrorMessage(error: any): string {
@@ -48,7 +36,7 @@ export const authApi = {
 
       return {
         success: true,
-        user: transformUser(authData.record),
+        user: authData.record as unknown as UserInfo,
         token: authData.token,
       }
     }
@@ -94,7 +82,7 @@ export const authApi = {
 
       return {
         success: true,
-        user: transformUser(authData.record),
+        user: authData.record as unknown as UserInfo,
         token: authData.token,
       }
     }
@@ -120,11 +108,11 @@ export const authApi = {
   },
 
   // 获取当前认证用户（不发起网络请求）
-  getCurrentAuthUser(): UserInfo | null {
+  getCurrentAuthUser(): any | null {
     if (!pb.authStore.isValid || !pb.authStore.model) {
       return null
     }
-    return transformUser(pb.authStore.model)
+    return pb.authStore.model
   },
 
   // 监听认证状态变化
@@ -285,51 +273,27 @@ export const notesApi = {
 // 用户查询 API
 export const userApi = {
   // 根据用户名获取用户信息
-  async getUserByUsername(username: string): Promise<UserInfo | null> {
+  async getUserByUsername(username: string): Promise<any | null> {
     try {
-      // 查询用户名匹配的用户
-      const records = await pb.collection('users').getFullList({
-        filter: `username = "${username}"`,
-        limit: 1,
-      })
-
-      if (records.length > 0) {
-        return transformUser(records[0])
-      }
-
-      return null
+      // 从 public_users 视图查询用户名匹配的用户
+      const record = await pb.collection('public_users').getFirstListItem(`username = "${username}"`)
+      return record
     }
     catch (error: any) {
+      // 如果是找不到记录的错误，返回 null
+      if (error?.status === 404) {
+        return null
+      }
       console.error('根据用户名获取用户失败:', error)
       throw new Error(`根据用户名获取用户失败: ${mapErrorMessage(error)}`)
     }
   },
 
-  // 根据邮箱获取用户信息
-  async getUserByEmail(email: string): Promise<UserInfo | null> {
-    try {
-      const records = await pb.collection('users').getFullList({
-        filter: `email = "${email}"`,
-        limit: 1,
-      })
-
-      if (records.length > 0) {
-        return transformUser(records[0])
-      }
-
-      return null
-    }
-    catch (error: any) {
-      console.error('根据邮箱获取用户失败:', error)
-      throw new Error(`根据邮箱获取用户失败: ${mapErrorMessage(error)}`)
-    }
-  },
-
   // 根据用户ID获取用户信息
-  async getUserById(id: string): Promise<UserInfo | null> {
+  async getUserById(id: string): Promise<any | null> {
     try {
       const record = await pb.collection('users').getOne(id)
-      return transformUser(record)
+      return record
     }
     catch (error: any) {
       console.error('根据ID获取用户失败:', error)
