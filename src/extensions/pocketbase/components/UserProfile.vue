@@ -306,3 +306,10 @@ onMounted(() => {
     </IonContent>
   </IonModal>
 </template>
+
+<style lang="scss">
+.example-test {
+  // 打包出空css导致edgeone 404
+  color: red;
+}
+</style>

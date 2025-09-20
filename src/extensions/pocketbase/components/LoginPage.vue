@@ -205,7 +205,3 @@ function clearForm() {
     </IonContent>
   </IonPage>
 </template>
-
-<style scoped>
-/* 使用 UnoCSS 提供的原子化类，不需要额外 CSS */
-</style>
