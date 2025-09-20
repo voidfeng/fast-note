@@ -74,6 +74,7 @@ async function handleLogout() {
             await logout()
 
             await loading.dismiss()
+            isModalOpen.value = true
           },
         },
       ],

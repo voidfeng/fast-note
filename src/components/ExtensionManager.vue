@@ -90,9 +90,9 @@ function closeModal() {
           <IonIcon
             v-if="extension.icon"
             slot="start"
-            :icon="extension.icon"
             size="small"
           />
+          <!-- :icon="extension.icon" -->
           <IonLabel>
             <h2>{{ extension.name }}</h2>
             <p>{{ extension.description }}</p>

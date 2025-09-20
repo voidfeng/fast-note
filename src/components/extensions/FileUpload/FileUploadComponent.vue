@@ -307,72 +307,72 @@ onMounted(() => {
   </NodeViewWrapper>
 </template>
 
-<style>
+<style lang="scss">
 .file-upload-wrapper {
   padding: 0;
   padding: 4px;
   display: inline-block;
   /* transition: all 20s ease; */
   position: relative;
-}
-.file-upload-content {
-  /* border: 1px solid #ddd; */
-  box-shadow: 0 0 0 1px #ddd;
-  border-radius: 4px;
-}
-.file-upload-content .file-upload-wrapper.is-selected {
-  border-color: #2196f3;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
-}
+  .file-upload-content {
+    /* border: 1px solid #ddd; */
+    box-shadow: 0 0 0 1px #ddd;
+    border-radius: 4px;
+  }
+  .file-upload-content .file-upload-wrapper.is-selected {
+    border-color: #2196f3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+  }
 
-.image-preview,
-.file-preview {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  .image-preview,
+  .file-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-.image-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 4px;
-}
+  .image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+  }
 
-.file-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
+  .file-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 
-.loading-wrapper,
-.error-wrapper {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5f5f5;
-  border-radius: 4px;
-}
+  .loading-wrapper,
+  .error-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    border-radius: 4px;
+  }
 
-.loading-spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #ddd;
-  border-top-color: #2196f3;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
+  .loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #ddd;
+    border-top-color: #2196f3;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
 
-.error-text {
-  color: #f44336;
-  font-size: 14px;
+  .error-text {
+    color: #f44336;
+    font-size: 14px;
+  }
 }
 
 @keyframes spin {
