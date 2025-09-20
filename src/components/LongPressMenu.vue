@@ -44,7 +44,7 @@ const config = ref<IConfig>({
             handler: async (d) => {
               note.value!.title = d.newFolderName
               note.value!.updated = getTime()
-              await updateNote(note.value!.id, toRaw(note.value))
+              await updateNote(note.value!.id, toRaw(note.value!))
               dismiss()
               emit('refresh')
             },
@@ -68,7 +68,7 @@ const config = ref<IConfig>({
             text: '确认',
             handler: async () => {
               note.value!.is_deleted = 1
-              await updateNote(note.value!.id, toRaw(note.value))
+              await updateNote(note.value!.id, toRaw(note.value!))
               const notes = await getNotesByParentId(note.value!.id)
               for (const note of notes) {
                 note.is_deleted = 1
@@ -89,7 +89,7 @@ const config = ref<IConfig>({
     label: '恢复',
     handler: async () => {
       note.value!.is_deleted = 0
-      await updateNote(note.value!.id, toRaw(note.value))
+      await updateNote(note.value!.id, toRaw(note.value!))
       updateParentFolderSubcount(note.value!)
       emit('refresh')
       dismiss()
@@ -99,7 +99,7 @@ const config = ref<IConfig>({
     label: '永久删除',
     handler: async () => {
       note.value!.updated = new Date(0).toISOString()
-      await updateNote(note.value!.id, toRaw(note.value))
+      await updateNote(note.value!.id, toRaw(note.value!))
       emit('refresh')
       dismiss()
     },

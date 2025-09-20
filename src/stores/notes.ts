@@ -11,8 +11,6 @@ let initializing = false
 let isInitialized = false
 const onNoteUpdateArr: UpdateFn[] = []
 
-window.notes = notes
-
 // 全局同步实例
 let notesSync: ReturnType<typeof useRefDBSync<Note>> | null = null
 
