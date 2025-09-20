@@ -28,7 +28,7 @@ import {
   syncOutline,
   warningOutline,
 } from 'ionicons/icons'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { pb } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { useSync } from '../hooks/useSync'
@@ -170,9 +170,10 @@ onMounted(() => {
       v-else
       fill="clear"
       size="small"
+      style="--padding-start: 0px;"
       @click="handleUserProfile"
     >
-      <div class="flex items-center space-x-1">
+      <div class="flex items-center space-x-1 bg-primary c-gray-100 rounded-full p-[1px]">
         <IonAvatar class="w-6 h-6">
           <IonImg
             v-if="currentUser && pb.files.getURL(currentUser, currentUser.avatar)"
@@ -185,9 +186,9 @@ onMounted(() => {
             class="w-full h-full"
           />
         </IonAvatar>
-        <IonBadge color="primary" class="text-xs">
-          PB
-        </IonBadge>
+        <div class="pr-2">
+          {{ currentUser?.username }}
+        </div>
       </div>
     </IonButton>
   </div>
@@ -304,37 +305,3 @@ onMounted(() => {
     </IonContent>
   </IonModal>
 </template>
-
-<style scoped>
-.flex {
-  display: flex;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.space-x-1 > * + * {
-  margin-left: 0.25rem;
-}
-
-.flex-col {
-  flex-direction: column;
-}
-
-.space-y-3 > * + * {
-  margin-top: 0.75rem;
-}
-
-.mt-4 {
-  margin-top: 1rem;
-}
-
-.mr-2 {
-  margin-right: 0.5rem;
-}
-
-.text-xs {
-  font-size: 0.75rem;
-}
-</style>

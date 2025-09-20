@@ -197,7 +197,7 @@ onMounted(() => {
           </Transition>
         </IonToolbar>
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 16px;">
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center">
             <!-- 使用扩展渲染器动态渲染同步组件 -->
             <ExtensionRenderer
               extension-id="sync"
