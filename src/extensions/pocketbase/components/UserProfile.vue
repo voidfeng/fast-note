@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import {
   alertController,
+  IonAvatar,
   IonBadge,
   IonButton,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
   IonCol,
   IonContent,
   IonGrid,
   IonHeader,
   IonIcon,
+  IonImg,
   IonItem,
   IonLabel,
   IonList,
@@ -24,15 +22,14 @@ import {
 } from '@ionic/vue'
 import {
   closeOutline,
-  cloudDoneOutline,
   logInOutline,
   logOutOutline,
   personCircleOutline,
-  refreshOutline,
   syncOutline,
   warningOutline,
 } from 'ionicons/icons'
 import { computed, onMounted, ref } from 'vue'
+import { pb } from '../api/client'
 import { useAuth } from '../hooks/useAuth'
 import { useSync } from '../hooks/useSync'
 
@@ -47,13 +44,6 @@ const isLoading = ref(false)
 // 同步相关状态
 const syncResult = ref<{ uploaded: number, downloaded: number, deleted: number } | null>(null)
 const localStats = ref<{ notes: number } | null>(null)
-
-// 用户信息显示名称
-const displayName = computed(() => {
-  if (!currentUser.value)
-    return '未登录'
-  return currentUser.value.email || '用户'
-})
 
 function handleLogin() {
   router.push('/pocketbase/login')
@@ -93,21 +83,6 @@ async function handleLogout() {
   }
   catch (error) {
     console.error('退出登录失败:', error)
-  }
-}
-
-async function handleRefresh() {
-  isLoading.value = true
-  try {
-    // 刷新用户信息和本地数据统计
-    console.warn('刷新 PocketBase 用户信息')
-    await loadLocalStats()
-  }
-  catch (error) {
-    console.error('刷新用户信息失败:', error)
-  }
-  finally {
-    isLoading.value = false
   }
 }
 
@@ -198,7 +173,18 @@ onMounted(() => {
       @click="handleUserProfile"
     >
       <div class="flex items-center space-x-1">
-        <IonIcon :icon="personCircleOutline" />
+        <IonAvatar class="w-6 h-6">
+          <IonImg
+            v-if="currentUser && pb.files.getURL(currentUser, currentUser.avatar)"
+            :src="pb.files.getURL(currentUser, currentUser.avatar)"
+            :alt="currentUser?.username || '用户头像'"
+          />
+          <IonIcon
+            v-else
+            :icon="personCircleOutline"
+            class="w-full h-full"
+          />
+        </IonAvatar>
         <IonBadge color="primary" class="text-xs">
           PB
         </IonBadge>
@@ -210,7 +196,7 @@ onMounted(() => {
   <IonModal :is-open="isModalOpen" @did-dismiss="closeModal">
     <IonHeader>
       <IonToolbar>
-        <IonTitle>PocketBase 用户信息</IonTitle>
+        <IonTitle>用户信息</IonTitle>
         <IonButton
           slot="end"
           fill="clear"
@@ -226,98 +212,72 @@ onMounted(() => {
         <IonRow>
           <IonCol size="12">
             <!-- 用户基本信息 -->
-            <IonCard>
-              <IonCardHeader>
-                <IonCardTitle>用户信息</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList>
-                  <IonItem>
-                    <IonLabel>
-                      <h3>用户名</h3>
-                      <p>{{ displayName }}</p>
-                    </IonLabel>
-                    <IonIcon slot="end" :icon="personCircleOutline" />
-                  </IonItem>
+            <IonList>
+              <IonItem>
+                <IonLabel>
+                  <h3>用户名</h3>
+                  <p>{{ currentUser?.username }}</p>
+                </IonLabel>
+                <IonAvatar slot="end" class="w-10 h-10">
+                  <IonImg
+                    v-if="currentUser && pb.files.getURL(currentUser, currentUser.avatar)"
+                    :src="pb.files.getURL(currentUser, currentUser.avatar)"
+                    :alt="currentUser?.username || '用户头像'"
+                  />
+                  <IonIcon
+                    v-else
+                    :icon="personCircleOutline"
+                    class="w-full h-full text-gray-400"
+                  />
+                </IonAvatar>
+              </IonItem>
 
-                  <IonItem v-if="currentUser?.email">
-                    <IonLabel>
-                      <h3>邮箱</h3>
-                      <p>{{ currentUser.email }}</p>
-                    </IonLabel>
-                  </IonItem>
+              <IonItem v-if="currentUser?.email">
+                <IonLabel>
+                  <h3>邮箱</h3>
+                  <p>{{ currentUser.email }}</p>
+                </IonLabel>
+              </IonItem>
 
-                  <IonItem v-if="currentUser?.created">
-                    <IonLabel>
-                      <h3>注册时间</h3>
-                      <p>{{ new Date(currentUser.created).toLocaleDateString('zh-CN') }}</p>
-                    </IonLabel>
-                  </IonItem>
+              <IonItem v-if="currentUser?.created">
+                <IonLabel>
+                  <h3>注册时间</h3>
+                  <p>{{ new Date(currentUser.created).toLocaleDateString('zh-CN') }}</p>
+                </IonLabel>
+              </IonItem>
 
-                  <IonItem v-if="currentUser?.updated">
-                    <IonLabel>
-                      <h3>更新时间</h3>
-                      <p>{{ new Date(currentUser.updated).toLocaleDateString('zh-CN') }}</p>
-                    </IonLabel>
-                  </IonItem>
-                </IonList>
-              </IonCardContent>
-            </IonCard>
+              <IonItem>
+                <IonLabel>
+                  <h3>本地笔记数量</h3>
+                  <p>{{ localStats?.notes ?? '加载中...' }} 条</p>
+                </IonLabel>
+              </IonItem>
 
-            <!-- 数据统计信息 -->
-            <IonCard v-if="isLoggedIn">
-              <IonCardHeader>
-                <IonCardTitle class="flex items-center">
-                  <IonIcon :icon="cloudDoneOutline" class="mr-2" />
-                  数据统计
-                </IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList>
-                  <IonItem>
-                    <IonLabel>
-                      <h3>本地笔记数量</h3>
-                      <p>{{ localStats?.notes ?? '加载中...' }} 条</p>
-                    </IonLabel>
-                  </IonItem>
+              <IonItem v-if="syncResult">
+                <IonLabel>
+                  <h3>上次同步结果</h3>
+                  <p>上传: {{ syncResult.uploaded }} 条, 下载: {{ syncResult.downloaded }} 条, 删除: {{ syncResult.deleted }} 条</p>
+                </IonLabel>
+              </IonItem>
 
-                  <IonItem v-if="syncResult">
-                    <IonLabel>
-                      <h3>上次同步结果</h3>
-                      <p>上传: {{ syncResult.uploaded }} 条, 下载: {{ syncResult.downloaded }} 条, 删除: {{ syncResult.deleted }} 条</p>
-                    </IonLabel>
-                  </IonItem>
+              <IonItem v-if="syncStatus.lastSyncTime">
+                <IonLabel>
+                  <h3>上次同步时间</h3>
+                  <p>{{ syncStatus.lastSyncTime.toLocaleString('zh-CN') }}</p>
+                </IonLabel>
+              </IonItem>
 
-                  <IonItem v-if="syncStatus.lastSyncTime">
-                    <IonLabel>
-                      <h3>上次同步时间</h3>
-                      <p>{{ syncStatus.lastSyncTime.toLocaleString('zh-CN') }}</p>
-                    </IonLabel>
-                  </IonItem>
-
-                  <IonItem v-if="syncStatus.error">
-                    <IonLabel color="danger">
-                      <h3>同步错误</h3>
-                      <p>{{ syncStatus.error }}</p>
-                    </IonLabel>
-                    <IonIcon slot="end" :icon="warningOutline" color="danger" />
-                  </IonItem>
-                </IonList>
-              </IonCardContent>
-            </IonCard>
+              <IonItem v-if="syncStatus.error">
+                <IonLabel color="danger">
+                  <h3>同步错误</h3>
+                  <p>{{ syncStatus.error }}</p>
+                </IonLabel>
+                <IonIcon slot="end" :icon="warningOutline" color="danger" />
+              </IonItem>
+            </IonList>
 
             <!-- 操作按钮 -->
             <div class="flex mt-4 flex-col space-y-3">
-              <IonButton
-                expand="block"
-                fill="outline"
-                :disabled="isLoading"
-                @click="handleRefresh"
-              >
-                <IonIcon slot="start" :icon="refreshOutline" />
-                刷新信息
-              </IonButton>
-
               <IonButton
                 v-if="isLoggedIn"
                 expand="block"
