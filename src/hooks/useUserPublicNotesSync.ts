@@ -9,12 +9,6 @@ export function useUserPublicNotesSync(username: string) {
   const { getPublicUserInfo } = useUserCache()
   const syncing = ref(false)
 
-  // 设置笔记数据的函数（暂时未使用，等待 PocketBase 实现）
-  // function setPublicNotes(newNotes: Note[]) {
-  //   // 直接更新 publicNotes ref
-  //   publicNotes.value = newNotes
-  // }
-
   // 同步指定用户的公开笔记
   async function syncUserPublicNotes() {
     if (!username)
@@ -29,6 +23,7 @@ export function useUserPublicNotesSync(username: string) {
         // 可以根据需要调用 PocketBase API 获取公开笔记
         const notes = await notesApi.getPublicNotes(userInfo.id)
 
+        publicNotes.value = notes
         return {
           synced: notes.length,
           notes,

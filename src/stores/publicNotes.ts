@@ -1,12 +1,10 @@
 import type { Table } from 'dexie'
 import type { FolderTreeNode, Note } from '@/types'
 import Dexie from 'dexie'
-import { onUnmounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useRefDBSync } from '@/database'
 import { NOTE_TYPE } from '@/types'
 import { getTime } from '@/utils/date'
-
-type UpdateFn = (item: Note) => void
 
 // 用户数据库类
 class UserPublicNotesDB extends Dexie {
@@ -27,7 +25,6 @@ const userPublicNotesMap = new Map<string, {
   publicNotes: ReturnType<typeof ref<Note[]>>
   initializing: boolean
   isInitialized: boolean
-  onPublicNoteUpdateArr: UpdateFn[]
   publicNotesSync: ReturnType<typeof useRefDBSync<Note>> | null
 }>()
 
@@ -39,7 +36,6 @@ function getUserState(username: string) {
       publicNotes: ref<Note[]>([]),
       initializing: false,
       isInitialized: false,
-      onPublicNoteUpdateArr: [],
       publicNotesSync: null,
     })
   }
@@ -89,7 +85,6 @@ export function getUserPublicNotesSync(username: string) {
 
 export function useUserPublicNotes(username: string) {
   const state = getUserState(username)
-  const privatePublicNoteUpdateArr: UpdateFn[] = []
 
   function getFirstPublicNote() {
     const publicNotes = state.publicNotes.value || []
@@ -191,11 +186,6 @@ export function useUserPublicNotes(username: string) {
     }
 
     return count
-  }
-
-  function onUpdatePublicNote(fn: UpdateFn) {
-    state.onPublicNoteUpdateArr.push(fn)
-    privatePublicNoteUpdateArr.push(fn)
   }
 
   function getPublicNotesByUpdated(updated: string) {
@@ -317,12 +307,6 @@ export function useUserPublicNotes(username: string) {
     }
   }
 
-  onUnmounted(() => {
-    privatePublicNoteUpdateArr.forEach((fn) => {
-      state.onPublicNoteUpdateArr.splice(state.onPublicNoteUpdateArr.indexOf(fn), 1)
-    })
-  })
-
   return {
     getFirstPublicNote,
     publicNotes: state.publicNotes,
@@ -333,7 +317,6 @@ export function useUserPublicNotes(username: string) {
     getPublicNotesByPUuid,
     getDeletedPublicNotes,
     getPublicNoteCountByUuid,
-    onUpdatePublicNote,
     searchPublicNotesByPUuid,
     // 文件夹
     getAllPublicFolders,

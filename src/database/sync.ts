@@ -220,7 +220,6 @@ export function useRefDBSync<T extends SyncableItem>(
     watchStopHandle = watch(
       data,
       (newData) => {
-        console.log('监听到数据更新')
         debouncedSync(newData)
       },
       { deep: true },
