@@ -84,6 +84,7 @@ defineExpose({
     <IonAccordionGroup :value="expandedItems" multiple @ion-change="(event: CustomEvent) => setExpandedItems(event.detail.value)">
       <NoteListItem
         v-if="showAllNotes"
+        key="allnotes"
         :data="{
           originNote: {
             id: 'allnotes',
@@ -106,6 +107,7 @@ defineExpose({
       />
       <NoteListItem
         v-if="showUnfiledNotes"
+        key="unfilednotes"
         :data="{
           originNote: {
             id: 'unfilednotes',
@@ -122,7 +124,7 @@ defineExpose({
           },
           children: [],
         } as FolderTreeNode"
-        :class="{ active: noteUuid === 'allnotes' }"
+        :class="{ active: noteUuid === 'unfilednotes' }"
         :disabled-route
         @selected="onSelected('unfilednotes')"
       />
