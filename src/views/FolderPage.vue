@@ -18,7 +18,7 @@ import {
 } from '@ionic/vue'
 import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
@@ -60,11 +60,6 @@ useIonicLongPressList(listRef, {
 const data = ref<Note>({} as Note)
 const folderList = ref<FolderTreeNode[]>([])
 const noteList = ref<FolderTreeNode[]>([])
-
-const state = reactive({
-  windowWidth: 0,
-  noteUuid: '',
-})
 
 const folderId = computed(() => {
   const path = route.path
@@ -246,7 +241,6 @@ onIonViewDidEnter(() => {
       </IonHeader>
 
       <NoteList
-        v-model:note-id="state.noteUuid"
         :data-list="[...folders, ...noteList]"
         :show-parent-folder="data.id === 'allnotes'"
         @selected="$emit('selected', $event)"

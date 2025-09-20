@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Note } from '@/types'
+import type { FolderTreeNode } from '@/types'
 import {
   IonBackButton,
   IonButtons,
@@ -22,7 +22,7 @@ defineEmits(['selected'])
 const { getDeletedNotes } = useNote()
 const { isDesktop } = useDeviceType()
 
-const dataList = ref<Note[]>([])
+const dataList = ref<FolderTreeNode[]>([])
 const longPressMenuOpen = ref(false)
 const longPressUUID = ref('')
 const listRef = ref()
@@ -40,12 +40,11 @@ useIonicLongPressList(listRef, {
 })
 const state = reactive({
   windowWidth: 0,
-  noteUuid: '',
 })
 
 function init() {
   getDeletedNotes().then((res) => {
-    dataList.value = res
+    dataList.value = res.map(note => ({ originNote: note, children: [] }))
   })
 }
 
@@ -92,7 +91,6 @@ onUnmounted(() => {
 
       <NoteList
         ref="listRef"
-        v-model:note-id="state.noteUuid"
         :data-list="dataList"
         :press-items="[{ type: 'restore' }, { type: 'deleteNow' }]"
         @selected="$emit('selected', $event)"

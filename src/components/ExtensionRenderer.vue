@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, markRaw, ref, watch } from 'vue'
 import { useExtensions } from '@/hooks/useExtensions'
 
 const props = defineProps({
@@ -95,7 +95,7 @@ async function loadExtensionComponent() {
     return
   }
 
-  componentInstance.value = component
+  componentInstance.value = markRaw(component)
 }
 
 // 监听扩展状态变化
