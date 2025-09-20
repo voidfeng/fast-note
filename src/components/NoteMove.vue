@@ -49,16 +49,6 @@ async function onSelected(id: string) {
     currentNote.value.updated = getTime()
     updateParentFolderSubcount(currentNote.value)
   }
-  // const preNote = Object.assign({}, currentNote.value)
-  // currentNote.value!.pid = id || ''
-  // currentNote.value!.updated = getTime()
-  // await updateNote(currentNote.value!.id, toRaw(currentNote.value!))
-  // if (preNote.pid) {
-  //   updateParentFolderSubcount(preNote)
-  // }
-  // if (currentNote.value!.pid) {
-  //   updateParentFolderSubcount(currentNote.value!)
-  // }
   dismiss()
   emit('refresh')
 }

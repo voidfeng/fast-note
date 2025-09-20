@@ -159,7 +159,7 @@ async function handleNoteSaving() {
         created: getTime(),
         updated: time,
         item_type: NOTE_TYPE.NOTE,
-        parent_id: (!route.query.pid || route.query.pid === 'unfilednotes') ? '' : route.query.pid as string,
+        parent_id: (!route.query.parent_id || route.query.parent_id === 'unfilednotes') ? '' : route.query.parent_id as string,
         id,
         is_deleted: 0,
         is_locked: 0,
@@ -253,8 +253,8 @@ function openTextFormatModal() {
 
 onMounted(() => {
   if (isNewNote.value && !isDesktop.value) {
-    if (route.query.pid) {
-      window.history.replaceState(null, '', `/n/${newNoteId.value}?pid=${route.query.pid}`)
+    if (route.query.parent_id) {
+      window.history.replaceState(null, '', `/n/${newNoteId.value}?parent_id=${route.query.parent_id}`)
     }
     else {
       window.history.replaceState(null, '', `/n/${newNoteId.value}`)

@@ -35,7 +35,7 @@ async function onWillPresent() {
 // 获取所有子级笔记（递归）
 async function getAllChildrenNotes(noteUuid: string): Promise<Note[]> {
   const children = await db.value.notes
-    .where('pid')
+    .where('parent_id')
     .equals(noteUuid)
     .and((item: Note) => item.is_deleted !== 1)
     .toArray()
@@ -53,10 +53,10 @@ async function getAllChildrenNotes(noteUuid: string): Promise<Note[]> {
 }
 
 // 获取父级笔记
-async function getParentNote(pid: string | null): Promise<Note | null> {
-  if (!pid)
+async function getParentNote(parentId: string | null): Promise<Note | null> {
+  if (!parentId)
     return null
-  return await db.value.notes.where('id').equals(pid).first() || null
+  return await db.value.notes.where('id').equals(parentId).first() || null
 }
 
 // 递归获取所有父级笔记
@@ -90,7 +90,7 @@ async function onShare() {
       // 启用分享：遍历父级，把全部父级的is_public改为true
       note.value.is_public = true
       note.value.updated = now
-      await updateNote(note.value.id, { ...note.value })
+      await updateNote(note.value.id, note.value)
 
       // 获取所有父级并设置为公开
       const parents = await getAllParentNotes(note.value)

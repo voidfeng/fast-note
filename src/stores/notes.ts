@@ -11,6 +11,8 @@ let initializing = false
 let isInitialized = false
 const onNoteUpdateArr: UpdateFn[] = []
 
+window.notes = notes
+
 // 全局同步实例
 let notesSync: ReturnType<typeof useRefDBSync<Note>> | null = null
 
@@ -98,17 +100,14 @@ export function useNote() {
     }
   }
 
-  function updateNote(id: string, updates: any) {
+  function updateNote(id: string, updates: Partial<Note>) {
     // 直接更新 notes ref 变量中的数据
     const noteIndex = notes.value.findIndex(n => n.id === id)
     if (noteIndex > -1) {
       // 确保更新 updated 用于同步检测
-      const updatedNote = {
-        ...notes.value[noteIndex],
-        ...updates,
-        updated: updates.updated || getTime(),
-      }
-      notes.value[noteIndex] = updatedNote
+      const oldNote = notes.value[noteIndex]
+      Object.assign(oldNote, updates, { updated: updates.updated || getTime() })
+      notes.value[noteIndex] = oldNote
     }
   }
 
