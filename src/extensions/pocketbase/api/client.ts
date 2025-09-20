@@ -268,6 +268,13 @@ export const notesApi = {
       throw new Error(`更新PocketBase笔记失败: ${mapErrorMessage(error)}`)
     }
   },
+  // 获取公开笔记
+  async getPublicNotes(user_id: string): Promise<any[]> {
+    const record = await pb.collection('notes').getFullList({
+      filter: `user_id = "${user_id}"`,
+    })
+    return record
+  },
 }
 
 // 用户查询 API
