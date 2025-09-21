@@ -115,12 +115,11 @@ export function useRefDBSync<T extends SyncableItem>(
       const id = item[idField]
       const lastItem = lastSnapshotMap.get(id)
 
-      if (!lastItem) {
+      if (!lastItem || item.updated > lastItem.updated) {
         // 新增项目 - 直接使用 toRaw 转换
-        upsertItems.push(toRaw(item))
-      }
-      else if (item.updated > lastItem.updated) {
-        // 修改项目（通过时间戳比较）- 直接使用 toRaw 转换
+        if (item.files) {
+          item.files = toRaw(item.files)
+        }
         upsertItems.push(toRaw(item))
       }
     }

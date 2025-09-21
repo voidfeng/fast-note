@@ -165,7 +165,7 @@ export function useNote() {
   const privateNoteUpdateArr: UpdateFn[] = []
 
   function getFirstNote() {
-    const sortedNotes = [...notes.value].sort((a, b) => (a.created || '').localeCompare(b.created || ''))
+    const sortedNotes = notes.value.slice().sort((a, b) => (a.created || '').localeCompare(b.created || ''))
     return sortedNotes[0] || null
   }
 
@@ -185,10 +185,9 @@ export function useNote() {
 
   function addNote(note: Note) {
     // 确保有 updated 字段用于同步检测
-    const noteWithTime = {
-      ...note,
+    const noteWithTime = Object.assign({}, note, {
       updated: note.updated || getTime(),
-    }
+    })
 
     // 直接添加到 notes ref 变量
     notes.value.push(noteWithTime)
@@ -226,7 +225,7 @@ export function useNote() {
     const existingNote = notesMap.value.get(id)
     if (existingNote) {
       // 确保更新 updated 用于同步检测
-      const updatedNote = { ...existingNote, ...updates, updated: updates.updated || getTime() }
+      const updatedNote = Object.assign({}, existingNote, updates, { updated: updates.updated || getTime() })
 
       // 更新数组中的数据
       const noteIndex = notes.value.findIndex(n => n.id === id)
@@ -350,8 +349,7 @@ export function useNote() {
         && note.is_deleted === 0
         && note.content.includes(keyword),
       )
-      .map(note => ({
-        ...note,
+      .map(note => Object.assign({}, note, {
         folderName: title,
       }))
 
@@ -362,12 +360,12 @@ export function useNote() {
     )
 
     // 递归搜索每个文件夹中的笔记
-    let allMatchedNotes = [...directNotes]
+    let allMatchedNotes = directNotes.slice()
 
     for (const folder of folders) {
       // 对每个文件夹递归调用搜索方法
       const folderNotes = await searchNotesByParentId(folder.id!, folder.title, keyword)
-      allMatchedNotes = [...allMatchedNotes, ...folderNotes]
+      allMatchedNotes = allMatchedNotes.concat(folderNotes)
     }
 
     return allMatchedNotes

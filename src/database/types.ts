@@ -26,6 +26,7 @@ export interface NoteFile {
  * 可同步的数据项接口
  */
 export interface SyncableItem {
+  files: any[]
   updated: string
   [key: string]: any
 }
