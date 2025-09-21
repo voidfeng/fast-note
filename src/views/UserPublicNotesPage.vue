@@ -21,6 +21,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
+import { useSimpleBackButton } from '@/hooks/useSmartBackButton'
 import { useUserCache } from '@/hooks/useUserCache'
 import { useUserPublicNotesSync } from '@/hooks/useUserPublicNotesSync'
 import { useUserPublicNotes } from '@/stores'
@@ -32,6 +33,9 @@ const { isDesktop } = useDeviceType()
 
 // 获取路由参数
 const username = computed(() => route.params.username as string)
+
+// 简单的返回按钮
+const { backButtonProps } = useSimpleBackButton('/', '返回')
 
 const { getPublicUserInfo } = useUserCache()
 // 初始化用户公开笔记存储
@@ -101,7 +105,7 @@ onMounted(() => {
       <IonToolbar>
         <IonTitle>{{ userInfo?.username }}</IonTitle>
         <IonButtons slot="start">
-          <IonBackButton default-href="/" />
+          <IonBackButton v-bind="backButtonProps" />
         </IonButtons>
       </IonToolbar>
     </IonHeader>

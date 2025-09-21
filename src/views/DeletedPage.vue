@@ -15,12 +15,16 @@ import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
+import { useSimpleBackButton } from '@/hooks/useSmartBackButton'
 import { useNote } from '@/stores'
 
 defineEmits(['selected'])
 
 const { getDeletedNotes } = useNote()
 const { isDesktop } = useDeviceType()
+
+// 简单的返回按钮
+const { backButtonProps } = useSimpleBackButton('/home', '备忘录')
 
 const dataList = ref<FolderTreeNode[]>([])
 const longPressMenuOpen = ref(false)
@@ -75,7 +79,7 @@ onUnmounted(() => {
     <IonHeader v-if="!isDesktop" :translucent="true">
       <IonToolbar>
         <IonButtons slot="start">
-          <IonBackButton text="备忘录" default-href="/home" />
+          <IonBackButton v-bind="backButtonProps" />
         </IonButtons>
       </IonToolbar>
     </IonHeader>

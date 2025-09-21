@@ -23,6 +23,7 @@ import { useRoute } from 'vue-router'
 import NoteList from '@/components/NoteList.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useIonicLongPressList } from '@/hooks/useIonicLongPressList'
+import { useFolderBackButton } from '@/hooks/useSmartBackButton'
 import { useNote, useUserPublicNotes } from '@/stores'
 import { NOTE_TYPE } from '@/types'
 import { getTime } from '@/utils/date'
@@ -105,25 +106,12 @@ const folders = computed(() => {
   return folderList.value
 })
 
-const defaultHref = computed(() => {
-  /**
-   * 返回上一级逻辑：当前url去掉最后一个id
-   * 例如:  /f/12/13 返回 /f/12
-   * 例如2: /f/12  返回 /home
-   * 用户上下文: /:username/f/12 返回 /:username
-   */
-  const path = route.path
-  const lastId = path.split('/').pop()
-  const newPath = path.replace(`/${lastId}`, '')
-
-  if (isUserContext.value && isTopFolder.value) {
-    return `/${username.value}`
-  }
-  else if (isTopFolder.value) {
-    return '/home'
-  }
-  return newPath
-})
+// 智能返回按钮
+const { backButtonProps } = useFolderBackButton(
+  route,
+  () => isTopFolder.value,
+  username.value,
+)
 
 watch(
   () => props.currentFolder,
@@ -226,7 +214,7 @@ onIonViewDidEnter(() => {
     <IonHeader v-if="!isDesktop" :translucent="true">
       <IonToolbar>
         <IonButtons slot="start">
-          <IonBackButton :text="isTopFolder ? '备忘录' : '返回'" :default-href="defaultHref" />
+          <IonBackButton v-bind="backButtonProps" />
         </IonButtons>
       </IonToolbar>
     </IonHeader>

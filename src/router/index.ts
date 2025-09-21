@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from '@ionic/vue-router'
+import { useNavigationHistory } from '@/hooks/useNavigationHistory'
 import { useUserPublicNotesSync } from '@/hooks/useUserPublicNotesSync'
 import { initializeUserPublicNotes } from '@/stores'
 import HomePage from '../views/HomePage.vue'
@@ -52,6 +53,10 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
+
+// 初始化导航历史记录
+const { setRouter } = useNavigationHistory()
+setRouter(router)
 
 // 记录已初始化的用户，避免重复初始化
 const initializedUsers = new Set<string>()

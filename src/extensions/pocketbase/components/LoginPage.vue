@@ -18,11 +18,15 @@ import {
 } from '@ionic/vue'
 import { ref } from 'vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
+import { useSimpleBackButton } from '@/hooks/useSmartBackButton'
 import { useAuth } from '../hooks/useAuth'
 
 const router = useIonRouter()
 const { isDesktop } = useDeviceType()
 const { login } = useAuth()
+
+// 简单的返回按钮
+const { backButtonProps } = useSimpleBackButton('/', '返回')
 
 const loading = ref(false)
 const error = ref('')
@@ -89,7 +93,7 @@ function clearForm() {
     <IonHeader :translucent="true">
       <IonToolbar>
         <IonButtons slot="start">
-          <IonBackButton text="返回" default-href="/" />
+          <IonBackButton v-bind="backButtonProps" />
         </IonButtons>
       </IonToolbar>
     </IonHeader>
@@ -193,13 +197,6 @@ function clearForm() {
               </IonItem>
             </div>
           </IonList>
-
-          <!-- 底部说明 -->
-          <div class="text-center mt-8">
-            <p class="dark:text-gray-400 text-xs text-gray-500">
-              使用 PocketBase 进行用户认证
-            </p>
-          </div>
         </div>
       </div>
     </IonContent>

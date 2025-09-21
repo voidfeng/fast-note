@@ -7,12 +7,120 @@ import { getTime } from '@/utils/date'
 type UpdateFn = (item: Note) => void
 
 const notes = ref<Note[]>([])
+// 添加索引 Map 提升查询性能
+const notesMap = ref<Map<string, Note>>(new Map())
+const parentIdMap = ref<Map<string, Note[]>>(new Map())
 let initializing = false
 let isInitialized = false
 const onNoteUpdateArr: UpdateFn[] = []
 
 // 全局同步实例
 let notesSync: ReturnType<typeof useRefDBSync<Note>> | null = null
+
+/**
+ * 重建索引 Map
+ */
+function rebuildIndexMaps() {
+  // 清空现有索引
+  notesMap.value.clear()
+  parentIdMap.value.clear()
+
+  // 重建 ID 索引 Map
+  for (const note of notes.value) {
+    if (note.id) {
+      notesMap.value.set(note.id, note)
+    }
+  }
+
+  // 重建父级 ID 索引 Map
+  const parentGroups = new Map<string, Note[]>()
+  for (const note of notes.value) {
+    const parentId = note.parent_id || 'root'
+    if (!parentGroups.has(parentId)) {
+      parentGroups.set(parentId, [])
+    }
+    parentGroups.get(parentId)!.push(note)
+  }
+  parentIdMap.value = parentGroups
+}
+
+/**
+ * 全文搜索优化：使用数据库层面搜索
+ * 建议后续考虑使用 Dexie 的全文搜索插件或建立关键词索引
+ */
+async function searchNotesInDatabase(keyword: string) {
+  const { db } = useDexie()
+  // 使用数据库层面的模糊搜索，比内存遍历更高效
+  return await db.value.notes
+    .filter(note =>
+      note.item_type === NOTE_TYPE.NOTE
+      && note.is_deleted !== 1
+      && (note.content.includes(keyword) || note.title.includes(keyword)),
+    )
+    .toArray()
+}
+
+/**
+ * 同步更新索引
+ */
+function updateIndexes(note: Note, operation: 'add' | 'update' | 'delete') {
+  if (!note.id)
+    return
+
+  switch (operation) {
+    case 'add':
+    case 'update': {
+      // 更新 ID 索引
+      notesMap.value.set(note.id, note)
+
+      // 更新父级索引
+      const parentId = note.parent_id || 'root'
+      if (!parentIdMap.value.has(parentId)) {
+        parentIdMap.value.set(parentId, [])
+      }
+
+      // 移除旧的父级关系（如果存在）
+      for (const [pid, noteList] of parentIdMap.value.entries()) {
+        const index = noteList.findIndex(n => n.id === note.id)
+        if (index > -1 && pid !== parentId) {
+          noteList.splice(index, 1)
+          if (noteList.length === 0) {
+            parentIdMap.value.delete(pid)
+          }
+        }
+      }
+
+      // 添加新的父级关系
+      const parentNotes = parentIdMap.value.get(parentId)!
+      const existingIndex = parentNotes.findIndex(n => n.id === note.id)
+      if (existingIndex > -1) {
+        parentNotes[existingIndex] = note
+      }
+      else {
+        parentNotes.push(note)
+      }
+      break
+    }
+
+    case 'delete': {
+      // 从 ID 索引移除
+      notesMap.value.delete(note.id)
+
+      // 从父级索引移除
+      for (const [pid, noteList] of parentIdMap.value.entries()) {
+        const index = noteList.findIndex(n => n.id === note.id)
+        if (index > -1) {
+          noteList.splice(index, 1)
+          if (noteList.length === 0) {
+            parentIdMap.value.delete(pid)
+          }
+          break
+        }
+      }
+      break
+    }
+  }
+}
 
 // 全局初始化函数
 export async function initializeNotes() {
@@ -24,6 +132,9 @@ export async function initializeNotes() {
         .orderBy('created')
         .toArray()
       notes.value = data
+
+      // 初始化后重建索引
+      rebuildIndexMaps()
 
       // 初始化 useRefDBSync
       notesSync = useRefDBSync({
@@ -64,6 +175,8 @@ export function useNote() {
       .toArray() // 将结果转换为数组
       .then((data: Note[]) => {
         notes.value = data
+        // 重建索引
+        rebuildIndexMaps()
       })
       .catch((error: any) => {
         console.error('Error fetching data:', error)
@@ -81,35 +194,52 @@ export function useNote() {
     notes.value.push(noteWithTime)
     // 按 created 重新排序
     notes.value.sort((a, b) => (a.created || '').localeCompare(b.created || ''))
+
+    // 更新索引
+    updateIndexes(noteWithTime, 'add')
+
     return noteWithTime
   }
 
   function getNote(id: string) {
-    // 直接从 notes ref 变量获取
-    const note = notes.value.find(n => n.id === id)
-    return note || null
+    // 使用 Map 索引快速查找，时间复杂度从 O(n) 优化到 O(1)
+    return notesMap.value.get(id) || null
   }
 
   function deleteNote(id: string) {
-    // 直接从 notes ref 变量删除
+    // 先获取要删除的笔记用于更新索引
+    const noteToDelete = notesMap.value.get(id)
+    if (!noteToDelete)
+      return
+
+    // 从 notes ref 变量删除
     const index = notes.value.findIndex(n => n.id === id)
     if (index > -1) {
       notes.value.splice(index, 1)
+      // 更新索引
+      updateIndexes(noteToDelete, 'delete')
     }
   }
 
   function updateNote(id: string, updates: Partial<Note>) {
-    // 直接更新 notes ref 变量中的数据
-    const noteIndex = notes.value.findIndex(n => n.id === id)
-    if (noteIndex > -1) {
+    // 使用 Map 索引快速查找
+    const existingNote = notesMap.value.get(id)
+    if (existingNote) {
       // 确保更新 updated 用于同步检测
-      const oldNote = notes.value[noteIndex]
-      Object.assign(oldNote, updates, { updated: updates.updated || getTime() })
-      notes.value[noteIndex] = oldNote
+      const updatedNote = { ...existingNote, ...updates, updated: updates.updated || getTime() }
+
+      // 更新数组中的数据
+      const noteIndex = notes.value.findIndex(n => n.id === id)
+      if (noteIndex > -1) {
+        notes.value[noteIndex] = updatedNote
+        // 更新索引
+        updateIndexes(updatedNote, 'update')
+      }
     }
   }
 
   async function getAllFolders() {
+    // 可以考虑为 item_type 也建立索引，但这里先保持简单的过滤
     return notes.value.filter(note => note.item_type === NOTE_TYPE.FOLDER && note.is_deleted !== 1)
   }
 
@@ -118,10 +248,14 @@ export function useNote() {
       return notes.value.filter(note => note.item_type === NOTE_TYPE.NOTE && note.is_deleted !== 1)
     }
     else if (parent_id === 'unfilednotes') {
-      return notes.value.filter(note => note.item_type === NOTE_TYPE.NOTE && note.parent_id === null && note.is_deleted !== 1)
+      // 使用 Map 索引快速查找根级别的笔记
+      const rootNotes = parentIdMap.value.get('root') || []
+      return rootNotes.filter(note => note.item_type === NOTE_TYPE.NOTE && note.is_deleted !== 1)
     }
     else {
-      return notes.value.filter(note => note.parent_id === parent_id && note.is_deleted !== 1)
+      // 使用 Map 索引快速查找，时间复杂度从 O(n) 优化到 O(1)
+      const childNotes = parentIdMap.value.get(parent_id) || []
+      return childNotes.filter(note => note.is_deleted !== 1)
     }
   }
 
@@ -131,13 +265,14 @@ export function useNote() {
   }
 
   async function getNoteCountByParentId(parent_id: string) {
-    // 获取当前 parent_id 下的所有分类
-    const categories = notes.value.filter(note => note.parent_id === parent_id && note.is_deleted !== 1)
+    // 使用 Map 索引快速获取子项目
+    const categories = parentIdMap.value.get(parent_id) || []
+    const validCategories = categories.filter(note => note.is_deleted !== 1)
 
     let count = 0
 
     // 遍历所有分类
-    for (const category of categories) {
+    for (const category of validCategories) {
       // 如果是笔记类型，计数加1
       if (category.item_type === NOTE_TYPE.NOTE) {
         count++
@@ -162,11 +297,15 @@ export function useNote() {
 
   function getFolderTreeByParentId(parent_id: string | null = ''): FolderTreeNode[] {
     /**
-     * 先获取全部文件夹，再根据parent_id获取对应的文件夹，再递归寻找每个文件夹的子文件夹
+     * 使用 Map 索引快速查找，先获取全部文件夹，再根据parent_id获取对应的文件夹，再递归寻找每个文件夹的子文件夹
      * 使用新的数据结构，不修改原始数据
      */
     const allFolders = notes.value.filter(note => note.item_type === NOTE_TYPE.FOLDER && note.is_deleted !== 1)
-    const folders = allFolders.filter(item => item.parent_id === parent_id)
+
+    // 使用 Map 索引快速查找子文件夹
+    const mapKey = parent_id || 'root'
+    const childItems = parentIdMap.value.get(mapKey) || []
+    const folders = childItems.filter(item => item.item_type === NOTE_TYPE.FOLDER && item.is_deleted !== 1)
 
     if (folders && folders.length > 0) {
       // 递归构建文件夹树
@@ -201,11 +340,13 @@ export function useNote() {
   }
 
   async function searchNotesByParentId(parent_id: string, title: string, keyword: string) {
+    // 使用 Map 索引快速获取子项目
+    const childItems = parentIdMap.value.get(parent_id) || []
+
     // 搜索当前 parent_id 下符合条件的笔记
-    const directNotes = notes.value
+    const directNotes = childItems
       .filter(note =>
         note.item_type === NOTE_TYPE.NOTE
-        && note.parent_id === parent_id
         && note.is_deleted === 0
         && note.content.includes(keyword),
       )
@@ -215,9 +356,8 @@ export function useNote() {
       }))
 
     // 获取当前 parent_id 下的所有文件夹
-    const folders = notes.value.filter(note =>
+    const folders = childItems.filter(note =>
       note.item_type === NOTE_TYPE.FOLDER
-      && note.parent_id === parent_id
       && note.is_deleted === 0,
     )
 
@@ -247,8 +387,8 @@ export function useNote() {
 
     // 递归更新所有父级文件夹的 noteCount
     while (currentParentId) {
-      // 获取当前父级文件夹
-      const parentFolder: Note | undefined = notes.value.find(note => note.id === currentParentId)
+      // 使用 Map 索引快速获取当前父级文件夹
+      const parentFolder: Note | undefined = notesMap.value.get(currentParentId!)
       if (!parentFolder || parentFolder.item_type !== NOTE_TYPE.FOLDER) {
         break
       }
@@ -257,7 +397,7 @@ export function useNote() {
       const noteCount = await getNoteCountByParentId(currentParentId)
 
       // 先获取当前文件夹信息，再更新父级文件夹的 note_count 和 updated
-      const currentFolder = notes.value.find(note => note.id === currentParentId)
+      const currentFolder = notesMap.value.get(currentParentId)
       if (currentFolder) {
         updateNote(currentParentId, {
           note_count: noteCount,
@@ -297,5 +437,7 @@ export function useNote() {
     updateParentFolderSubcount,
     // 同步相关
     getNotesSync: () => notesSync,
+    // 搜索优化
+    searchNotesInDatabase,
   }
 }

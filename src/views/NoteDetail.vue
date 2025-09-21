@@ -11,6 +11,7 @@ import TableFormatModal from '@/components/TableFormatModal.vue'
 import TextFormatModal from '@/components/TextFormatModal.vue'
 import YYEditor from '@/components/YYEditor.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
+import { useNoteBackButton } from '@/hooks/useSmartBackButton'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useWebAuthn } from '@/hooks/useWebAuthn'
 import { useNote, useUserPublicNotes } from '@/stores'
@@ -53,6 +54,9 @@ const idFromSource = computed(() => props.noteId || idFromRoute.value)
 const isNewNote = computed(() => idFromSource.value === '0')
 const username = computed(() => route.params.username as string)
 const isUserContext = computed(() => !!username.value)
+
+// 智能返回按钮
+const { backButtonProps } = useNoteBackButton(route, data, username.value)
 
 watch(isNewNote, (isNew) => {
   if (isNew && !newNoteId.value)
@@ -102,12 +106,6 @@ function changeFormatModal(n: boolean) {
       }, 300)
     }, 10)
   }
-}
-
-function getBackButtonText() {
-  const win = window as any
-  const mode = win && win.Ionic && win.Ionic.mode
-  return mode === 'ios' ? '备忘录' : ''
 }
 
 async function handleNoteSaving() {
@@ -275,7 +273,7 @@ onIonViewWillLeave(() => {
     <IonHeader :translucent="true">
       <IonToolbar>
         <IonButtons slot="start">
-          <IonBackButton :text="getBackButtonText()" default-href="/" />
+          <IonBackButton v-bind="backButtonProps" />
         </IonButtons>
         <IonButtons v-if="!isUserContext" slot="end">
           <IonButton @click="state.showNoteMore = true">
@@ -286,19 +284,6 @@ onIonViewWillLeave(() => {
     </IonHeader>
 
     <IonContent :fullscreen="true" force-overscroll>
-      <!-- <ion-item>
-        <ion-icon aria-hidden="true" :icon="personCircle" color="primary"></ion-icon>
-        <ion-label class="ion-text-wrap">
-          <h2>
-            {{ message.fromName }}
-            <span class="date">
-              <ion-note>{{ message.date }}</ion-note>
-            </span>
-          </h2>
-          <h3>To: <ion-note>Me</ion-note></h3>
-        </ion-label>
-      </ion-item> -->
-
       <div v-if="data?.is_locked !== 1 || state.isAuth" class="ion-padding">
         <YYEditor
           v-if="effectiveUuid"
