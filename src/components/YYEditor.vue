@@ -134,74 +134,12 @@ defineExpose({
 
 <template>
   <div v-if="editor" class="yy-editor">
-    <EditorContent :editor="editor as any" />
-    <div v-if="false" class="button-group">
-      <button
-        :disabled="!editor.can().chain().focus().undo().run()"
-        @click="editor.chain().focus().undo().run()"
-      >
-        撤销
-      </button>
-      <button
-        :disabled="!editor.can().chain().focus().redo().run()"
-        @click="editor.chain().focus().redo().run()"
-      >
-        重做
-      </button>
-      <button
-        :disabled="!editor.can().chain().focus().toggleCode().run()"
-        :class="{ 'is-active': editor.isActive('code') }"
-        @click="editor.chain().focus().toggleCode().run()"
-      >
-        代码
-      </button>
-      <button @click="editor.chain().focus().unsetAllMarks().run()">
-        清除标记
-      </button>
-      <button @click="editor.chain().focus().clearNodes().run()">
-        清除节点
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('codeBlock') }"
-        @click="editor.chain().focus().toggleCodeBlock().run()"
-      >
-        代码块
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('blockquote') }"
-        @click="editor.chain().focus().toggleBlockquote().run()"
-      >
-        引用
-      </button>
-      <button @click="editor.chain().focus().setHorizontalRule().run()">
-        水平线
-      </button>
-      <button @click="editor.chain().focus().setHardBreak().run()">
-        硬换行
-      </button>
-      <button
-        :class="{ 'is-active': editor.isActive('textStyle', { color: '#958DF1' }) }"
-        @click="editor.chain().focus().setColor('#958DF1').run()"
-      >
-        紫色
-      </button>
-    </div>
+    <EditorContent :editor="(editor as any)" />
   </div>
 </template>
 
 <style lang="scss">
 .yy-editor {
-  .button-group {
-    button {
-      padding: 6px 12px;
-      border-radius: 4px;
-      background: #161616;
-      color: #a1a1a1;
-      cursor: pointer;
-      margin: 2px;
-    }
-  }
-
   .tiptap-image {
     max-width: 100%;
     height: auto;
