@@ -49,8 +49,12 @@ function handleLogin() {
   router.push('/pocketbase/login')
 }
 
-async function handleUserProfile() {
+function openModal() {
   isModalOpen.value = true
+}
+
+function closeModal() {
+  isModalOpen.value = false
 }
 
 async function handleLogout() {
@@ -74,7 +78,7 @@ async function handleLogout() {
             await logout()
 
             await loading.dismiss()
-            isModalOpen.value = true
+            closeModal()
           },
         },
       ],
@@ -143,10 +147,6 @@ async function handleSync() {
   }
 }
 
-function closeModal() {
-  isModalOpen.value = false
-}
-
 // 组件挂载时加载本地数据统计
 onMounted(() => {
   if (isLoggedIn.value) {
@@ -172,7 +172,7 @@ onMounted(() => {
       fill="clear"
       size="small"
       style="--padding-start: 0px;"
-      @click="handleUserProfile"
+      @click="openModal"
     >
       <div class="flex items-center space-x-1 bg-primary c-gray-100 rounded-full p-[1px]">
         <IonAvatar class="w-6 h-6">

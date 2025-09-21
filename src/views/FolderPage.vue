@@ -106,6 +106,17 @@ const folders = computed(() => {
   return folderList.value
 })
 
+const title = computed(() => {
+  switch (data.value.id) {
+    case 'allnotes':
+      return '全部备忘录'
+    case 'unfilednotes':
+      return '备忘录'
+    default:
+      return data.value.title
+  }
+})
+
 // 智能返回按钮
 const { backButtonProps } = useFolderBackButton(
   route,
@@ -214,7 +225,7 @@ onIonViewDidEnter(() => {
     <IonHeader v-if="!isDesktop" :translucent="true">
       <IonToolbar>
         <IonButtons slot="start">
-          <IonBackButton v-bind="backButtonProps" />
+          <IonBackButton v-bind="backButtonProps" text="返回" />
         </IonButtons>
       </IonToolbar>
     </IonHeader>
@@ -223,7 +234,7 @@ onIonViewDidEnter(() => {
       <IonHeader collapse="condense">
         <IonToolbar>
           <IonTitle size="large">
-            {{ data.title }}
+            {{ title }}
           </IonTitle>
         </IonToolbar>
       </IonHeader>

@@ -21,7 +21,7 @@ export function useNoteBackButton(
 
   return {
     backButtonProps: computed(() => ({
-      text: isPlatform('ios') ? '备忘录' : '',
+      text: '返回',
       defaultHref: getSmartBackPath(route, fallbackPath.value),
     })),
   }
@@ -46,15 +46,9 @@ export function useFolderBackButton(
     return path.replace(`/${lastSegment}`, '')
   })
 
-  const iosText = computed(() => {
-    if (!isPlatform('ios'))
-      return ''
-    return isTopFolder() ? '备忘录' : '返回'
-  })
-
   return {
     backButtonProps: computed(() => ({
-      text: iosText.value,
+      text: '返回',
       defaultHref: getSmartBackPath(route, fallbackPath.value),
     })),
   }

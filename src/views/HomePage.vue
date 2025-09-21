@@ -121,8 +121,8 @@ const addButtons: AlertButton[] = [
 ]
 const state = reactive({
   windowWidth: 0,
-  folerUuid: '',
-  noteUuid: '',
+  folerId: '',
+  noteId: '',
 })
 
 const sortDataList = computed(() => {
@@ -221,7 +221,7 @@ onMounted(() => {
       <GlobalSearch />
 
       <NoteList
-        :note-uuid="state.folerUuid"
+        :note-uuid="state.folerId"
         :data-list="sortDataList"
         :all-notes-count
         :unfiled-notes-count
@@ -232,7 +232,7 @@ onMounted(() => {
         show-unfiled-notes
         show-delete
         @refresh="init"
-        @selected="(id: string) => state.folerUuid = id"
+        @selected="(id: string) => state.folerId = id"
       />
     </IonContent>
     <IonFooter>
@@ -264,12 +264,12 @@ onMounted(() => {
     />
     <div v-if="isDesktop" class="home-list">
       <FolderPage
-        :current-folder="state.folerUuid"
-        @selected="(id: string) => state.noteUuid = id"
+        :current-folder="state.folerId"
+        @selected="(id: string) => state.noteId = id"
       />
     </div>
     <div v-if="isDesktop" class="home-detail">
-      <NoteDetail :note-uuid="state.noteUuid" />
+      <NoteDetail :note-id="state.noteId" />
     </div>
   </IonPage>
 </template>
