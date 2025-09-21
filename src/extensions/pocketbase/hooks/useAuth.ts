@@ -38,6 +38,29 @@ export function useAuth() {
     }
   }
 
+  // 注册函数
+  const register = async (email: string, password: string, passwordConfirm: string, username?: string) => {
+    try {
+      isLoading.value = true
+      const result = await authApi.signUp(email, password, passwordConfirm, username)
+
+      if (result.success && result.user) {
+        currentUser.value = result.user
+        return { success: true, user: result.user }
+      }
+      else {
+        return { success: false, error: result.error }
+      }
+    }
+    catch (error: any) {
+      console.error('注册失败:', error.message)
+      return { success: false, error: error.message }
+    }
+    finally {
+      isLoading.value = false
+    }
+  }
+
   // 登出函数
   const logout = async () => {
     try {
@@ -167,6 +190,7 @@ export function useAuth() {
 
     // 方法
     login,
+    register,
     logout,
     initializeAuth,
     refreshUser,

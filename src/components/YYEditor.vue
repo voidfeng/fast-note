@@ -135,7 +135,7 @@ defineExpose({
 <template>
   <div v-if="editor" class="yy-editor">
     <EditorContent :editor="editor as any" />
-    <div class="button-group">
+    <div v-if="false" class="button-group">
       <button
         :disabled="!editor.can().chain().focus().undo().run()"
         @click="editor.chain().focus().undo().run()"

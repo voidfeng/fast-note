@@ -6,7 +6,6 @@ import {
   IonButtons,
   IonContent,
   IonHeader,
-  IonIcon,
   IonInput,
   IonItem,
   IonLabel,
@@ -24,7 +23,7 @@ import { useAuth } from '../hooks/useAuth'
 
 const router = useIonRouter()
 const { isDesktop } = useDeviceType()
-const { login } = useAuth()
+const { register } = useAuth()
 
 // 简单的返回按钮
 const { backButtonProps } = useSimpleBackButton('/', '返回')
@@ -34,16 +33,40 @@ const error = ref('')
 const message = ref('')
 
 const formData = ref({
+  username: '',
   email: '',
   password: '',
+  passwordConfirm: '',
 })
 
-async function handleLogin() {
+function validateForm(): string | null {
+  if (!formData.value.username || !formData.value.email || !formData.value.password || !formData.value.passwordConfirm) {
+    return '请填写所有必填字段'
+  }
+
+  if (formData.value.password.length < 8) {
+    return '密码长度至少为8位'
+  }
+
+  if (formData.value.password !== formData.value.passwordConfirm) {
+    return '两次输入的密码不一致'
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
+  if (!emailRegex.test(formData.value.email)) {
+    return '请输入有效的邮箱地址'
+  }
+
+  return null
+}
+
+async function handleRegister() {
   // 验证输入
-  if (!formData.value.email || !formData.value.password) {
+  const validationError = validateForm()
+  if (validationError) {
     const alert = await alertController.create({
       header: '提示',
-      message: '请输入邮箱和密码',
+      message: validationError,
       buttons: ['确定'],
     })
     alert.present()
@@ -51,7 +74,7 @@ async function handleLogin() {
   }
 
   const loadingInstance = await loadingController.create({
-    message: '正在登录...',
+    message: '正在注册...',
   })
   loadingInstance.present()
 
@@ -60,20 +83,26 @@ async function handleLogin() {
     message.value = ''
     loading.value = true
 
-    const { success, error: loginError } = await login(formData.value.email, formData.value.password)
-    if (!success || loginError) {
-      throw new Error(loginError || '登录失败')
+    const { success, error: registerError } = await register(
+      formData.value.email,
+      formData.value.password,
+      formData.value.passwordConfirm,
+      formData.value.username,
+    )
+
+    if (!success || registerError) {
+      throw new Error(registerError || '注册失败')
     }
 
-    // 登录成功，显示成功消息并返回上一页
-    message.value = '登录成功！'
+    // 注册成功，显示成功消息并返回上一页
+    message.value = '注册成功！正在跳转...'
     setTimeout(() => {
       router.back()
-    }, 1000)
+    }, 1500)
   }
   catch (err) {
-    error.value = err instanceof Error ? err.message : '登录失败'
-    console.error('登录错误:', err)
+    error.value = err instanceof Error ? err.message : '注册失败'
+    console.error('注册错误:', err)
   }
   finally {
     loading.value = false
@@ -93,7 +122,7 @@ async function handleLogin() {
     </IonHeader>
 
     <IonContent :fullscreen="true">
-      <!-- 登录表单容器 -->
+      <!-- 注册表单容器 -->
       <div class="flex items-center min-h-full justify-center px-4 py-8">
         <div
           :class="{
@@ -104,15 +133,30 @@ async function handleLogin() {
           <!-- 标题 -->
           <div class="text-center mb-8">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              用户登录
+              用户注册
             </h1>
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              请输入您的邮箱和密码
+              创建您的新账户
             </p>
           </div>
 
-          <!-- 登录表单 -->
+          <!-- 注册表单 -->
           <div class="bg-transparent">
+            <!-- 用户名输入（必填） -->
+            <div class="mb-4">
+              <IonInput
+                v-model="formData.username"
+                label="用户名"
+                label-placement="floating"
+                fill="outline"
+                placeholder="请输入用户名"
+                type="text"
+                mode="md"
+                class="rounded-lg"
+                :disabled="loading"
+              />
+            </div>
+
             <!-- 邮箱输入 -->
             <div class="mb-4">
               <IonInput
@@ -129,30 +173,45 @@ async function handleLogin() {
             </div>
 
             <!-- 密码输入 -->
-            <div class="mb-6">
+            <div class="mb-4">
               <IonInput
                 v-model="formData.password"
                 label="密码"
                 label-placement="floating"
                 fill="outline"
-                placeholder="请输入密码"
+                placeholder="请输入密码（至少8位）"
                 type="password"
                 mode="md"
                 class="rounded-lg"
                 :disabled="loading"
-                @keyup.enter="handleLogin"
               />
             </div>
 
-            <!-- 登录按钮 -->
+            <!-- 确认密码输入 -->
+            <div class="mb-6">
+              <IonInput
+                v-model="formData.passwordConfirm"
+                label="确认密码"
+                label-placement="floating"
+                fill="outline"
+                placeholder="请再次输入密码"
+                type="password"
+                mode="md"
+                class="rounded-lg"
+                :disabled="loading"
+                @keyup.enter="handleRegister"
+              />
+            </div>
+
+            <!-- 注册按钮 -->
             <div>
               <IonButton
                 expand="block"
-                :disabled="loading || !formData.email || !formData.password"
-                @click="handleLogin"
+                :disabled="loading || !formData.username || !formData.email || !formData.password || !formData.passwordConfirm"
+                @click="handleRegister"
               >
                 <IonSpinner v-if="loading" name="crescent" class="mr-2" />
-                {{ loading ? '登录中...' : '登录' }}
+                {{ loading ? '注册中...' : '注册' }}
               </IonButton>
             </div>
 
@@ -176,15 +235,15 @@ async function handleLogin() {
               </IonItem>
             </div>
 
-            <!-- 注册链接 -->
+            <!-- 登录链接 -->
             <div class="flex justify-center items-center">
-              还没有账户？
+              已有账户？
               <IonButton
-                :disabled="loading"
                 fill="clear"
-                @click="router.replace('/pocketbase/register')"
+                :disabled="loading"
+                @click="router.replace('/pocketbase/login')"
               >
-                立即注册
+                立即登录
               </IonButton>
             </div>
           </div>

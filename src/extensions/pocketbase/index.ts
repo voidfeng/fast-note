@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 import { routeManager } from '@/router/routeManager'
 import LoginPage from './components/LoginPage.vue'
+import RegisterPage from './components/RegisterPage.vue'
 import UserProfile from './components/UserProfile.vue'
 import { useAuth } from './hooks/useAuth'
 
@@ -12,15 +13,26 @@ const pocketbaseRoutes: RouteRecordRaw[] = [
     component: LoginPage,
   },
   {
+    path: '/pocketbase/register',
+    name: 'PocketBaseRegister',
+    component: RegisterPage,
+  },
+  {
     path: '/auth/pocketbase-login',
     name: 'AuthPocketBaseLogin',
     component: LoginPage,
+  },
+  {
+    path: '/auth/pocketbase-register',
+    name: 'AuthPocketBaseRegister',
+    component: RegisterPage,
   },
 ]
 
 // 导出 PocketBase 扩展的所有组件和钩子函数
 export {
   LoginPage,
+  RegisterPage,
   useAuth,
   UserProfile,
 }
@@ -32,6 +44,7 @@ let isInstalled = false
 export default {
   // 组件导出，供 ExtensionRenderer 使用
   LoginPage,
+  RegisterPage,
   UserProfile,
 
   // Hook 导出
@@ -46,6 +59,7 @@ export default {
 
     // 注册全局组件
     app.component('PocketBaseLoginPage', LoginPage)
+    app.component('PocketBaseRegisterPage', RegisterPage)
     app.component('PocketBaseUserProfile', UserProfile)
 
     // 动态注册路由（只有在路由未注册时才注册）

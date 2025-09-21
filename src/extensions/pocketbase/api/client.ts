@@ -49,6 +49,54 @@ export const authApi = {
     }
   },
 
+  // 用户注册
+  async signUp(email: string, password: string, passwordConfirm: string, username?: string): Promise<AuthResponse> {
+    try {
+      // 创建用户
+      const userData = {
+        email,
+        password,
+        passwordConfirm,
+        username,
+        emailVisibility: false,
+      }
+
+      const _record = await pb.collection('users').create(userData)
+
+      // 注册成功后自动登录
+      const authData = await pb.collection('users').authWithPassword(email, password)
+
+      return {
+        success: true,
+        user: authData.record as unknown as UserInfo,
+        token: authData.token,
+      }
+    }
+    catch (error: any) {
+      console.error('PocketBase 注册错误:', error)
+
+      // 处理特定的注册错误
+      let errorMessage = mapErrorMessage(error)
+      if (error?.data?.data) {
+        const data = error.data.data
+        if (data.email?.message) {
+          errorMessage = '邮箱格式无效或已存在'
+        }
+        else if (data.password?.message) {
+          errorMessage = '密码不符合要求'
+        }
+        else if (data.passwordConfirm?.message) {
+          errorMessage = '两次输入的密码不一致'
+        }
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+      }
+    }
+  },
+
   // 用户登出
   async signOut(): Promise<AuthResponse> {
     try {

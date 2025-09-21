@@ -241,12 +241,12 @@ function openTableFormatModal() {
 }
 
 function openTextFormatModal() {
-  if (isPlatform('desktop')) {
-    editorRef.value?.setInputMode('none')
-    setTimeout(() => {
-      state.showFormat = true
-    }, 300)
-  }
+  // if (isPlatform('desktop')) {
+  editorRef.value?.setInputMode('none')
+  setTimeout(() => {
+    state.showFormat = true
+  }, 300)
+  // }
 }
 
 onMounted(() => {
@@ -283,7 +283,7 @@ onIonViewWillLeave(() => {
       </IonToolbar>
     </IonHeader>
 
-    <IonContent :fullscreen="true" force-overscroll>
+    <IonContent force-overscroll>
       <div v-if="data?.is_locked !== 1 || state.isAuth" class="ion-padding">
         <YYEditor
           v-if="effectiveUuid"
