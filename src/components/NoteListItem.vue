@@ -102,7 +102,7 @@ function onClick() {
       v-if="noteData"
       slot="header"
       :detail="false"
-      :uuid="noteData.id"
+      :data-id="noteData.id"
       class="list-item"
       lines="inset"
       style="--inner-border-width: 0 0 0.55px 0;"
@@ -127,7 +127,7 @@ function onClick() {
   <IonItem
     v-else
     :detail="false"
-    :uuid="noteData.id"
+    :data-id="noteData.id"
     class="list-item"
     lines="inset"
   >

@@ -45,7 +45,7 @@ const emit = defineEmits(['refresh', 'update:noteUuid', 'selected'])
 // const { getNote } = useNote()
 
 const listRef = ref<DefineComponent>()
-const longPressUUID = ref('')
+const longPressId = ref('')
 const longPressMenuOpen = ref(false)
 const expandedItems = ref<string[]>([])
 
@@ -55,9 +55,9 @@ if (!props.disabledLongPress) {
     duration: 500,
     pressedClass: 'item-long-press',
     onItemLongPress: async (element) => {
-      const id = element.getAttribute('id')
+      const id = element.getAttribute('data-id')
       if (id && !['allnotes', 'deleted', 'unfilednotes'].includes(id)) {
-        longPressUUID.value = id
+        longPressId.value = id
         longPressMenuOpen.value = true
       }
     },
@@ -163,7 +163,7 @@ defineExpose({
   </IonList>
 
   <LongPressMenu
-    :id="longPressUUID"
+    :id="longPressId"
     :is-open="longPressMenuOpen"
     :items="pressItems"
     :presenting-element
