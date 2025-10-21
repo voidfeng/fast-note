@@ -302,15 +302,49 @@ defineExpose({
       }
     }
   }
+  // 表格滚动容器
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 10px 0;
+    -webkit-overflow-scrolling: touch; // iOS平滑滚动
+
+    // 滚动条样式优化
+    &::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--c-blue-gray-800);
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--c-blue-gray-600);
+      border-radius: 4px;
+
+      &:hover {
+        background: var(--c-blue-gray-500);
+      }
+    }
+  }
+
   table {
     border-collapse: collapse;
     border-spacing: 0;
     border: 1px solid var(--c-blue-gray-700);
     width: 100%;
-    margin: 10px 0;
-    td {
+    margin: 0;
+
+    td,
+    th {
       border: 1px solid var(--c-blue-gray-700);
       padding: 8px;
+      min-width: 100px; // 设置最小宽度，确保表格可以横向扩展
+    }
+
+    th {
+      background-color: var(--c-blue-gray-800);
+      font-weight: 600;
     }
   }
 }

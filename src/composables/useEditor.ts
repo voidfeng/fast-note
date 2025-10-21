@@ -1,6 +1,6 @@
 import { Color } from '@tiptap/extension-color'
 import { ListItem, TaskItem, TaskList } from '@tiptap/extension-list'
-import { TableKit } from '@tiptap/extension-table'
+import { TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
@@ -8,6 +8,7 @@ import { Editor } from '@tiptap/vue-3'
 import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { FileUpload } from '@/components/extensions/FileUpload/FileUpload'
+import { TableWithWrapper } from '@/components/extensions/TableWithWrapper'
 import { filesApi } from '@/extensions/pocketbase/api/client'
 import { useNoteFiles } from '@/hooks/useNoteFiles'
 import { getFileHash } from '@/utils'
@@ -105,7 +106,11 @@ export function useEditor() {
         }),
         TaskList,
         TaskItem,
-        TableKit,
+        // 使用自定义的TableWithWrapper替代TableKit
+        TableWithWrapper,
+        TableRow,
+        TableHeader,
+        TableCell,
         FileUpload.configure({
           loadFile: loadFileFromStorage,
           onImageLoaded(url: string, width: number, height: number) {
