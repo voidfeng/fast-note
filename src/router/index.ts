@@ -20,6 +20,17 @@ const routes: Array<RouteRecordRaw> = [
     path: '/n/:id',
     component: () => import('../views/NoteDetail.vue'),
   },
+  // 认证页面 - 核心路由
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/LoginPage.vue'),
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../views/RegisterPage.vue'),
+  },
   // 用户公开文件夹内部页面
   {
     path: '/:username/f/:pathMatch(.*)*',

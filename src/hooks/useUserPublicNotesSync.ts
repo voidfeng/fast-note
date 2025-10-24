@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { notesApi } from '@/extensions/pocketbase/api/client'
+import { notesApi } from '@/pocketbase'
 // import type { Note } from '@/types' // 暂时未使用，等待 PocketBase 实现时再启用
 import { useUserPublicNotes } from '@/stores'
 import { useUserCache } from './useUserCache'

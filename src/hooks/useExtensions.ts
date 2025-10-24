@@ -15,15 +15,8 @@ let initPromise: Promise<void> | null = null
 const loadingPromises = new Map<string, Promise<boolean>>()
 
 // 可用扩展的元数据
-const availableExtensions = [
-  {
-    id: 'pocketbase',
-    name: 'PocketBase 用户认证',
-    description: '基于 PocketBase 的用户登录、注册和认证管理',
-    icon: 'person-circle-outline',
-    path: '/src/extensions/pocketbase', // 扩展的路径
-  },
-]
+// 注意：PocketBase 功能已迁移到核心层，不再作为扩展提供
+const availableExtensions: any[] = []
 
 // 初始化内置扩展
 async function initExtensions(): Promise<void> {
@@ -114,33 +107,9 @@ async function loadExtension(id: string): Promise<boolean> {
       console.log(`开始加载扩展 ${id}`)
 
       // 动态导入扩展模块
-      let module
-
-      // 根据扩展ID动态导入对应模块
-      if (id === 'pocketbase') {
-        module = await import('../extensions/pocketbase')
-      }
-      else {
-        console.error(`未知的扩展ID: ${id}`)
-        return false
-      }
-
-      // 先存储模块，避免重复加载
-      state.loadedExtensions[id] = module
-
-      // 如果扩展有安装方法，则调用它
-      if (module.default && typeof module.default.install === 'function') {
-        const app = (window as any).__VUE_APP__
-        if (app) {
-          module.default.install(app)
-        }
-        else {
-          console.warn(`无法安装扩展 ${id}，应用实例不可用`)
-        }
-      }
-
-      console.log(`扩展 ${id} 已加载`)
-      return true
+      // 注意：扩展系统已废弃，所有功能已迁移到核心层
+      console.error(`扩展系统已废弃，扩展ID ${id} 不可用`)
+      return false
     }
     catch (error) {
       console.error(`加载扩展 ${id} 失败:`, error)

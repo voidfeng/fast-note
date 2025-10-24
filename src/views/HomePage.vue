@@ -22,12 +22,13 @@ import { addOutline, createOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
-import ExtensionButton from '@/components/ExtensionButton.vue'
-import ExtensionManager from '@/components/ExtensionManager.vue'
+// import ExtensionButton from '@/components/ExtensionButton.vue'
+// import ExtensionManager from '@/components/ExtensionManager.vue'
 import ExtensionRenderer from '@/components/ExtensionRenderer.vue'
 import GlobalSearch from '@/components/GlobalSearch/GlobalSearch.vue'
 import { useGlobalSearch } from '@/components/GlobalSearch/useGlobalSearch'
 import NoteList from '@/components/NoteList.vue'
+import UserProfile from '@/components/UserProfile.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useExtensions } from '@/hooks/useExtensions'
 import { useNote } from '@/stores'
@@ -43,7 +44,7 @@ const { showGlobalSearch } = useGlobalSearch()
 const { isExtensionEnabled, getExtensionModule } = useExtensions()
 
 // 扩展管理器状态
-const showExtensionManager = ref(false)
+// const showExtensionManager = ref(false)
 
 // 动态获取同步扩展的钩子函数
 let unSub: (() => void) | undefined
@@ -204,15 +205,11 @@ onMounted(() => {
               component-name="SyncState"
               :component-props="{}"
             />
-            <!-- 使用扩展渲染器动态渲染 PocketBase 用户信息组件 -->
-            <ExtensionRenderer
-              extension-id="pocketbase"
-              component-name="UserProfile"
-              :component-props="{}"
-            />
+            <!-- 用户信息组件 - 核心组件 -->
+            <UserProfile />
           </div>
           <div class="flex items-center">
-            <ExtensionButton @click="showExtensionManager = true" />
+            <!-- <ExtensionButton @click="showExtensionManager = true" /> -->
             <DarkModeToggle />
           </div>
         </div>
@@ -258,10 +255,10 @@ onMounted(() => {
     />
 
     <!-- 扩展管理器 -->
-    <ExtensionManager
+    <!-- <ExtensionManager
       v-model:is-open="showExtensionManager"
       :presenting-element="presentingElement"
-    />
+    /> -->
     <div v-if="isDesktop" class="home-list">
       <FolderPage
         :current-folder="state.folerId"

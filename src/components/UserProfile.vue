@@ -2,7 +2,6 @@
 import {
   alertController,
   IonAvatar,
-  IonBadge,
   IonButton,
   IonCol,
   IonContent,
@@ -28,14 +27,29 @@ import {
   syncOutline,
   warningOutline,
 } from 'ionicons/icons'
-import { onMounted, ref } from 'vue'
-import { pb } from '../api/client'
-import { useAuth } from '../hooks/useAuth'
-import { useSync } from '../hooks/useSync'
+import { computed, onMounted, ref } from 'vue'
+import { authManager } from '@/core/auth-manager'
+import { realtimeManager } from '@/core/realtime-manager'
+import { useSync } from '@/hooks/useSync'
+import { pb } from '@/pocketbase'
 
 const router = useIonRouter()
-const { currentUser, logout, isLoggedIn } = useAuth()
 const { sync, syncing, syncStatus, getLocalDataStats } = useSync()
+
+// 使用核心 authManager
+const currentUser = authManager.userInfo
+const isLoggedIn = authManager.isLoggedIn
+
+// 计算头像 URL
+const avatarUrl = computed(() => {
+  if (!currentUser.value || !currentUser.value.avatar) {
+    return ''
+  }
+
+  // 构造 PocketBase 文件 URL
+  // 格式：{pocketbase_url}/api/files/{collection}/{record_id}/{filename}
+  return `${pb.baseUrl}/api/files/users/${currentUser.value.id}/${currentUser.value.avatar}`
+})
 
 // 弹窗控制
 const isModalOpen = ref(false)
@@ -46,7 +60,7 @@ const syncResult = ref<{ uploaded: number, downloaded: number, deleted: number }
 const localStats = ref<{ notes: number } | null>(null)
 
 function handleLogin() {
-  router.push('/pocketbase/login')
+  router.push('/login')
 }
 
 function openModal() {
@@ -75,7 +89,11 @@ async function handleLogout() {
             })
             await loading.present()
 
-            await logout()
+            // 断开 Realtime 连接
+            realtimeManager.disconnect()
+
+            // 使用核心 authManager 退出
+            await authManager.logout()
 
             await loading.dismiss()
             closeModal()
@@ -106,7 +124,7 @@ async function handleSync() {
   if (!isLoggedIn.value) {
     const alert = await alertController.create({
       header: '未登录',
-      message: '请先登录 PocketBase 账户后再进行同步',
+      message: '请先登录后再进行同步',
       buttons: ['确定'],
     })
     await alert.present()
@@ -177,8 +195,8 @@ onMounted(() => {
       <div class="flex items-center space-x-1 bg-primary c-gray-100 rounded-full p-[1px]">
         <IonAvatar class="w-6 h-6">
           <IonImg
-            v-if="currentUser && pb.files.getURL(currentUser, currentUser.avatar)"
-            :src="pb.files.getURL(currentUser, currentUser.avatar)"
+            v-if="currentUser && avatarUrl"
+            :src="avatarUrl"
             :alt="currentUser?.username || '用户头像'"
           />
           <IonIcon
@@ -222,8 +240,8 @@ onMounted(() => {
                 </IonLabel>
                 <IonAvatar slot="end" class="w-10 h-10">
                   <IonImg
-                    v-if="currentUser && pb.files.getURL(currentUser, currentUser.avatar)"
-                    :src="pb.files.getURL(currentUser, currentUser.avatar)"
+                    v-if="currentUser && avatarUrl"
+                    :src="avatarUrl"
                     :alt="currentUser?.username || '用户头像'"
                   />
                   <IonIcon

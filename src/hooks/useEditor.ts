@@ -9,8 +9,8 @@ import GlobalDragHandle from 'tiptap-extension-global-drag-handle'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { FileUpload } from '@/components/extensions/FileUpload/FileUpload'
 import { TableWithWrapper } from '@/components/extensions/TableWithWrapper'
-import { filesApi } from '@/extensions/pocketbase/api/client'
 import { useNoteFiles } from '@/hooks/useNoteFiles'
+import { filesApi } from '@/pocketbase'
 import { getFileHash } from '@/utils'
 
 /**

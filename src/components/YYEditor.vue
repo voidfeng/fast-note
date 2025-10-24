@@ -4,7 +4,7 @@ import { EditorContent } from '@tiptap/vue-3'
 import PhotoSwipe from 'photoswipe'
 import PhotoSwipeLightbox from 'photoswipe/lightbox'
 import { onMounted, onUnmounted, provide, ref } from 'vue'
-import { useEditor } from '@/composables/useEditor'
+import { useEditor } from '@/hooks/useEditor'
 import 'photoswipe/style.css'
 
 const emit = defineEmits(['focus', 'blur'])

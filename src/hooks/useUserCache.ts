@@ -1,5 +1,5 @@
-import type { PublicUserInfo } from '@/extensions/pocketbase/types'
-import { userApi } from '@/extensions/pocketbase/api/client'
+import type { PublicUserInfo } from '@/types/pocketbase'
+import { userApi } from '@/pocketbase'
 
 // 全局用户缓存
 const userCache = new Map<string, PublicUserInfo>()

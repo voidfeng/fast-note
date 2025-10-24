@@ -1,9 +1,13 @@
+/**
+ * 数据同步 Hook
+ * 提供笔记与 PocketBase 的双向同步功能
+ */
 import type { Note } from '@/types'
 import { ref } from 'vue'
 import { useNoteFiles } from '@/hooks/useNoteFiles'
+import { notesService } from '@/pocketbase'
 import { useNote } from '@/stores'
 import { getTime } from '@/utils/date'
-import { notesApi } from '../api/client'
 
 const defaultUpdated = JSON.stringify(getTime('2010/01/01 00:00:00'))
 const updated = ref(JSON.parse(localStorage.pocketbaseUpdated || defaultUpdated))
@@ -197,7 +201,9 @@ export function useSync() {
     return updatedContent
   }
 
-  // 注册同步成功的回调函数
+  /**
+   * 注册同步成功的回调函数
+   */
   function onSynced(callback: (result?: any) => void) {
     if (typeof callback === 'function') {
       syncSyncedCallbacks.push(callback)
@@ -207,7 +213,9 @@ export function useSync() {
     return () => offOnSynced(callback)
   }
 
-  // 移除同步成功的回调函数
+  /**
+   * 移除同步成功的回调函数
+   */
   function offOnSynced(callback: (result?: any) => void) {
     const index = syncSyncedCallbacks.indexOf(callback)
     if (index !== -1) {
@@ -215,7 +223,9 @@ export function useSync() {
     }
   }
 
-  // 触发同步成功的回调函数
+  /**
+   * 触发同步成功的回调函数
+   */
   function triggerSyncedCallbacks(result?: any) {
     for (const callback of syncSyncedCallbacks) {
       try {
@@ -227,7 +237,9 @@ export function useSync() {
     }
   }
 
-  // 主同步函数
+  /**
+   * 主同步函数
+   */
   async function sync() {
     syncing.value = true
 
@@ -245,7 +257,9 @@ export function useSync() {
     }
   }
 
-  // 同步备忘录
+  /**
+   * 同步笔记
+   */
   async function syncNote() {
     console.warn('PocketBase同步开始，updated:', updated.value)
 
@@ -254,7 +268,7 @@ export function useSync() {
     console.warn('本地笔记变更:', localNotes)
 
     // 获取云端变更数据
-    const cloudNotes = await notesApi.getNotesByUpdated(updated.value)
+    const cloudNotes = await notesService.getNotesByUpdated(updated.value)
     console.warn('云端笔记变更:', cloudNotes)
 
     // content 转义处理（PocketBase可能也需要）
@@ -398,12 +412,12 @@ export function useSync() {
       try {
         if (action === 'upload') {
           // 使用新的优雅方案处理附件
-          const { updatedNote, filesForUpload, fileMapping: _fileMapping } = await handleNoteFilesElegant(note)
+          const { updatedNote, filesForUpload } = await handleNoteFilesElegant(note)
 
           // 上传到PocketBase
           const result = filesForUpload !== undefined
-            ? await notesApi.updateNote(updatedNote, filesForUpload)
-            : await notesApi.updateNote(updatedNote)
+            ? await notesService.updateNote(updatedNote, filesForUpload)
+            : await notesService.updateNote(updatedNote)
 
           // 如果有需要上传的文件，处理返回结果
           if (filesForUpload && filesForUpload.length > 0 && result.success && result.record) {
@@ -428,7 +442,7 @@ export function useSync() {
                 // 更新本地笔记
                 await updateNote(note.id, finalNote)
                 // 将更新后的内容同步到PocketBase服务端（不包含文件，只更新内容）
-                await notesApi.updateNote(finalNote)
+                await notesService.updateNote(finalNote)
                 console.warn(`已更新笔记 ${note.id} 的附件引用并同步到服务端`)
               }
             }
@@ -438,12 +452,12 @@ export function useSync() {
         }
         else if (action === 'update') {
           // 使用新的优雅方案处理附件
-          const { updatedNote, filesForUpload, fileMapping: _fileMapping } = await handleNoteFilesElegant(note)
+          const { updatedNote, filesForUpload } = await handleNoteFilesElegant(note)
 
           // 上传到PocketBase
           const result = filesForUpload !== undefined
-            ? await notesApi.updateNote(updatedNote, filesForUpload)
-            : await notesApi.updateNote(updatedNote)
+            ? await notesService.updateNote(updatedNote, filesForUpload)
+            : await notesService.updateNote(updatedNote)
 
           // 如果有需要上传的文件，处理返回结果
           if (filesForUpload && filesForUpload.length > 0 && result.success && result.record) {
@@ -468,7 +482,7 @@ export function useSync() {
                 // 更新本地笔记
                 await updateNote(note.id, finalNote)
                 // 将更新后的内容同步到PocketBase服务端（不包含文件，只更新内容）
-                await notesApi.updateNote(finalNote)
+                await notesService.updateNote(finalNote)
                 console.warn(`已更新笔记 ${note.id} 的附件引用并同步到服务端`)
               }
             }
@@ -492,7 +506,7 @@ export function useSync() {
         }
         else if (action === 'delete') {
           // 请求云端删除（标记为删除状态）
-          await notesApi.updateNote(note)
+          await notesService.updateNote(note)
           deletedCount++
         }
 
@@ -530,7 +544,9 @@ export function useSync() {
     lastSyncTime: null as Date | null,
   })
 
-  // 双向同步（别名）
+  /**
+   * 双向同步（别名）
+   */
   async function bidirectionalSync() {
     try {
       const result = await sync()
@@ -544,7 +560,9 @@ export function useSync() {
     }
   }
 
-  // 全量上传到 PocketBase
+  /**
+   * 全量上传到 PocketBase
+   */
   async function fullSyncToPocketBase() {
     try {
       const result = await sync()
@@ -556,7 +574,9 @@ export function useSync() {
     }
   }
 
-  // 获取本地数据统计
+  /**
+   * 获取本地数据统计
+   */
   async function getLocalDataStats() {
     const { getNotesByUpdated } = useNote()
 
@@ -573,7 +593,9 @@ export function useSync() {
     }
   }
 
-  // 清空本地数据
+  /**
+   * 清空本地数据
+   */
   async function clearLocalData() {
     const { deleteNote, getNotesByUpdated } = useNote()
 

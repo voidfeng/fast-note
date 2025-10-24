@@ -6,6 +6,7 @@ import {
   IonButtons,
   IonContent,
   IonHeader,
+  IonIcon,
   IonInput,
   IonItem,
   IonLabel,
@@ -17,13 +18,15 @@ import {
 } from '@ionic/vue'
 import { alertCircle, checkmarkCircle } from 'ionicons/icons'
 import { ref } from 'vue'
+import { PocketBaseRealtimeAdapter } from '@/adapters/pocketbase/realtime-adapter'
+import { authManager } from '@/core/auth-manager'
+import { realtimeManager } from '@/core/realtime-manager'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useSimpleBackButton } from '@/hooks/useSmartBackButton'
-import { useAuth } from '../hooks/useAuth'
+import { useSync } from '@/hooks/useSync'
 
 const router = useIonRouter()
 const { isDesktop } = useDeviceType()
-const { register } = useAuth()
 
 // 简单的返回按钮
 const { backButtonProps } = useSimpleBackButton('/', '返回')
@@ -33,40 +36,16 @@ const error = ref('')
 const message = ref('')
 
 const formData = ref({
-  username: '',
   email: '',
   password: '',
-  passwordConfirm: '',
 })
 
-function validateForm(): string | null {
-  if (!formData.value.username || !formData.value.email || !formData.value.password || !formData.value.passwordConfirm) {
-    return '请填写所有必填字段'
-  }
-
-  if (formData.value.password.length < 8) {
-    return '密码长度至少为8位'
-  }
-
-  if (formData.value.password !== formData.value.passwordConfirm) {
-    return '两次输入的密码不一致'
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
-  if (!emailRegex.test(formData.value.email)) {
-    return '请输入有效的邮箱地址'
-  }
-
-  return null
-}
-
-async function handleRegister() {
+async function handleLogin() {
   // 验证输入
-  const validationError = validateForm()
-  if (validationError) {
+  if (!formData.value.email || !formData.value.password) {
     const alert = await alertController.create({
       header: '提示',
-      message: validationError,
+      message: '请输入邮箱和密码',
       buttons: ['确定'],
     })
     alert.present()
@@ -74,7 +53,7 @@ async function handleRegister() {
   }
 
   const loadingInstance = await loadingController.create({
-    message: '正在注册...',
+    message: '正在登录...',
   })
   loadingInstance.present()
 
@@ -83,26 +62,49 @@ async function handleRegister() {
     message.value = ''
     loading.value = true
 
-    const { success, error: registerError } = await register(
-      formData.value.email,
-      formData.value.password,
-      formData.value.passwordConfirm,
-      formData.value.username,
-    )
-
-    if (!success || registerError) {
-      throw new Error(registerError || '注册失败')
+    // 使用核心 authManager 登录
+    const result = await authManager.login(formData.value.email, formData.value.password)
+    if (!result.success || result.error) {
+      throw new Error(result.error || '登录失败')
     }
 
-    // 注册成功，显示成功消息并返回上一页
-    message.value = '注册成功！正在跳转...'
+    // 登录成功后，建立 Realtime 连接
+    try {
+      const realtimeAdapter = new PocketBaseRealtimeAdapter({
+        autoReconnect: true,
+        maxReconnectAttempts: 5,
+        reconnectDelay: 2000,
+      })
+
+      realtimeManager.setRealtimeService(realtimeAdapter)
+      await realtimeManager.connect()
+      console.log('✅ 登录后 Realtime 连接成功')
+    }
+    catch (realtimeError) {
+      console.error('❌ 登录后建立 Realtime 连接失败:', realtimeError)
+      // 不影响登录流程
+    }
+
+    // 执行数据同步
+    try {
+      const { sync } = useSync()
+      await sync()
+      console.log('✅ 登录后数据同步完成')
+    }
+    catch (syncError) {
+      console.error('❌ 登录后数据同步失败:', syncError)
+      // 不影响登录流程
+    }
+
+    // 登录成功，显示成功消息并返回上一页
+    message.value = '登录成功！'
     setTimeout(() => {
       router.back()
-    }, 1500)
+    }, 1000)
   }
   catch (err) {
-    error.value = err instanceof Error ? err.message : '注册失败'
-    console.error('注册错误:', err)
+    error.value = err instanceof Error ? err.message : '登录失败'
+    console.error('登录错误:', err)
   }
   finally {
     loading.value = false
@@ -122,7 +124,7 @@ async function handleRegister() {
     </IonHeader>
 
     <IonContent :fullscreen="true">
-      <!-- 注册表单容器 -->
+      <!-- 登录表单容器 -->
       <div class="flex items-center min-h-full justify-center px-4 py-8">
         <div
           :class="{
@@ -133,30 +135,15 @@ async function handleRegister() {
           <!-- 标题 -->
           <div class="text-center mb-8">
             <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              用户注册
+              用户登录
             </h1>
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              创建您的新账户
+              请输入您的邮箱和密码
             </p>
           </div>
 
-          <!-- 注册表单 -->
+          <!-- 登录表单 -->
           <div class="bg-transparent">
-            <!-- 用户名输入（必填） -->
-            <div class="mb-4">
-              <IonInput
-                v-model="formData.username"
-                label="用户名"
-                label-placement="floating"
-                fill="outline"
-                placeholder="请输入用户名"
-                type="text"
-                mode="md"
-                class="rounded-lg"
-                :disabled="loading"
-              />
-            </div>
-
             <!-- 邮箱输入 -->
             <div class="mb-4">
               <IonInput
@@ -173,45 +160,30 @@ async function handleRegister() {
             </div>
 
             <!-- 密码输入 -->
-            <div class="mb-4">
+            <div class="mb-6">
               <IonInput
                 v-model="formData.password"
                 label="密码"
                 label-placement="floating"
                 fill="outline"
-                placeholder="请输入密码（至少8位）"
+                placeholder="请输入密码"
                 type="password"
                 mode="md"
                 class="rounded-lg"
                 :disabled="loading"
+                @keyup.enter="handleLogin"
               />
             </div>
 
-            <!-- 确认密码输入 -->
-            <div class="mb-6">
-              <IonInput
-                v-model="formData.passwordConfirm"
-                label="确认密码"
-                label-placement="floating"
-                fill="outline"
-                placeholder="请再次输入密码"
-                type="password"
-                mode="md"
-                class="rounded-lg"
-                :disabled="loading"
-                @keyup.enter="handleRegister"
-              />
-            </div>
-
-            <!-- 注册按钮 -->
+            <!-- 登录按钮 -->
             <div>
               <IonButton
                 expand="block"
-                :disabled="loading || !formData.username || !formData.email || !formData.password || !formData.passwordConfirm"
-                @click="handleRegister"
+                :disabled="loading || !formData.email || !formData.password"
+                @click="handleLogin"
               >
                 <IonSpinner v-if="loading" name="crescent" class="mr-2" />
-                {{ loading ? '注册中...' : '注册' }}
+                {{ loading ? '登录中...' : '登录' }}
               </IonButton>
             </div>
 
@@ -235,15 +207,15 @@ async function handleRegister() {
               </IonItem>
             </div>
 
-            <!-- 登录链接 -->
+            <!-- 注册链接 -->
             <div class="flex justify-center items-center">
-              已有账户？
+              还没有账户？
               <IonButton
-                fill="clear"
                 :disabled="loading"
-                @click="router.replace('/pocketbase/login')"
+                fill="clear"
+                @click="router.replace('/register')"
               >
-                立即登录
+                立即注册
               </IonButton>
             </div>
           </div>
