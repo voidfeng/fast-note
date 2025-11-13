@@ -5,7 +5,7 @@ import { ref, toRaw, watch } from 'vue'
 import { useNote } from '@/stores'
 import { NOTE_TYPE } from '@/types'
 import { getTime } from '@/utils/date'
-import NoteMove from './NoteMove.vue'
+// import NoteMove from './NoteMove.vue'
 
 export type ItemType = 'rename' | 'delete' | 'restore' | 'deleteNow' | 'move'
 interface IConfig {

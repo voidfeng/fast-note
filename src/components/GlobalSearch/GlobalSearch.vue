@@ -94,7 +94,7 @@ function onInput(event: CustomEvent) {
               </h2>
             </div>
             <NoteList
-              :data-list="state.notes"
+              :data-list="state.notes as any[]"
               :all-notes-count="state.notes.length"
               show-parent-folder
             />
