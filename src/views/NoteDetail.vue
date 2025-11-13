@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Editor } from '@tiptap/vue-3'
-import { IonBackButton, IonButton, IonButtons, IonContent, IonFooter, IonHeader, IonIcon, IonPage, IonToolbar, isPlatform, onIonViewWillLeave } from '@ionic/vue'
+import { IonBackButton, IonButton, IonButtons, IonContent, IonFooter, IonHeader, IonIcon, IonPage, IonToast, IonToolbar, isPlatform, onIonViewWillLeave } from '@ionic/vue'
 import { attachOutline, checkmarkCircleOutline, ellipsisHorizontalCircleOutline, textOutline } from 'ionicons/icons'
 import { nanoid } from 'nanoid'
 import { computed, nextTick, onMounted, reactive, ref, toRaw, watch } from 'vue'
@@ -12,6 +12,7 @@ import TextFormatModal from '@/components/TextFormatModal.vue'
 import YYEditor from '@/components/YYEditor.vue'
 import { useDeviceType } from '@/hooks/useDeviceType'
 import { useNoteBackButton } from '@/hooks/useSmartBackButton'
+import { useSync } from '@/hooks/useSync'
 import { useVisualViewport } from '@/hooks/useVisualViewport'
 import { useWebAuthn } from '@/hooks/useWebAuthn'
 import { useNote, useUserPublicNotes } from '@/stores'
@@ -33,6 +34,7 @@ const { addNote, getNote, updateNote, deleteNote, updateParentFolderSubcount } =
 const { isDesktop } = useDeviceType()
 const { restoreHeight } = useVisualViewport()
 const { state: authState, verify, register } = useWebAuthn()
+const { sync } = useSync()
 
 const isIos = isPlatform('ios')
 const pageRef = ref()
@@ -47,6 +49,11 @@ const state = reactive({
   showTableFormat: false,
   showNoteMore: false,
   isAuth: false,
+  toast: {
+    isOpen: false,
+    message: '',
+    color: 'success',
+  },
 })
 
 const idFromRoute = computed(() => route.params.id as string || route.params.noteId as string)
@@ -167,6 +174,21 @@ async function handleNoteSaving() {
       await addNote(newNote)
       updateParentFolderSubcount(newNote)
       data.value = newNote
+    }
+
+    // 自动同步笔记到云端（静默模式）
+    // 静默模式：未登录时不会抛出错误，直接跳过
+    try {
+      await sync(true)
+      // 同步成功提示
+      state.toast.message = '同步成功'
+      state.toast.isOpen = true
+    }
+    catch (error) {
+      console.error('自动同步失败:', error)
+      // 同步失败提示
+      state.toast.message = '同步失败，请检查网络连接'
+      state.toast.isOpen = true
     }
   }
   else {
@@ -348,6 +370,15 @@ onIonViewWillLeave(() => {
     <NoteMore v-if="!isUserContext" v-model:is-open="state.showNoteMore" />
     <TableFormatModal v-if="!isUserContext" v-model:is-open="state.showTableFormat" :editor="((editorRef?.editor || {}) as Editor)" />
     <TextFormatModal v-if="!isUserContext" v-model:is-open="state.showFormat" :editor="((editorRef?.editor || {}) as Editor)" />
+
+    <!-- 同步结果提示 -->
+    <IonToast
+      :is-open="state.toast.isOpen"
+      :message="state.toast.message"
+      :duration="2000"
+      position="bottom"
+      @did-dismiss="state.toast.isOpen = false"
+    />
   </IonPage>
 </template>
 
@@ -419,6 +450,9 @@ ion-item ion-note {
   font-weight: normal;
 }
 
+ion-toast {
+  --background: var(--c-gray-700);
+}
 p {
   line-height: 1.4;
 }

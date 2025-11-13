@@ -121,34 +121,32 @@ async function loadLocalStats() {
 
 // 处理同步功能
 async function handleSync() {
-  if (!isLoggedIn.value) {
-    const alert = await alertController.create({
-      header: '未登录',
-      message: '请先登录后再进行同步',
-      buttons: ['确定'],
-    })
-    await alert.present()
-    return
-  }
+  let loading: HTMLIonLoadingElement | null = null
 
   try {
-    const loading = await loadingController.create({
+    loading = await loadingController.create({
       message: '正在同步数据...',
     })
     await loading.present()
 
-    const result = await sync()
-    syncResult.value = result
+    // 非静默模式：未登录会抛出错误
+    const result = await sync(false)
+
+    if (result) {
+      syncResult.value = result
+    }
 
     await loading.dismiss()
 
     // 显示同步结果
-    const alert = await alertController.create({
-      header: '同步完成',
-      message: `上传: ${result.uploaded} 条, 下载: ${result.downloaded} 条, 删除: ${result.deleted} 条`,
-      buttons: ['确定'],
-    })
-    await alert.present()
+    if (result) {
+      const alert = await alertController.create({
+        header: '同步完成',
+        message: `上传: ${result.uploaded} 条, 下载: ${result.downloaded} 条, 删除: ${result.deleted} 条`,
+        buttons: ['确定'],
+      })
+      await alert.present()
+    }
 
     // 刷新本地数据统计
     await loadLocalStats()
@@ -156,6 +154,12 @@ async function handleSync() {
   catch (error) {
     console.error('同步失败:', error)
 
+    // 确保 loading 被关闭
+    if (loading) {
+      await loading.dismiss()
+    }
+
+    // 显示错误提示（包括"用户未登录，请先登录"）
     const alert = await alertController.create({
       header: '同步失败',
       message: error instanceof Error ? error.message : '同步过程中发生错误',

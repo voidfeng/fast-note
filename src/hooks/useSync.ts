@@ -5,7 +5,7 @@
 import type { Note } from '@/types'
 import { ref } from 'vue'
 import { useNoteFiles } from '@/hooks/useNoteFiles'
-import { notesService } from '@/pocketbase'
+import { authService, notesService } from '@/pocketbase'
 import { useNote } from '@/stores'
 import { getTime } from '@/utils/date'
 
@@ -239,8 +239,22 @@ export function useSync() {
 
   /**
    * 主同步函数
+   * @param silent 是否静默同步，静默模式下未登录不会抛出错误，直接返回 null
    */
-  async function sync() {
+  async function sync(silent = false) {
+    // 检查登录状态
+    if (!authService.isAuthenticated()) {
+      if (silent) {
+        // 静默模式：未登录时直接返回，不显示任何提示
+        console.warn('用户未登录，跳过同步')
+        return null
+      }
+      else {
+        // 非静默模式：抛出错误，让调用方处理并显示提示
+        throw new Error('用户未登录，请先登录')
+      }
+    }
+
     syncing.value = true
 
     try {
@@ -546,10 +560,11 @@ export function useSync() {
 
   /**
    * 双向同步（别名）
+   * @param silent 是否静默同步
    */
-  async function bidirectionalSync() {
+  async function bidirectionalSync(silent = false) {
     try {
-      const result = await sync()
+      const result = await sync(silent)
       syncStatus.value.lastSyncTime = new Date()
       syncStatus.value.error = null
       return result
@@ -562,10 +577,11 @@ export function useSync() {
 
   /**
    * 全量上传到 PocketBase
+   * @param silent 是否静默同步
    */
-  async function fullSyncToPocketBase() {
+  async function fullSyncToPocketBase(silent = false) {
     try {
-      const result = await sync()
+      const result = await sync(silent)
       return result
     }
     catch (error) {
