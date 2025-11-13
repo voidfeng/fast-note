@@ -129,7 +129,7 @@ watch(() => props.id, () => {
       </IonList>
     </div>
   </IonModal>
-  <NoteMove
+  <!-- <NoteMove
     :id="id"
     :is-open="showMove"
     :presenting-element
@@ -138,7 +138,7 @@ watch(() => props.id, () => {
       $emit('refresh')
       dismiss()
     }"
-  />
+  /> -->
 </template>
 
 <style lang="scss">
